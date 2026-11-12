@@ -83,7 +83,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "meucupom · Links e Cupons de Parceiros para Creators",
   description:
-    "Crie sua página de links e cupons em minutos. Personalize layout, cores e acompanhe cliques e cópias com login pelo Google, Apple ou e-mail.",
+    "Crie sua página de links e cupons em minutos. Personalize layout, cores e acompanhe cliques e cópias com login pelo Google ou e-mail.",
 };
 
 export default function RootLayout({

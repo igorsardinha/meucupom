@@ -8,16 +8,7 @@ import { authClient } from "@/lib/auth-client";
 
 interface AuthFormProps {
   googleEnabled: boolean;
-  appleEnabled: boolean;
   demoEnabled: boolean;
-}
-
-function AppleIcon() {
-  return (
-    <svg className="h-5 w-5 shrink-0 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.572-2.27 1.206-2.98.804-.94 2.142-1.64 3.248-1.68.03.13.05.28.05.43zm4.565 15.71c-.03.07-.463 1.58-1.518 3.12-.945 1.34-1.94 2.71-3.43 2.71-1.517 0-1.9-.88-3.63-.88-1.698 0-2.302.91-3.67.91-1.377 0-2.332-1.26-3.428-2.8-1.287-1.82-2.323-4.63-2.323-7.28 0-4.28 2.797-6.55 5.552-6.55 1.448 0 2.675.95 3.6.95.865 0 2.222-1.01 3.902-1.01.613 0 2.886.06 4.374 2.19-.13.09-2.383 1.37-2.383 4.19 0 3.26 2.854 4.42 2.955 4.45z" />
-    </svg>
-  );
 }
 
 function GoogleIcon() {
@@ -45,7 +36,6 @@ function GoogleIcon() {
 
 export function AuthForm({
   googleEnabled,
-  appleEnabled,
   demoEnabled,
 }: AuthFormProps) {
   const router = useRouter();
@@ -57,16 +47,12 @@ export function AuthForm({
   const [loading, setLoading] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  async function handleSocialSignIn(provider: "google" | "apple", enabled: boolean) {
+  async function handleSocialSignIn(provider: "google", enabled: boolean) {
     setErrorMsg(null);
     if (!enabled) {
-      const envMessages: Record<"google" | "apple", string> = {
-        google:
-          "O login com Google ainda não está configurado neste ambiente (defina GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET no .env.local).",
-        apple:
-          "O login com Apple ainda não está configurado neste ambiente (defina APPLE_CLIENT_ID e APPLE_CLIENT_SECRET no .env.local).",
-      };
-      setErrorMsg(envMessages[provider]);
+      setErrorMsg(
+        "O login com Google ainda não está configurado neste ambiente (defina GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET no .env.local)."
+      );
       return;
     }
 
@@ -182,25 +168,6 @@ export function AuthForm({
             <span>Continuar com Google</span>
             {!googleEnabled ? (
               <span className="ml-auto rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600">
-                Configurar .env
-              </span>
-            ) : null}
-          </button>
-
-          <button
-            type="button"
-            disabled={loading !== null}
-            onClick={() => handleSocialSignIn("apple", appleEnabled)}
-            className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-[13px] border border-white/15 bg-black px-4 text-sm font-bold text-white transition hover:bg-zinc-900 disabled:opacity-60"
-          >
-            {loading === "apple" ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <AppleIcon />
-            )}
-            <span>Continuar com Apple</span>
-            {!appleEnabled ? (
-              <span className="ml-auto rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold uppercase text-white/85">
                 Configurar .env
               </span>
             ) : null}

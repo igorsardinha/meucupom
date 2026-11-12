@@ -50,7 +50,7 @@ const FEATURES = [
   },
   {
     icon: ShieldCheck,
-    title: "Login com Google, Apple ou e-mail",
+    title: "Login com Google ou e-mail",
     description:
       "Entre rápido em segundos com segurança e comece a publicar seus cupons sem complicação.",
   },
@@ -138,7 +138,7 @@ export default function HomePage() {
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-4 text-xs font-semibold text-[#9CB3CE]">
-              <span>✓ Login com Google, Apple ou e-mail</span>
+              <span>✓ Login com Google ou e-mail</span>
               <span>✓ Preview em tempo real</span>
               <span>✓ Sem código</span>
             </div>

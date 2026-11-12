@@ -48,7 +48,7 @@ export const PLAN_CARDS = [
     features: [
       `Até ${FREE_MAX_ACTIVE_OR_TOTAL_LINKS} cupons ou links`,
       "Divisórias ilimitadas",
-      "Login social com Google e Apple",
+      "Login social com Google ou e-mail",
       "Layouts Clássico e Compacto + temas prontos",
       "Métricas totais de visitas, cópias e cliques",
     ],

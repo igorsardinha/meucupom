@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/AuthForm";
 import {
   getAuth,
-  isAppleOAuthEnabled,
   isDemoLoginEnabled,
   isGoogleOAuthEnabled,
 } from "@/lib/auth";
@@ -19,7 +18,6 @@ async function AuthGate() {
   return (
     <AuthForm
       googleEnabled={isGoogleOAuthEnabled()}
-      appleEnabled={isAppleOAuthEnabled()}
       demoEnabled={isDemoLoginEnabled()}
     />
   );
