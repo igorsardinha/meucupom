@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { InstagramIcon } from "@/components/InstagramIcon";
 import { YouTubeIcon } from "@/components/YouTubeIcon";
+import { BrandLogo } from "@/components/BrandLogo";
 import {
   computeInitials,
   CreatorProfileData,
@@ -1147,17 +1148,21 @@ export function PublicBioView({ profile, items, previewMode = false }: PublicBio
         <footer style={{ color: mutedText }} className="mt-7 text-center text-xs">
           {profile.footerText ? <p>{profile.footerText}</p> : null}
           {profile.showBranding ? (
-            <p className="mt-2.5">
-              Feito com{" "}
+            <div className="mt-5 flex flex-col items-center justify-center">
               <Link
                 href="/"
-                style={{ color: profile.accentColor }}
-                className="font-bold underline-offset-4 hover:underline"
+                target={previewMode ? "_self" : "_blank"}
+                rel="noopener noreferrer"
+                className="group inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-3.5 py-1.5 backdrop-blur-md transition hover:border-white/25 hover:bg-black/40 shadow-sm"
+                aria-label="Criar sua página meucupom.bio grátis"
               >
-                meucupom
-              </Link>{" "}
-              · Crie o seu grátis
-            </p>
+                <span className="text-[11px] font-medium opacity-70">Feito com</span>
+                <BrandLogo
+                  className="h-3.5 w-auto"
+                  textColor={effectiveScheme === "light" ? "#0F172A" : "#FFFFFF"}
+                />
+              </Link>
+            </div>
           ) : null}
           {!previewMode ? (
             <p className="mt-3">

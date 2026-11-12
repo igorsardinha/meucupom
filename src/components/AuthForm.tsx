@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AlertCircle, ArrowLeft, Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
+import { BrandIcon } from "@/components/BrandIcon";
+import { BrandLogo } from "@/components/BrandLogo";
 import { authClient } from "@/lib/auth-client";
 
 interface AuthFormProps {
@@ -141,8 +143,11 @@ export function AuthForm({
 
       <div className="rounded-[24px] border border-[#94C5FF]/15 bg-[#0E1624] p-6 shadow-[0_20px_50px_rgba(2,6,14,0.55)] sm:p-7">
         <div className="mb-6">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#38BDF8]/30 bg-[#38BDF8]/10 px-3 py-1 text-xs font-bold text-[#38BDF8]">
-            <span>meucupom</span>
+          <div className="mb-4 flex items-center gap-2.5">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[#1E60CF] to-[#145ca1] p-1.5 text-white shadow-md shadow-[#1E60CF]/25">
+              <BrandIcon className="h-full w-full" />
+            </span>
+            <BrandLogo className="h-6 w-auto" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight text-white">
             {mode === "login" ? "Entrar no seu painel" : "Criar sua página grátis"}

@@ -107,7 +107,7 @@ export const PLAN_CARDS = [
       "Métricas totais de visitas, cópias e cliques",
     ],
     limitations: [
-      "Selo \"Feito com meucupom\" no rodapé",
+      "Selo oficial meucupom.bio no rodapé",
       "14 fundos exclusivos (com desenhos) e temas Pro bloqueados",
       "Bordas Pílula e Super Arredondada exclusivas do Pro",
       "Animações básicas de destaque",
@@ -121,7 +121,7 @@ export const PLAN_CARDS = [
     description: "Para criadores e atletas que monetizam com vários parceiros.",
     features: [
       "Cupons e links ilimitados",
-      "Remover selo \"Feito com meucupom\"",
+      "Remover logo meucupom.bio (página 100% white-label)",
       "Todos os 19 fundos (incluindo todos com desenhos: Ondas, Zig-zag, Colmeia, Grid, etc.)",
       "Todas as opções de borda (Pílula e Super Arredondada)",
       "Todos os temas prontos exclusivos com ícones visuais",

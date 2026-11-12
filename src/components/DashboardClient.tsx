@@ -77,6 +77,8 @@ import {
   ThemeMode,
   ThemePreset,
 } from "@/types/meucupom";
+import { BrandIcon } from "@/components/BrandIcon";
+import { BrandLogo } from "@/components/BrandLogo";
 import { PublicBioView } from "./PublicBioView";
 
 interface DashboardClientProps {
@@ -1342,13 +1344,10 @@ export function DashboardClient({
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-2 sm:px-6 sm:py-3">
           {/* Brand */}
           <Link href="/" className="flex shrink-0 items-center gap-2 transition hover:opacity-90 sm:gap-2.5">
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[#1E60CF] to-[#38BDF8] text-xs font-black text-white shadow-md shadow-[#1E60CF]/20 sm:h-9 sm:w-9">
-              MC
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[#1E60CF] to-[#145ca1] p-1.5 text-white shadow-md shadow-[#1E60CF]/20 sm:h-9 sm:w-9">
+              <BrandIcon className="h-full w-full" />
             </span>
-            <div className="flex items-baseline gap-1">
-              <span className="text-sm font-extrabold tracking-tight text-white sm:text-lg">meucupom</span>
-              <span className="text-[11px] font-bold text-[#38BDF8] sm:text-xs">.bio</span>
-            </div>
+            <BrandLogo className="h-5 sm:h-6 w-auto" />
           </Link>
 
           {/* Right Actions */}
@@ -3319,34 +3318,63 @@ export function DashboardClient({
                     />
                   </div>
 
-                  <div className="sm:col-span-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <label
-                        className={`flex items-center gap-3 text-sm font-semibold ${
-                          userIsPro ? "cursor-pointer" : "cursor-not-allowed opacity-75"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          disabled={!userIsPro}
-                          checked={userIsPro ? profile.showBranding : true}
-                          onChange={(e) =>
-                            setProfile((p) => ({ ...p, showBranding: e.target.checked }))
-                          }
-                          className="h-4 w-4 accent-[#38BDF8]"
-                        />
-                        <span>Exibir selo &quot;Feito com meucupom&quot; no rodapé</span>
-                      </label>
-                      {!userIsPro ? (
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab("plan")}
-                          className="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-2.5 py-1 text-[11px] font-bold text-amber-200 hover:bg-amber-400/25"
+                  {/* Branding / Watermark Card */}
+                  <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-[#09101B]/80 p-4 sm:p-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/5 p-1.5 text-white">
+                          <BrandIcon className="h-full w-full" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-bold text-white">Marca d&apos;água no rodapé</h4>
+                            {!userIsPro ? (
+                              <span className="rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-extrabold text-amber-300">
+                                Recurso Pro
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-1 text-xs text-[#9CB3CE]">
+                            {userIsPro
+                              ? "Você possui o Plano Pro: desmarque a caixa ao lado para remover completamente a logo da sua página."
+                              : "No plano Grátis, sua página exibe a logo oficial meucupom.bio. Assine o Pro para ter uma página 100% white-label sem marca."}
+                          </p>
+                          <div className="mt-2.5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1">
+                            <span className="text-[10px] font-medium text-[#9CB3CE]">Prévia da logo:</span>
+                            <BrandLogo className="h-3.5 w-auto" textColor="#FFFFFF" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:items-end gap-2 shrink-0">
+                        <label
+                          className={`flex items-center gap-2 text-xs font-semibold ${
+                            userIsPro ? "cursor-pointer text-white" : "cursor-not-allowed opacity-60 text-[#9CB3CE]"
+                          }`}
                         >
-                          <Lock className="h-3 w-3" aria-hidden="true" />
-                          <span>Remover no Pro</span>
-                        </button>
-                      ) : null}
+                          <input
+                            type="checkbox"
+                            disabled={!userIsPro}
+                            checked={userIsPro ? profile.showBranding : true}
+                            onChange={(e) =>
+                              setProfile((p) => ({ ...p, showBranding: e.target.checked }))
+                            }
+                            className="h-4 w-4 rounded accent-[#38BDF8]"
+                          />
+                          <span>Exibir logo na página</span>
+                        </label>
+
+                        {!userIsPro ? (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab("plan")}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-3.5 py-1.5 text-xs font-bold text-[#08101C] hover:bg-amber-300 shadow-sm transition"
+                          >
+                            <Crown className="h-3.5 w-3.5" aria-hidden="true" />
+                            <span>Remover logo no Pro</span>
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 </div>

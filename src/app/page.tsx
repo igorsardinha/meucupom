@@ -9,6 +9,8 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import { BrandIcon } from "@/components/BrandIcon";
+import { BrandLogo } from "@/components/BrandLogo";
 import { PublicBioView } from "@/components/PublicBioView";
 import { PLAN_CARDS } from "@/lib/plans";
 import {
@@ -75,11 +77,11 @@ export default function HomePage() {
     <div className="min-h-dvh bg-[#070C14] text-[#F4F8FD] bg-[radial-gradient(circle_at_50%_-8%,rgba(47,108,181,0.34),transparent_48%),radial-gradient(circle_at_82%_20%,rgba(56,189,248,0.14),transparent_40%)]">
       {/* Header */}
       <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
-        <Link href="/" className="flex items-center gap-2.5 font-extrabold tracking-tight">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[#1E60CF] to-[#38BDF8] text-sm font-black text-white shadow-lg">
-            MC
+        <Link href="/" className="flex items-center gap-3 transition hover:opacity-90">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[#1E60CF] to-[#145ca1] p-1.5 text-white shadow-lg shadow-[#1E60CF]/25">
+            <BrandIcon className="h-full w-full" />
           </span>
-          <span className="text-xl">meucupom</span>
+          <BrandLogo className="h-7 w-auto" />
         </Link>
 
         <nav className="flex items-center gap-2.5">
@@ -103,10 +105,12 @@ export default function HomePage() {
       <main className="mx-auto max-w-6xl px-4 pt-6 pb-20 sm:px-6 lg:pt-12">
         <section className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.08fr_0.92fr]">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#38BDF8]/30 bg-[#38BDF8]/10 px-3.5 py-1 text-xs font-bold text-[#7DD3FC]">
-              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>Feito para o link da bio &amp; Stories</span>
-            </span>
+            <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-[#38BDF8]/30 bg-[#38BDF8]/10 py-1 pl-1.5 pr-3.5 text-xs font-bold text-[#7DD3FC]">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-[#1E60CF] p-1 text-white shadow">
+                <BrandIcon className="h-full w-full" />
+              </span>
+              <span>meucupom.bio · Feito para o link da bio &amp; Stories</span>
+            </div>
 
             <h1 className="mt-5 text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl">
               Seus links e cupons de parceiros em uma página que{" "}
@@ -257,9 +261,15 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="border-t border-white/10 py-6 text-center text-xs text-[#9CB3CE]">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6">
-          <p>meucupom · Plataforma de links e cupons para criadores</p>
+      <footer className="border-t border-white/10 py-8 text-xs text-[#9CB3CE]">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 sm:px-6">
+          <Link href="/" className="flex items-center gap-2.5 transition hover:opacity-90">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[#1E60CF] to-[#145ca1] p-1.5 text-white shadow-md">
+              <BrandIcon className="h-full w-full" />
+            </span>
+            <BrandLogo className="h-5 w-auto" />
+          </Link>
+          <p>© 2026 meucupom.bio · Plataforma de links e cupons para criadores e atletas</p>
           <div className="flex items-center gap-4">
             <Link href="/termos" className="hover:text-white hover:underline">
               Termos de Uso

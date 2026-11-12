@@ -18,6 +18,8 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
+import { BrandIcon } from "@/components/BrandIcon";
+import { BrandLogo } from "@/components/BrandLogo";
 import type {
   AdminOverviewData,
   AdminReportSummary,
@@ -232,16 +234,14 @@ export function AdminDashboardClient({
       <header className="sticky top-0 z-30 border-b border-amber-400/20 bg-[#070C14]/92 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-6">
           <div className="flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-sm font-black text-[#08101C]">
-              SA
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 p-1.5 text-[#08101C] shadow-md shadow-amber-400/20">
+              <BrandIcon className="h-full w-full" />
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-extrabold tracking-tight sm:text-lg">
-                  Super Admin · meucupom
-                </h1>
+                <BrandLogo className="h-5 w-auto" />
                 <span className="rounded-full border border-amber-400/35 bg-amber-400/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-200">
-                  Administração
+                  Super Admin
                 </span>
               </div>
               <p className="text-xs text-[#9CB3CE]">{adminEmail}</p>
