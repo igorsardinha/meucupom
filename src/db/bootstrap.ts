@@ -59,6 +59,8 @@ const SQLITE_DDL = [
     "instagram_url" text NOT NULL DEFAULT '',
     "tiktok_handle" text NOT NULL DEFAULT '',
     "tiktok_url" text NOT NULL DEFAULT '',
+    "youtube_handle" text NOT NULL DEFAULT '',
+    "youtube_url" text NOT NULL DEFAULT '',
     "bio" text NOT NULL DEFAULT '',
     "footer_text" text NOT NULL DEFAULT '',
     "section_title" text NOT NULL DEFAULT 'Parceiros & Cupons',
@@ -185,6 +187,8 @@ const PG_DDL = [
     "instagram_url" text NOT NULL DEFAULT '',
     "tiktok_handle" text NOT NULL DEFAULT '',
     "tiktok_url" text NOT NULL DEFAULT '',
+    "youtube_handle" text NOT NULL DEFAULT '',
+    "youtube_url" text NOT NULL DEFAULT '',
     "bio" text NOT NULL DEFAULT '',
     "footer_text" text NOT NULL DEFAULT '',
     "section_title" text NOT NULL DEFAULT 'Parceiros & Cupons',
@@ -324,6 +328,8 @@ async function seedShowcaseProfile() {
       instagramUrl: "https://instagram.com",
       tiktokHandle: "@criadormodelo",
       tiktokUrl: "https://tiktok.com",
+      youtubeHandle: "@criadormodelo",
+      youtubeUrl: "https://youtube.com",
       bio: "Links oficiais, parceiros e cupons selecionados para você economizar.",
       ...DEFAULT_PROFILE_CUSTOMIZATION,
       viewsCount: 186,
@@ -405,6 +411,8 @@ async function seedShowcaseProfile() {
     instagramUrl: "https://instagram.com",
     tiktokHandle: "@criadormodelo",
     tiktokUrl: "https://tiktok.com",
+    youtubeHandle: "@criadormodelo",
+    youtubeUrl: "https://youtube.com",
     bio: "Links oficiais, parceiros e cupons selecionados para você economizar.",
     ...DEFAULT_PROFILE_CUSTOMIZATION,
     viewsCount: 186,
@@ -602,6 +610,16 @@ async function runColumnMigrations() {
         `ALTER TABLE "creator_profile" ADD COLUMN "tiktok_url" text NOT NULL DEFAULT ''`
       );
     }
+    if (!profNames.has("youtube_handle")) {
+      await handle.client.execute(
+        `ALTER TABLE "creator_profile" ADD COLUMN "youtube_handle" text NOT NULL DEFAULT ''`
+      );
+    }
+    if (!profNames.has("youtube_url")) {
+      await handle.client.execute(
+        `ALTER TABLE "creator_profile" ADD COLUMN "youtube_url" text NOT NULL DEFAULT ''`
+      );
+    }
     if (!profNames.has("title_font_style")) {
       await handle.client.execute(
         `ALTER TABLE "creator_profile" ADD COLUMN "title_font_style" text NOT NULL DEFAULT 'jakarta'`
@@ -681,6 +699,12 @@ async function runColumnMigrations() {
   );
   await handle.pool.query(
     `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "tiktok_url" text NOT NULL DEFAULT ''`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "youtube_handle" text NOT NULL DEFAULT ''`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "youtube_url" text NOT NULL DEFAULT ''`
   );
   await handle.pool.query(
     `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "title_font_style" text NOT NULL DEFAULT 'jakarta'`

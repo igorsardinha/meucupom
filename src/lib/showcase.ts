@@ -17,6 +17,8 @@ export const NEUTRAL_SHOWCASE_PROFILE: CreatorProfileData = {
   instagramUrl: "https://instagram.com",
   tiktokHandle: "@criadormodelo",
   tiktokUrl: "https://tiktok.com",
+  youtubeHandle: "@criadormodelo",
+  youtubeUrl: "https://youtube.com",
   bio: "Links oficiais, parceiros e cupons selecionados para você economizar.",
   ...DEFAULT_PROFILE_CUSTOMIZATION,
   viewsCount: 186,

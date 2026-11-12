@@ -7,8 +7,13 @@ import type { CreatorProfileData } from "@/types/meucupom";
 
 let cachedConfig: MercadoPagoConfig | null = null;
 
+export function getMercadoPagoAccessToken(): string {
+  const raw = process.env.MP_ACCESS_TOKEN?.trim() || "";
+  return raw.replace(/^["']|["']$/g, "").trim();
+}
+
 export function isMercadoPagoEnabled(): boolean {
-  return Boolean(process.env.MP_ACCESS_TOKEN?.trim());
+  return Boolean(getMercadoPagoAccessToken());
 }
 
 export function getProPriceBrl(): number {
@@ -20,14 +25,14 @@ export function getProPriceBrl(): number {
 }
 
 export function getMercadoPagoConfig(): MercadoPagoConfig {
-  const accessToken = process.env.MP_ACCESS_TOKEN?.trim();
+  const accessToken = getMercadoPagoAccessToken();
   if (!accessToken) {
     throw new Error("MP_ACCESS_TOKEN não configurado.");
   }
   if (!cachedConfig) {
     cachedConfig = new MercadoPagoConfig({
       accessToken,
-      options: { timeout: 8000 },
+      options: { timeout: 10000 },
     });
   }
   return cachedConfig;

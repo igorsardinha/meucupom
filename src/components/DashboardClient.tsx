@@ -18,11 +18,13 @@ import {
   Eye,
   EyeOff,
   GripVertical,
+  KeyRound,
   LayoutGrid,
   Link2,
   Loader2,
   Lock,
   LogOut,
+  Mail,
   Minus,
   MousePointerClick,
   Palette,
@@ -329,9 +331,11 @@ function getThemePreviewStyle(preset: ThemePreset): {
 function ThemePresetPreviewIcon({
   preset,
   isProTheme,
+  userIsPro,
 }: {
   preset: ThemePreset;
   isProTheme: boolean;
+  userIsPro?: boolean;
 }) {
   const bgStyle = useMemo(() => getThemePreviewStyle(preset), [preset]);
 
@@ -373,8 +377,8 @@ function ThemePresetPreviewIcon({
         />
       </div>
 
-      {/* Pro crown pill badge if exclusive */}
-      {isProTheme ? (
+      {/* Pro crown pill badge if exclusive and user is not Pro */}
+      {isProTheme && !userIsPro ? (
         <span
           className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-amber-400/80 bg-[#140E04] text-amber-300 shadow-md"
           title="Tema exclusivo Pro"
@@ -441,6 +445,18 @@ export function DashboardClient({
   } | null>(null);
   const [grabbedId, setGrabbedId] = useState<string | null>(null);
   const [reorderStatus, setReorderStatus] = useState("");
+
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [sendingResetEmail, setSendingResetEmail] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [changePasswordError, setChangePasswordError] = useState<string | null>(null);
+  const [changePasswordSuccess, setChangePasswordSuccess] = useState(false);
 
   const itemDialogRef = useRef<HTMLDialogElement>(null);
   const deleteDialogRef = useRef<HTMLDialogElement>(null);
@@ -598,9 +614,10 @@ export function DashboardClient({
 
   function notify(type: "ok" | "error", text: string) {
     setStatusBanner({ type, text });
+    const duration = text.length > 80 ? 9000 : 3500;
     window.setTimeout(() => {
       setStatusBanner((prev) => (prev?.text === text ? null : prev));
-    }, 3500);
+    }, duration);
   }
 
   async function handleCopyPublicUrl() {
@@ -732,6 +749,33 @@ export function DashboardClient({
       window.location.href = data.url;
     } catch {
       notify("error", "Erro de conexão ao iniciar checkout.");
+    } finally {
+      setBillingLoading(false);
+    }
+  }
+
+  async function handleAdminSelfActivatePro() {
+    setBillingLoading(true);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: profile.userId,
+          plan: "pro",
+          subscriptionStatus: "active",
+        }),
+      });
+      const json = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok) {
+        notify("error", json.error || "Não foi possível ativar plano Pro como Super Admin.");
+        return;
+      }
+      setProfile((prev) => ({ ...prev, plan: "pro", subscriptionStatus: "active" }));
+      notify("ok", "Plano Pro ativado nesta conta com sucesso (Super Admin)!");
+      router.refresh();
+    } catch {
+      notify("error", "Erro ao ativar plano Pro.");
     } finally {
       setBillingLoading(false);
     }
@@ -920,6 +964,7 @@ export function DashboardClient({
     e.target.value = "";
     if (!file) return;
 
+    setAvatarUploading(true);
     try {
       const { blob, filename, dataUrl } = await resizeAvatarToAsset(file);
       let finalAvatarUrl = dataUrl;
@@ -945,11 +990,87 @@ export function DashboardClient({
       }
 
       await saveProfilePatch({ avatarUrl: finalAvatarUrl });
+      notify("ok", "Foto de perfil atualizada com sucesso!");
     } catch (err) {
       notify(
         "error",
         err instanceof Error ? err.message : "Erro ao carregar foto de perfil."
       );
+    } finally {
+      setAvatarUploading(false);
+    }
+  }
+
+  async function handleSendResetPasswordEmail() {
+    if (!userEmail) {
+      notify("error", "E-mail da conta não encontrado.");
+      return;
+    }
+    setSendingResetEmail(true);
+    try {
+      const res = await fetch("/api/auth/request-password-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: userEmail.trim(),
+          redirectTo: `${window.location.origin}/redefinir-senha`,
+        }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { message?: string };
+        notify("error", body.message || "Erro ao solicitar e-mail de redefinição.");
+      } else {
+        setResetEmailSent(true);
+        notify("ok", `E-mail de redefinição enviado para ${userEmail}!`);
+      }
+    } catch {
+      notify("error", "Erro ao solicitar redefinição de senha.");
+    } finally {
+      setSendingResetEmail(false);
+    }
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setChangePasswordError(null);
+    setChangePasswordSuccess(false);
+
+    if (newPassword.length < 8) {
+      setChangePasswordError("A nova senha deve ter no mínimo 8 caracteres.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setChangePasswordError("A confirmação da nova senha não confere.");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+          revokeOtherSessions: false,
+        }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { message?: string };
+        setChangePasswordError(
+          body.message || "Erro ao alterar senha. Verifique se sua senha atual está correta."
+        );
+      } else {
+        setChangePasswordSuccess(true);
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        notify("ok", "Senha alterada com sucesso!");
+      }
+    } catch {
+      setChangePasswordError("Erro inesperado ao alterar senha.");
+    } finally {
+      setChangingPassword(false);
     }
   }
 
@@ -1290,18 +1411,26 @@ export function DashboardClient({
         <div
           role="status"
           aria-live="polite"
-          className={`fixed right-4 bottom-20 z-50 flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold shadow-2xl lg:bottom-4 ${
+          className={`fixed right-4 bottom-20 z-50 flex max-w-[92vw] items-start gap-2.5 rounded-2xl border px-4 py-3 text-sm font-semibold shadow-2xl sm:max-w-md lg:bottom-4 ${
             statusBanner.type === "error"
               ? "border-red-400/50 bg-[#2A0F14] text-red-100"
               : "border-emerald-400/50 bg-[#0A241C] text-emerald-100"
           }`}
         >
           {statusBanner.type === "error" ? (
-            <AlertTriangle className="h-4 w-4 text-red-300" aria-hidden="true" />
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" aria-hidden="true" />
           ) : (
-            <Check className="h-4 w-4 text-emerald-300" aria-hidden="true" />
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
           )}
-          <span>{statusBanner.text}</span>
+          <span className="flex-1 leading-snug">{statusBanner.text}</span>
+          <button
+            type="button"
+            onClick={() => setStatusBanner(null)}
+            className="ml-1 text-xs opacity-70 hover:opacity-100"
+            aria-label="Fechar aviso"
+          >
+            ✕
+          </button>
         </div>
       ) : null}
 
@@ -1944,23 +2073,25 @@ export function DashboardClient({
                             : "border-white/12 bg-[#09101B] hover:border-white/25"
                         }`}
                       >
-                        <ThemePresetPreviewIcon preset={preset} isProTheme={isProTheme} />
+                        <ThemePresetPreviewIcon preset={preset} isProTheme={isProTheme} userIsPro={userIsPro} />
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
                             <span className="block truncate text-sm font-bold text-white">
                               {preset.name}
                             </span>
-                            {isProTheme ? (
-                              <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-amber-400/40 bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-extrabold text-amber-300">
-                                <Crown className="h-2.5 w-2.5 fill-amber-300" aria-hidden="true" />
-                                <span>PRO</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
-                                Grátis
-                              </span>
-                            )}
+                            {!userIsPro ? (
+                              isProTheme ? (
+                                <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-amber-400/40 bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-extrabold text-amber-300">
+                                  <Crown className="h-2.5 w-2.5 fill-amber-300" aria-hidden="true" />
+                                  <span>PRO</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                                  Grátis
+                                </span>
+                              )
+                            ) : null}
                           </div>
 
                           <p className="mt-0.5 truncate text-xs text-[#9CB3CE]">
@@ -1988,7 +2119,7 @@ export function DashboardClient({
                   })}
                 </div>
 
-                {themeProNotice ? (
+                {themeProNotice && !userIsPro ? (
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3.5 text-xs text-amber-200">
                     <div className="flex items-center gap-2">
                       <Crown className="h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
@@ -2981,20 +3112,29 @@ export function DashboardClient({
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2.5">
-                        <label
-                          htmlFor="prof-avatar-upload"
-                          className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl bg-[#1E60CF] px-4 text-sm font-bold text-white transition hover:bg-[#256EE8] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#38BDF8]"
+                        <button
+                          type="button"
+                          disabled={avatarUploading}
+                          onClick={() => avatarInputRef.current?.click()}
+                          className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl bg-[#1E60CF] px-4 text-sm font-bold text-white transition hover:bg-[#256EE8] active:scale-[0.98] disabled:opacity-60"
                         >
-                          <Upload className="h-4 w-4" aria-hidden="true" />
-                          <span>Carregar foto</span>
-                          <input
-                            id="prof-avatar-upload"
-                            type="file"
-                            accept="image/png,image/jpeg,image/webp,image/gif"
-                            onChange={handleAvatarFileChange}
-                            className="visually-hidden"
-                          />
-                        </label>
+                          {avatarUploading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                          ) : (
+                            <Upload className="h-4 w-4" aria-hidden="true" />
+                          )}
+                          <span>{avatarUploading ? "Carregando foto..." : "Carregar foto"}</span>
+                        </button>
+                        <input
+                          ref={avatarInputRef}
+                          id="prof-avatar-upload"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarFileChange}
+                          className="hidden"
+                          tabIndex={-1}
+                          aria-hidden="true"
+                        />
 
                         {profile.avatarUrl ? (
                           <button
@@ -3099,6 +3239,42 @@ export function DashboardClient({
                   </div>
 
                   <div>
+                    <label htmlFor="prof-yt" className="mb-1 block text-sm font-semibold">
+                      Canal do YouTube (@ ou nome)
+                    </label>
+                    <input
+                      id="prof-yt"
+                      type="text"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      value={profile.youtubeHandle || ""}
+                      onChange={(e) =>
+                        setProfile((p) => ({ ...p, youtubeHandle: e.target.value }))
+                      }
+                      placeholder="@seucanal"
+                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="prof-yt-url" className="mb-1 block text-sm font-semibold">
+                      Link do YouTube
+                    </label>
+                    <input
+                      id="prof-yt-url"
+                      type="url"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      value={profile.youtubeUrl || ""}
+                      onChange={(e) =>
+                        setProfile((p) => ({ ...p, youtubeUrl: e.target.value }))
+                      }
+                      placeholder="https://youtube.com/@seucanal"
+                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
+                    />
+                  </div>
+
+                  <div>
                     <label htmlFor="prof-sec" className="mb-1 block text-sm font-semibold">
                       Título da lista
                     </label>
@@ -3191,6 +3367,168 @@ export function DashboardClient({
                 </div>
               </form>
 
+              {/* Security & Password Reset Card */}
+              <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#1E60CF]/20 text-[#38BDF8]">
+                      <KeyRound className="h-5 w-5" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-extrabold text-white">Segurança e Senha</h2>
+                      <p className="text-xs text-[#9CB3CE]">
+                        Redefina sua senha por e-mail ou altere diretamente aqui.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={sendingResetEmail}
+                      onClick={handleSendResetPasswordEmail}
+                      className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-white/15 bg-[#09101B] px-3.5 text-xs font-bold text-white transition hover:border-[#38BDF8] disabled:opacity-60"
+                    >
+                      {sendingResetEmail ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <Mail className="h-3.5 w-3.5 text-[#38BDF8]" aria-hidden="true" />
+                      )}
+                      <span>
+                        {resetEmailSent ? "Reenviar link por e-mail" : "Enviar link por e-mail"}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChangePasswordOpen((prev) => !prev);
+                        setChangePasswordError(null);
+                        setChangePasswordSuccess(false);
+                      }}
+                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-white/10 px-3.5 text-xs font-bold text-white transition hover:bg-white/15"
+                    >
+                      <KeyRound className="h-3.5 w-3.5 text-amber-300" aria-hidden="true" />
+                      <span>{changePasswordOpen ? "Fechar" : "Alterar senha"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {resetEmailSent ? (
+                  <div className="mt-3.5 flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-3 text-xs text-emerald-200">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+                    <span>
+                      Enviamos um link seguro de redefinição para <strong>{userEmail}</strong>. Verifique sua caixa de entrada e spam.
+                    </span>
+                  </div>
+                ) : null}
+
+                {changePasswordOpen ? (
+                  <form
+                    onSubmit={handleChangePassword}
+                    className="mt-4 rounded-xl border border-white/10 bg-[#09101B] p-4"
+                  >
+                    <h3 className="mb-3 text-xs font-extrabold uppercase tracking-wider text-[#7DD3FC]">
+                      Criar nova senha
+                    </h3>
+
+                    {changePasswordError ? (
+                      <div className="mb-3 flex items-center gap-2 rounded-lg border border-red-400/30 bg-red-500/10 p-2.5 text-xs text-red-200">
+                        <AlertTriangle className="h-4 w-4 shrink-0 text-red-300" aria-hidden="true" />
+                        <span>{changePasswordError}</span>
+                      </div>
+                    ) : null}
+
+                    {changePasswordSuccess ? (
+                      <div className="mb-3 flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-500/10 p-2.5 text-xs text-emerald-200">
+                        <Check className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+                        <span>Senha alterada com sucesso!</span>
+                      </div>
+                    ) : null}
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <div>
+                        <label
+                          htmlFor="pwd-current"
+                          className="mb-1 block text-xs font-semibold text-[#9CB3CE]"
+                        >
+                          Senha atual
+                        </label>
+                        <input
+                          id="pwd-current"
+                          type="password"
+                          required
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="Sua senha atual"
+                          className="mc-input min-h-[42px] w-full rounded-lg border border-white/15 bg-[#070C14] px-3 text-xs text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="pwd-new"
+                          className="mb-1 block text-xs font-semibold text-[#9CB3CE]"
+                        >
+                          Nova senha (mínimo 8)
+                        </label>
+                        <input
+                          id="pwd-new"
+                          type="password"
+                          required
+                          minLength={8}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Pelo menos 8 dígitos"
+                          className="mc-input min-h-[42px] w-full rounded-lg border border-white/15 bg-[#070C14] px-3 text-xs text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="pwd-confirm"
+                          className="mb-1 block text-xs font-semibold text-[#9CB3CE]"
+                        >
+                          Confirmar nova senha
+                        </label>
+                        <input
+                          id="pwd-confirm"
+                          type="password"
+                          required
+                          minLength={8}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Repita a nova senha"
+                          className="mc-input min-h-[42px] w-full rounded-lg border border-white/15 bg-[#070C14] px-3 text-xs text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setChangePasswordOpen(false)}
+                        className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-semibold text-[#9CB3CE] hover:text-white"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={changingPassword}
+                        className="inline-flex min-h-[38px] items-center gap-1.5 rounded-lg bg-[#1E60CF] px-4 text-xs font-bold text-white transition hover:bg-[#256EE8] disabled:opacity-60"
+                      >
+                        {changingPassword ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                        )}
+                        <span>Salvar nova senha</span>
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
+              </div>
+
               {/* Plan & Subscription Card */}
               <div id="plan-section" className="rounded-2xl border border-[#94C5FF]/16 bg-[#0E1624] p-5 sm:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-4">
@@ -3233,6 +3571,19 @@ export function DashboardClient({
                           <Crown className="h-4 w-4" aria-hidden="true" />
                         )}
                         <span>Assinar Plano Pro</span>
+                      </button>
+                    ) : null}
+
+                    {!userIsPro && isAdmin ? (
+                      <button
+                        type="button"
+                        disabled={billingLoading}
+                        onClick={handleAdminSelfActivatePro}
+                        className="inline-flex min-h-[46px] items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-400/15 px-4 text-sm font-bold text-amber-200 hover:bg-amber-400/25 disabled:opacity-60"
+                        title="Ativar Pro instantaneamente na sua própria conta sem custo (Super Admin)"
+                      >
+                        <ShieldCheck className="h-4 w-4 text-amber-300" aria-hidden="true" />
+                        <span>Ativar Pro (Super Admin)</span>
                       </button>
                     ) : null}
 
@@ -3316,15 +3667,28 @@ export function DashboardClient({
                       </div>
 
                       {card.id === "pro" && !userIsPro ? (
-                        <button
-                          type="button"
-                          disabled={billingLoading}
-                          onClick={handleStartCheckout}
-                          className="mt-5 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-[#1E60CF] px-4 text-sm font-bold text-white hover:bg-[#256EE8] disabled:opacity-60"
-                        >
-                          <Crown className="h-4 w-4" aria-hidden="true" />
-                          <span>Assinar Plano Pro</span>
-                        </button>
+                        <div className="mt-5 flex flex-col gap-2">
+                          <button
+                            type="button"
+                            disabled={billingLoading}
+                            onClick={handleStartCheckout}
+                            className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-[#1E60CF] px-4 text-sm font-bold text-white hover:bg-[#256EE8] disabled:opacity-60"
+                          >
+                            <Crown className="h-4 w-4" aria-hidden="true" />
+                            <span>Assinar Plano Pro</span>
+                          </button>
+                          {isAdmin ? (
+                            <button
+                              type="button"
+                              disabled={billingLoading}
+                              onClick={handleAdminSelfActivatePro}
+                              className="inline-flex min-h-[38px] w-full items-center justify-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 text-xs font-bold text-amber-200 hover:bg-amber-400/20 disabled:opacity-60"
+                            >
+                              <ShieldCheck className="h-3.5 w-3.5 text-amber-300" aria-hidden="true" />
+                              <span>Ativar Pro como Super Admin</span>
+                            </button>
+                          ) : null}
+                        </div>
                       ) : null}
                     </div>
                   );

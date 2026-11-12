@@ -39,6 +39,8 @@ function mapProfile(row: Record<string, unknown>): CreatorProfileData {
     instagramUrl: String(row.instagramUrl || ""),
     tiktokHandle: String(row.tiktokHandle || ""),
     tiktokUrl: String(row.tiktokUrl || ""),
+    youtubeHandle: String(row.youtubeHandle || ""),
+    youtubeUrl: String(row.youtubeUrl || ""),
     bio: String(row.bio || ""),
     footerText: String(row.footerText || ""),
     sectionTitle: String(row.sectionTitle || "Parceiros & Cupons"),
@@ -309,6 +311,8 @@ export async function getOrCreateProfileForUser(user: {
     instagramUrl: igSlug ? `https://instagram.com/${igSlug}` : "",
     tiktokHandle: "",
     tiktokUrl: "",
+    youtubeHandle: "",
+    youtubeUrl: "",
     bio: "Meus links oficiais e cupons de desconto",
     ...DEFAULT_PROFILE_CUSTOMIZATION,
     viewsCount: 0,
@@ -462,6 +466,16 @@ export async function updateProfileForUser(
           ? patch.tiktokUrl.trim()
           : ""
         : current.tiktokUrl,
+    youtubeHandle:
+      typeof patch.youtubeHandle === "string"
+        ? patch.youtubeHandle.trim().slice(0, 60)
+        : current.youtubeHandle,
+    youtubeUrl:
+      patch.youtubeUrl !== undefined
+        ? isSafeHttpUrl(patch.youtubeUrl)
+          ? patch.youtubeUrl.trim()
+          : ""
+        : current.youtubeUrl,
     bio: typeof patch.bio === "string" ? patch.bio.trim().slice(0, 220) : current.bio,
     footerText:
       typeof patch.footerText === "string"

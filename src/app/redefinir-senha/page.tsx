@@ -4,6 +4,7 @@ import React, { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, CheckCircle2, KeyRound, Loader2 } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 
 function RedefinirSenhaForm() {
   const router = useRouter();
@@ -34,14 +35,12 @@ function RedefinirSenhaForm() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newPassword: password, token }),
+      const res = await authClient.resetPassword({
+        newPassword: password,
+        token,
       });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { message?: string };
-        setErrorMsg(body.message || "Token expirado ou inválido.");
+      if (res.error) {
+        setErrorMsg(res.error.message || "Token expirado ou inválido.");
         setLoading(false);
         return;
       }

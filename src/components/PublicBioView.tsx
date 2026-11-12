@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { InstagramIcon } from "@/components/InstagramIcon";
+import { YouTubeIcon } from "@/components/YouTubeIcon";
 import {
   computeInitials,
   CreatorProfileData,
@@ -590,6 +591,15 @@ export function PublicBioView({ profile, items, previewMode = false }: PublicBio
     : profile.tiktokHandle
       ? `https://www.tiktok.com/@${profile.tiktokHandle.replace(/^@+/, "")}`
       : "";
+  const ytHref = isSafeHttpUrl(profile.youtubeUrl)
+    ? profile.youtubeUrl
+    : profile.youtubeHandle
+      ? profile.youtubeHandle.startsWith("http")
+        ? profile.youtubeHandle
+        : profile.youtubeHandle.startsWith("@")
+          ? `https://www.youtube.com/${profile.youtubeHandle}`
+          : `https://www.youtube.com/@${profile.youtubeHandle}`
+      : "";
 
   const listGridClass =
     profile.layout === "compact" ? "flex flex-col gap-2.5" : "flex flex-col gap-3.5";
@@ -707,13 +717,15 @@ export function PublicBioView({ profile, items, previewMode = false }: PublicBio
           {(() => {
             const hasIg = Boolean(profile.instagramHandle || igHref);
             const hasTt = Boolean(profile.tiktokHandle || ttHref);
-            if (!hasIg && !hasTt) return null;
+            const hasYt = Boolean(profile.youtubeHandle || ytHref);
+            if (!hasIg && !hasTt && !hasYt) return null;
 
             const socialMode = profile.socialDisplayStyle || "both";
             const showIcon = socialMode !== "text";
             const showText = socialMode !== "icon";
             const igText = profile.instagramHandle || "Instagram";
             const ttText = profile.tiktokHandle || "TikTok";
+            const ytText = profile.youtubeHandle || "YouTube";
             const iconOnlyClass =
               "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-transform hover:scale-105 active:scale-95 shadow-sm";
             const pillClass =
@@ -771,6 +783,34 @@ export function PublicBioView({ profile, items, previewMode = false }: PublicBio
                   >
                     {showIcon ? <TikTokIcon className="h-4 w-4 shrink-0" /> : null}
                     {showText ? <span className="max-w-[150px] truncate">{ttText}</span> : null}
+                  </a>
+                ) : null}
+
+                {hasYt ? (
+                  <a
+                    href={
+                      ytHref ||
+                      (profile.youtubeHandle
+                        ? profile.youtubeHandle.startsWith("http")
+                          ? profile.youtubeHandle
+                          : `https://www.youtube.com/@${profile.youtubeHandle.replace(/^@+/, "")}`
+                        : "https://www.youtube.com")
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={!showText ? `YouTube ${ytText}` : undefined}
+                    title={!showText ? `YouTube ${ytText}` : undefined}
+                    style={{
+                      background: pillBg,
+                      borderColor: borderSubtle,
+                      color: resolvedText,
+                    }}
+                    className={showText ? pillClass : iconOnlyClass}
+                  >
+                    {showIcon ? (
+                      <YouTubeIcon className="h-4 w-4 shrink-0 text-red-500" />
+                    ) : null}
+                    {showText ? <span className="max-w-[150px] truncate">{ytText}</span> : null}
                   </a>
                 ) : null}
               </div>

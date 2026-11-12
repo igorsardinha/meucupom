@@ -82,6 +82,8 @@ export interface CreatorProfileData {
   instagramUrl: string;
   tiktokHandle: string;
   tiktokUrl: string;
+  youtubeHandle: string;
+  youtubeUrl: string;
   bio: string;
   footerText: string;
   sectionTitle: string;
