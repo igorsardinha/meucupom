@@ -83,8 +83,8 @@ const SQLITE_DDL = [
     "views_count" integer NOT NULL DEFAULT 0,
     "plan" text NOT NULL DEFAULT 'free',
     "subscription_status" text NOT NULL DEFAULT 'inactive',
-    "stripe_customer_id" text NOT NULL DEFAULT '',
-    "stripe_subscription_id" text NOT NULL DEFAULT '',
+    "mp_payer_id" text NOT NULL DEFAULT '',
+    "mp_preapproval_id" text NOT NULL DEFAULT '',
     "current_period_end" integer,
     "onboarding_completed" integer NOT NULL DEFAULT 0,
     "is_suspended" integer NOT NULL DEFAULT 0,
@@ -208,8 +208,8 @@ const PG_DDL = [
     "views_count" integer NOT NULL DEFAULT 0,
     "plan" text NOT NULL DEFAULT 'free',
     "subscription_status" text NOT NULL DEFAULT 'inactive',
-    "stripe_customer_id" text NOT NULL DEFAULT '',
-    "stripe_subscription_id" text NOT NULL DEFAULT '',
+    "mp_payer_id" text NOT NULL DEFAULT '',
+    "mp_preapproval_id" text NOT NULL DEFAULT '',
     "current_period_end" timestamp,
     "onboarding_completed" boolean NOT NULL DEFAULT false,
     "is_suspended" boolean NOT NULL DEFAULT false,
@@ -317,8 +317,8 @@ async function seedShowcaseProfile() {
       viewsCount: 142,
       plan: "pro",
       subscriptionStatus: "active",
-      stripeCustomerId: "",
-      stripeSubscriptionId: "",
+      mpPayerId: "",
+      mpPreapprovalId: "",
       currentPeriodEnd: null,
       onboardingCompleted: true,
       isSuspended: false,
@@ -388,8 +388,8 @@ async function seedShowcaseProfile() {
     viewsCount: 142,
     plan: "pro",
     subscriptionStatus: "active",
-    stripeCustomerId: "",
-    stripeSubscriptionId: "",
+    mpPayerId: "",
+    mpPreapprovalId: "",
     currentPeriodEnd: null,
     onboardingCompleted: true,
     isSuspended: false,
@@ -631,14 +631,14 @@ async function runColumnMigrations() {
         `ALTER TABLE "creator_profile" ADD COLUMN "subscription_status" text NOT NULL DEFAULT 'inactive'`
       );
     }
-    if (!profNames.has("stripe_customer_id")) {
+    if (!profNames.has("mp_payer_id")) {
       await handle.client.execute(
-        `ALTER TABLE "creator_profile" ADD COLUMN "stripe_customer_id" text NOT NULL DEFAULT ''`
+        `ALTER TABLE "creator_profile" ADD COLUMN "mp_payer_id" text NOT NULL DEFAULT ''`
       );
     }
-    if (!profNames.has("stripe_subscription_id")) {
+    if (!profNames.has("mp_preapproval_id")) {
       await handle.client.execute(
-        `ALTER TABLE "creator_profile" ADD COLUMN "stripe_subscription_id" text NOT NULL DEFAULT ''`
+        `ALTER TABLE "creator_profile" ADD COLUMN "mp_preapproval_id" text NOT NULL DEFAULT ''`
       );
     }
     if (!profNames.has("current_period_end")) {
@@ -692,10 +692,10 @@ async function runColumnMigrations() {
     `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "subscription_status" text NOT NULL DEFAULT 'inactive'`
   );
   await handle.pool.query(
-    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "stripe_customer_id" text NOT NULL DEFAULT ''`
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "mp_payer_id" text NOT NULL DEFAULT ''`
   );
   await handle.pool.query(
-    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "stripe_subscription_id" text NOT NULL DEFAULT ''`
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "mp_preapproval_id" text NOT NULL DEFAULT ''`
   );
   await handle.pool.query(
     `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "current_period_end" timestamp`

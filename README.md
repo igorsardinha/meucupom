@@ -82,9 +82,10 @@ Copie `.env.example` para `.env.local` (já criado para você no local) e preenc
 
 Sem essas chaves, o app funciona localmente com fallbacks seguros (link de reset no log do servidor, avatar em WebP comprimido e rate limiting em memória). Para produção completa:
 
-1. **Stripe (Planos Grátis vs Pro)**:
-   - Crie um produto recorrente no Stripe Dashboard e copie o Price ID para `STRIPE_PRICE_ID_PRO`.
-   - Defina `STRIPE_SECRET_KEY` e configure um webhook apontando para `https://SEU_DOMINIO/api/billing/webhook` com os eventos `checkout.session.completed`, `customer.subscription.updated` e `customer.subscription.deleted`, copiando o secret para `STRIPE_WEBHOOK_SECRET`.
+1. **Mercado Pago (Planos Grátis vs Pro)**:
+   - No painel [Mercado Pago Developers](https://www.mercadopago.com.br/developers/panel), crie uma aplicação e copie o **Access Token de produção** (ou teste) para `MP_ACCESS_TOKEN`.
+   - Em **Webhooks → Configurar notificações**, aponte a URL para `https://SEU_DOMINIO/api/billing/webhook`, marque os eventos **Assinaturas** (`subscription_preapproval` e `subscription_authorized_payment`) e copie a **Assinatura secreta** para `MP_WEBHOOK_SECRET`.
+   - Opcionalmente defina `MP_PRO_PRICE_BRL` (padrão `19.90`) ou `MP_PRO_PLAN_ID` se preferir vincular a um plano pré-criado.
 2. **Resend (Recuperação de senha em `/esqueci-senha`)**:
    - Crie uma API key no Resend e defina `RESEND_API_KEY` e `EMAIL_FROM`.
 3. **Vercel Blob (Upload de foto de perfil em nuvem)**:

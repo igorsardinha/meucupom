@@ -70,7 +70,7 @@ interface DashboardClientProps {
   initialProfile: CreatorProfileData;
   initialItems: LinkItemData[];
   userEmail: string;
-  stripeEnabled: boolean;
+  mercadoPagoEnabled: boolean;
 }
 
 type TabKey = "items" | "appearance" | "profile" | "plan";
@@ -186,7 +186,7 @@ export function DashboardClient({
   initialProfile,
   initialItems,
   userEmail,
-  stripeEnabled,
+  mercadoPagoEnabled,
 }: DashboardClientProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabKey>("items");
@@ -281,18 +281,32 @@ export function DashboardClient({
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const checkout = params.get("checkout");
-    if (!checkout) return;
+    const preapprovalId = params.get("preapproval_id") || undefined;
+    if (!checkout && !preapprovalId) return;
 
-    const timer = window.setTimeout(() => {
-      if (checkout === "success") {
-        setActiveTab("plan");
-        notify("ok", "Assinatura Pro confirmada! Seja bem-vindo ao plano Pro.");
-      } else if (checkout === "canceled") {
-        setActiveTab("plan");
-        notify("error", "Checkout cancelado. Você continua no plano atual.");
+    const timer = window.setTimeout(async () => {
+      setActiveTab("plan");
+      try {
+        const res = await fetch("/api/billing/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ preapprovalId }),
+        });
+        const data = (await res.json()) as { profile?: CreatorProfileData };
+        if (res.ok && data.profile) {
+          setProfile(data.profile);
+          if (data.profile.plan === "pro") {
+            notify("ok", "Assinatura Pro confirmada pelo Mercado Pago!");
+          } else {
+            notify("ok", "Pagamento em processamento no Mercado Pago.");
+          }
+        }
+      } catch {
+        notify("ok", "Retorno registrado. Clique em Atualizar status para conferir seu plano.");
+      } finally {
+        window.history.replaceState({}, "", "/painel");
       }
-      window.history.replaceState({}, "", "/painel");
-    }, 30);
+    }, 50);
 
     return () => window.clearTimeout(timer);
   }, []);
@@ -443,7 +457,7 @@ export function DashboardClient({
       if (!res.ok || !data.url) {
         notify(
           "error",
-          data.error || "Não foi possível iniciar o checkout. Verifique a configuração do Stripe."
+          data.error || "Não foi possível iniciar o checkout do Mercado Pago."
         );
         return;
       }
@@ -455,18 +469,48 @@ export function DashboardClient({
     }
   }
 
-  async function handleOpenPortal() {
+  async function handleSyncSubscription() {
     setBillingLoading(true);
     try {
-      const res = await fetch("/api/billing/portal", { method: "POST" });
-      const data = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok || !data.url) {
-        notify("error", data.error || "Não foi possível abrir o portal de assinatura.");
+      const res = await fetch("/api/billing/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = (await res.json()) as { profile?: CreatorProfileData; error?: string };
+      if (!res.ok || !data.profile) {
+        notify("error", data.error || "Não foi possível consultar assinatura.");
         return;
       }
-      window.location.href = data.url;
+      setProfile(data.profile);
+      notify(
+        "ok",
+        data.profile.plan === "pro"
+          ? "Plano Pro ativo e sincronizado!"
+          : "Status atualizado: Plano Grátis."
+      );
+      router.refresh();
     } catch {
-      notify("error", "Erro de conexão ao abrir o portal.");
+      notify("error", "Erro de conexão ao consultar status.");
+    } finally {
+      setBillingLoading(false);
+    }
+  }
+
+  async function handleCancelSubscription() {
+    setBillingLoading(true);
+    try {
+      const res = await fetch("/api/billing/cancel", { method: "POST" });
+      const data = (await res.json()) as { profile?: CreatorProfileData; error?: string };
+      if (!res.ok || !data.profile) {
+        notify("error", data.error || "Não foi possível cancelar a assinatura.");
+        return;
+      }
+      setProfile(data.profile);
+      notify("ok", "Assinatura cancelada no Mercado Pago.");
+      router.refresh();
+    } catch {
+      notify("error", "Erro de conexão ao cancelar assinatura.");
     } finally {
       setBillingLoading(false);
     }
@@ -2543,23 +2587,35 @@ export function DashboardClient({
                       </button>
                     ) : null}
 
-                    {profile.stripeCustomerId ? (
+                    {profile.mpPreapprovalId && !userIsPro ? (
                       <button
                         type="button"
                         disabled={billingLoading}
-                        onClick={handleOpenPortal}
+                        onClick={handleSyncSubscription}
                         className="inline-flex min-h-[46px] items-center gap-2 rounded-xl border border-white/15 bg-[#09101B] px-4 text-sm font-bold text-white hover:border-[#38BDF8] disabled:opacity-60"
                       >
                         <CreditCard className="h-4 w-4 text-[#38BDF8]" aria-hidden="true" />
-                        <span>Gerenciar assinatura</span>
+                        <span>Verificar pagamento</span>
+                      </button>
+                    ) : null}
+
+                    {profile.mpPreapprovalId && userIsPro ? (
+                      <button
+                        type="button"
+                        disabled={billingLoading}
+                        onClick={handleCancelSubscription}
+                        className="inline-flex min-h-[46px] items-center gap-2 rounded-xl border border-red-400/35 bg-red-500/10 px-4 text-sm font-bold text-red-200 hover:bg-red-500/20 disabled:opacity-60"
+                      >
+                        <CreditCard className="h-4 w-4 text-red-300" aria-hidden="true" />
+                        <span>Cancelar assinatura</span>
                       </button>
                     ) : null}
                   </div>
                 </div>
 
-                {!stripeEnabled && !userIsPro ? (
+                {!mercadoPagoEnabled && !userIsPro ? (
                   <p className="mt-4 rounded-xl border border-white/10 bg-[#09101B] px-3.5 py-2.5 text-xs text-[#9CB3CE]">
-                    Pagamentos via Stripe ainda não configurados neste ambiente (`STRIPE_SECRET_KEY` e `STRIPE_PRICE_ID_PRO`).
+                    Pagamentos via Mercado Pago ainda não configurados neste ambiente (`MP_ACCESS_TOKEN`).
                   </p>
                 ) : null}
               </div>

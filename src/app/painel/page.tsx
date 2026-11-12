@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { DashboardClient } from "@/components/DashboardClient";
 import { getOrCreateProfileForUser } from "@/db/repository";
 import { getAuth } from "@/lib/auth";
-import { isStripeEnabled } from "@/lib/stripe";
+import { isMercadoPagoEnabled } from "@/lib/mercadopago";
 
 async function DashboardLoader() {
   const auth = await getAuth();
@@ -20,7 +20,7 @@ async function DashboardLoader() {
       initialProfile={data.profile}
       initialItems={data.items}
       userEmail={session.user.email}
-      stripeEnabled={isStripeEnabled()}
+      mercadoPagoEnabled={isMercadoPagoEnabled()}
     />
   );
 }

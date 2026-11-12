@@ -70,8 +70,8 @@ function mapProfile(row: Record<string, unknown>): CreatorProfileData {
     plan: row.plan === "pro" ? "pro" : "free",
     subscriptionStatus:
       (row.subscriptionStatus as CreatorProfileData["subscriptionStatus"]) || "inactive",
-    stripeCustomerId: String(row.stripeCustomerId || ""),
-    stripeSubscriptionId: String(row.stripeSubscriptionId || ""),
+    mpPayerId: String(row.mpPayerId || ""),
+    mpPreapprovalId: String(row.mpPreapprovalId || ""),
     currentPeriodEnd: row.currentPeriodEnd
       ? new Date(row.currentPeriodEnd as string | number | Date).toISOString()
       : null,
@@ -312,8 +312,8 @@ export async function getOrCreateProfileForUser(user: {
     viewsCount: 0,
     plan: "free",
     subscriptionStatus: "inactive",
-    stripeCustomerId: "",
-    stripeSubscriptionId: "",
+    mpPayerId: "",
+    mpPreapprovalId: "",
     currentPeriodEnd: null,
     onboardingCompleted: false,
     isSuspended: false,
@@ -1060,29 +1060,29 @@ export async function createAbuseReport(input: {
   }
 }
 
-export async function setStripeCustomerIdForUser(
+export async function setMercadoPagoPreapprovalForUser(
   userId: string,
-  stripeCustomerId: string
+  mpPreapprovalId: string
 ): Promise<void> {
   await ensureDatabaseReady();
   const handle = getDbHandle();
   if (handle.dialect === "sqlite") {
     await handle.db
       .update(handle.schema.creatorProfile)
-      .set({ stripeCustomerId, updatedAt: new Date() })
+      .set({ mpPreapprovalId, updatedAt: new Date() })
       .where(eq(handle.schema.creatorProfile.userId, userId));
   } else {
     await handle.db
       .update(handle.schema.creatorProfile)
-      .set({ stripeCustomerId, updatedAt: new Date() })
+      .set({ mpPreapprovalId, updatedAt: new Date() })
       .where(eq(handle.schema.creatorProfile.userId, userId));
   }
 }
 
-export async function syncStripeSubscription(input: {
+export async function syncMercadoPagoSubscription(input: {
   userId?: string;
-  stripeCustomerId?: string;
-  stripeSubscriptionId: string;
+  mpPayerId?: string;
+  mpPreapprovalId: string;
   plan: "free" | "pro";
   subscriptionStatus: CreatorProfileData["subscriptionStatus"];
   currentPeriodEnd: Date | null;
@@ -1092,8 +1092,8 @@ export async function syncStripeSubscription(input: {
   const updates = {
     plan: input.plan,
     subscriptionStatus: input.subscriptionStatus,
-    stripeSubscriptionId: input.stripeSubscriptionId,
-    ...(input.stripeCustomerId ? { stripeCustomerId: input.stripeCustomerId } : {}),
+    mpPreapprovalId: input.mpPreapprovalId,
+    ...(input.mpPayerId ? { mpPayerId: input.mpPayerId } : {}),
     currentPeriodEnd: input.currentPeriodEnd,
     updatedAt: new Date(),
   };
@@ -1113,17 +1113,17 @@ export async function syncStripeSubscription(input: {
     return;
   }
 
-  if (input.stripeCustomerId) {
+  if (input.mpPreapprovalId) {
     if (handle.dialect === "sqlite") {
       await handle.db
         .update(handle.schema.creatorProfile)
         .set(updates)
-        .where(eq(handle.schema.creatorProfile.stripeCustomerId, input.stripeCustomerId));
+        .where(eq(handle.schema.creatorProfile.mpPreapprovalId, input.mpPreapprovalId));
     } else {
       await handle.db
         .update(handle.schema.creatorProfile)
         .set(updates)
-        .where(eq(handle.schema.creatorProfile.stripeCustomerId, input.stripeCustomerId));
+        .where(eq(handle.schema.creatorProfile.mpPreapprovalId, input.mpPreapprovalId));
     }
   }
 }

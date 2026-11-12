@@ -1,8 +1,15 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { getOrCreateProfileForUser, setStripeCustomerIdForUser } from "@/db/repository";
+import {
+  getOrCreateProfileForUser,
+  setMercadoPagoPreapprovalForUser,
+} from "@/db/repository";
 import { getAuth } from "@/lib/auth";
-import { getStripeClient, isStripeEnabled } from "@/lib/stripe";
+import {
+  getPreApprovalClient,
+  getProPriceBrl,
+  isMercadoPagoEnabled,
+} from "@/lib/mercadopago";
 
 export async function POST(request: Request) {
   const auth = await getAuth();
@@ -11,61 +18,69 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }
 
-  if (!isStripeEnabled()) {
+  if (!isMercadoPagoEnabled()) {
     return NextResponse.json(
       {
         error:
-          "Pagamentos Stripe ainda não configurados neste ambiente (defina STRIPE_SECRET_KEY e STRIPE_PRICE_ID_PRO).",
+          "Pagamentos via Mercado Pago ainda não configurados neste ambiente (defina MP_ACCESS_TOKEN).",
       },
       { status: 503 }
     );
   }
 
-  const { profile } = await getOrCreateProfileForUser(session.user);
-  const stripe = getStripeClient();
+  await getOrCreateProfileForUser(session.user);
+  const preApprovalClient = getPreApprovalClient();
+
   const origin =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+    process.env.BETTER_AUTH_URL?.trim() ||
     request.headers.get("origin") ||
-    process.env.NEXT_PUBLIC_APP_URL ||
     "http://localhost:3000";
 
-  let customerId = profile.stripeCustomerId;
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: session.user.email,
-      name: profile.displayName,
-      metadata: {
-        userId: session.user.id,
-        profileId: profile.id,
-        slug: profile.slug,
+  const planId = process.env.MP_PRO_PLAN_ID?.trim();
+
+  try {
+    const preapproval = await preApprovalClient.create({
+      body: {
+        reason: "meucupom Pro (Mensal)",
+        external_reference: session.user.id,
+        payer_email: session.user.email,
+        back_url: `${origin.replace(/\/+$/, "")}/painel?checkout=return`,
+        status: "pending",
+        ...(planId
+          ? { preapproval_plan_id: planId }
+          : {
+              auto_recurring: {
+                frequency: 1,
+                frequency_type: "months",
+                transaction_amount: getProPriceBrl(),
+                currency_id: "BRL",
+              },
+            }),
       },
     });
-    customerId = customer.id;
-    await setStripeCustomerIdForUser(session.user.id, customerId);
-  }
 
-  const checkoutSession = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    customer: customerId,
-    line_items: [
+    if (!preapproval.init_point) {
+      return NextResponse.json(
+        { error: "Mercado Pago não retornou link de pagamento." },
+        { status: 502 }
+      );
+    }
+
+    if (preapproval.id) {
+      await setMercadoPagoPreapprovalForUser(session.user.id, preapproval.id);
+    }
+
+    return NextResponse.json({ url: preapproval.init_point });
+  } catch (err) {
+    return NextResponse.json(
       {
-        price: process.env.STRIPE_PRICE_ID_PRO!.trim(),
-        quantity: 1,
+        error:
+          err instanceof Error
+            ? err.message
+            : "Erro ao criar assinatura no Mercado Pago.",
       },
-    ],
-    allow_promotion_codes: true,
-    success_url: `${origin}/painel?checkout=success`,
-    cancel_url: `${origin}/painel?checkout=canceled`,
-    metadata: {
-      userId: session.user.id,
-      profileId: profile.id,
-    },
-    subscription_data: {
-      metadata: {
-        userId: session.user.id,
-        profileId: profile.id,
-      },
-    },
-  });
-
-  return NextResponse.json({ url: checkoutSession.url });
+      { status: 502 }
+    );
+  }
 }

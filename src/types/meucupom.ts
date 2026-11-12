@@ -106,8 +106,8 @@ export interface CreatorProfileData {
   viewsCount: number;
   plan: "free" | "pro";
   subscriptionStatus: "inactive" | "active" | "trialing" | "past_due" | "canceled";
-  stripeCustomerId: string;
-  stripeSubscriptionId: string;
+  mpPayerId: string;
+  mpPreapprovalId: string;
   currentPeriodEnd: string | null;
   onboardingCompleted: boolean;
   isSuspended: boolean;
