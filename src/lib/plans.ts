@@ -1,4 +1,10 @@
-import { CreatorProfileData, FeaturedAnimation } from "@/types/meucupom";
+import {
+  BgStyle,
+  CreatorProfileData,
+  FeaturedAnimation,
+  RadiusStyle,
+  ThemePreset,
+} from "@/types/meucupom";
 
 export type PlanTier = "free" | "pro";
 export type SubscriptionStatus =
@@ -10,6 +16,7 @@ export type SubscriptionStatus =
 
 export const FREE_MAX_ACTIVE_OR_TOTAL_LINKS = 5;
 
+// Animações de destaque
 export const PRO_ALLOWED_ANIMATIONS: FeaturedAnimation[] = [
   "shimmer",
   "pulse",
@@ -20,6 +27,22 @@ export const PRO_ALLOWED_ANIMATIONS: FeaturedAnimation[] = [
 ];
 
 export const FREE_ALLOWED_ANIMATIONS: FeaturedAnimation[] = ["shimmer", "pulse", "none"];
+
+// Estilos de fundo: exatamente 5 opções liberadas no Grátis; as outras 14 (especialmente com desenhos) são Pro
+export const FREE_ALLOWED_BG_STYLES: BgStyle[] = [
+  "glow",
+  "solid",
+  "gradient",
+  "mesh",
+  "dots",
+];
+
+// Estilos de borda: exatamente 3 opções liberadas no Grátis; pílula e super arredondada são Pro
+export const FREE_ALLOWED_RADIUS_STYLES: RadiusStyle[] = [
+  "rounded",
+  "soft",
+  "sharp",
+];
 
 export function isProPlan(profile: Pick<CreatorProfileData, "plan" | "subscriptionStatus">): boolean {
   if (profile.plan !== "pro") return false;
@@ -38,6 +61,33 @@ export function isAnimationAllowedForPlan(
   return FREE_ALLOWED_ANIMATIONS.includes(animation);
 }
 
+export function isBgStyleAllowedForPlan(
+  bgStyle: BgStyle,
+  isPro: boolean
+): boolean {
+  if (isPro) return true;
+  return FREE_ALLOWED_BG_STYLES.includes(bgStyle);
+}
+
+export function isRadiusStyleAllowedForPlan(
+  radius: RadiusStyle,
+  isPro: boolean
+): boolean {
+  if (isPro) return true;
+  return FREE_ALLOWED_RADIUS_STYLES.includes(radius);
+}
+
+export function isThemePresetAllowedForPlan(
+  preset: Pick<ThemePreset, "bgStyle" | "radiusStyle">,
+  isPro: boolean
+): boolean {
+  if (isPro) return true;
+  return (
+    isBgStyleAllowedForPlan(preset.bgStyle, false) &&
+    isRadiusStyleAllowedForPlan(preset.radiusStyle, false)
+  );
+}
+
 export const PLAN_CARDS = [
   {
     id: "free" as const,
@@ -49,11 +99,15 @@ export const PLAN_CARDS = [
       `Até ${FREE_MAX_ACTIVE_OR_TOTAL_LINKS} cupons ou links`,
       "Divisórias ilimitadas",
       "Login social com Google ou e-mail",
-      "Layouts Clássico e Compacto + temas prontos",
+      "5 estilos de fundo clássicos (Glow, Sólido, Gradiente, Mesh, Pontilhado)",
+      "3 formatos de borda (Arredondado, Suave e Reto)",
+      "Layouts Clássico e Compacto + temas básicos",
       "Métricas totais de visitas, cópias e cliques",
     ],
     limitations: [
       "Selo \"Feito com meucupom\" no rodapé",
+      "14 fundos exclusivos (com desenhos) e temas Pro bloqueados",
+      "Bordas Pílula e Super Arredondada exclusivas do Pro",
       "Animações básicas de destaque",
     ],
   },
@@ -66,6 +120,9 @@ export const PLAN_CARDS = [
     features: [
       "Cupons e links ilimitados",
       "Remover selo \"Feito com meucupom\"",
+      "Todos os 19 fundos (incluindo todos com desenhos: Ondas, Zig-zag, Colmeia, Grid, etc.)",
+      "Todas as opções de borda (Pílula e Super Arredondada)",
+      "Todos os temas prontos exclusivos com ícones visuais",
       "Todas as animações de destaque (Flutuação, Balanço, Aura)",
       "Analytics detalhado com gráfico de 7 e 30 dias",
       "Prioridade em novos recursos e suporte",

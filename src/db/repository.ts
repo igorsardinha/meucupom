@@ -3,7 +3,9 @@ import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
 import {
   FREE_MAX_ACTIVE_OR_TOTAL_LINKS,
   isAnimationAllowedForPlan,
+  isBgStyleAllowedForPlan,
   isProPlan,
+  isRadiusStyleAllowedForPlan,
 } from "@/lib/plans";
 import {
   computeInitials,
@@ -411,6 +413,20 @@ export async function updateProfileForUser(
     nextSlug = cleaned;
   }
 
+  if (patch.bgStyle !== undefined && !isBgStyleAllowedForPlan(patch.bgStyle, userIsPro)) {
+    return {
+      ok: false,
+      error: "O estilo de fundo selecionado é exclusivo do Plano Pro.",
+    };
+  }
+
+  if (patch.radiusStyle !== undefined && !isRadiusStyleAllowedForPlan(patch.radiusStyle, userIsPro)) {
+    return {
+      ok: false,
+      error: "O estilo de borda selecionado é exclusivo do Plano Pro.",
+    };
+  }
+
   const displayName =
     typeof patch.displayName === "string" && patch.displayName.trim()
       ? patch.displayName.trim().slice(0, 80)
@@ -465,9 +481,19 @@ export async function updateProfileForUser(
       typeof patch.allowThemeToggle === "boolean"
         ? patch.allowThemeToggle
         : current.allowThemeToggle,
-    bgStyle: patch.bgStyle ?? current.bgStyle,
+    bgStyle:
+      patch.bgStyle !== undefined
+        ? isBgStyleAllowedForPlan(patch.bgStyle, userIsPro)
+          ? patch.bgStyle
+          : current.bgStyle
+        : current.bgStyle,
     cardStyle: patch.cardStyle ?? current.cardStyle,
-    radiusStyle: patch.radiusStyle ?? current.radiusStyle,
+    radiusStyle:
+      patch.radiusStyle !== undefined
+        ? isRadiusStyleAllowedForPlan(patch.radiusStyle, userIsPro)
+          ? patch.radiusStyle
+          : current.radiusStyle
+        : current.radiusStyle,
     fontStyle: patch.fontStyle ?? current.fontStyle,
     titleFontStyle: patch.titleFontStyle ?? current.titleFontStyle,
     nameFontStyle: patch.nameFontStyle ?? current.nameFontStyle,

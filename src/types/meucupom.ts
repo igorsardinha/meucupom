@@ -357,6 +357,84 @@ export const THEME_PRESETS: ThemePreset[] = [
     cardColor: "#13171D",
     textColor: "#F8FAFC",
   },
+  {
+    id: "cyber-matrix",
+    name: "Matrix Hexágonos",
+    description: "Colmeia futurista em verde esmeralda com cards de vidro",
+    themeMode: "dark",
+    bgStyle: "hexagons",
+    cardStyle: "glass",
+    radiusStyle: "rounded",
+    titleFontStyle: "space",
+    fontStyle: "jakarta",
+    accentColor: "#10B981",
+    ctaColor: "#059669",
+    bgColor: "#04100D",
+    cardColor: "#0A1F1A",
+    textColor: "#ECFDF5",
+  },
+  {
+    id: "topo-explorer",
+    name: "Topografia Aventura",
+    description: "Curvas de relevo topográfico em tom âmbar e preto fosco",
+    themeMode: "dark",
+    bgStyle: "topo",
+    cardStyle: "solid",
+    radiusStyle: "soft",
+    titleFontStyle: "syne",
+    fontStyle: "inter",
+    accentColor: "#F59E0B",
+    ctaColor: "#D97706",
+    bgColor: "#100E0A",
+    cardColor: "#1A1712",
+    textColor: "#FFFBEB",
+  },
+];
+
+export interface BgStyleOption {
+  id: BgStyle;
+  label: string;
+  category: "classic" | "pattern" | "atmosphere";
+  isPattern?: boolean;
+}
+
+export const BG_STYLE_OPTIONS: BgStyleOption[] = [
+  // 5 opções grátis
+  { id: "glow", label: "Glow Radial (Original)", category: "classic" },
+  { id: "solid", label: "Cor Sólida", category: "classic" },
+  { id: "gradient", label: "Gradiente Suave", category: "classic" },
+  { id: "mesh", label: "Mesh Colorido", category: "classic" },
+  { id: "dots", label: "Grade Pontilhada", category: "pattern", isPattern: true },
+  // Fundos com Desenhos e Padrões (Exclusivos Pro)
+  { id: "waves", label: "Desenho: Ondas Suaves", category: "pattern", isPattern: true },
+  { id: "zigzag", label: "Desenho: Zig-Zag", category: "pattern", isPattern: true },
+  { id: "scallop", label: "Desenho: Ondas em Camadas", category: "pattern", isPattern: true },
+  { id: "topo", label: "Desenho: Curvas Topográficas", category: "pattern", isPattern: true },
+  { id: "hexagons", label: "Desenho: Colmeia / Hexágonos", category: "pattern", isPattern: true },
+  { id: "diamonds", label: "Desenho: Losangos", category: "pattern", isPattern: true },
+  { id: "crosses", label: "Desenho: Sinais (+)", category: "pattern", isPattern: true },
+  { id: "confetti", label: "Desenho: Formas & Confete", category: "pattern", isPattern: true },
+  { id: "grid-lines", label: "Desenho: Grade / Blueprint", category: "pattern", isPattern: true },
+  // Atmosferas e Efeitos (Exclusivos Pro)
+  { id: "aurora", label: "Aurora Boreal", category: "atmosphere" },
+  { id: "spotlight", label: "Holofote no Topo", category: "atmosphere" },
+  { id: "sunset", label: "Horizonte Degradê", category: "atmosphere" },
+  { id: "duotone", label: "Duotone Diagonal", category: "atmosphere" },
+  { id: "orb", label: "Esferas Difusas", category: "atmosphere" },
+];
+
+export interface RadiusOption {
+  id: RadiusStyle;
+  label: string;
+  description: string;
+}
+
+export const RADIUS_OPTIONS: RadiusOption[] = [
+  { id: "rounded", label: "Arredondado (Padrão 20px)", description: "Visual equilibrado e moderno" },
+  { id: "soft", label: "Suave (14px)", description: "Arredondamento sutil e limpo" },
+  { id: "sharp", label: "Reto / Geométrico (8px)", description: "Cantos retos e contemporâneos" },
+  { id: "pill", label: "Pílula / Redondo Completo", description: "Bordas em cápsula arredondada (Pro)" },
+  { id: "extra", label: "Super Arredondado (30px)", description: "Bordas pronunciadas e orgânicas (Pro)" },
 ];
 
 export const QUICK_PALETTES = [

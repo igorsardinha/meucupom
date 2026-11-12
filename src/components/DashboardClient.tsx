@@ -40,10 +40,14 @@ import { authClient } from "@/lib/auth-client";
 import {
   FREE_MAX_ACTIVE_OR_TOTAL_LINKS,
   isAnimationAllowedForPlan,
+  isBgStyleAllowedForPlan,
   isProPlan,
+  isRadiusStyleAllowedForPlan,
+  isThemePresetAllowedForPlan,
   PLAN_CARDS,
 } from "@/lib/plans";
 import {
+  BG_STYLE_OPTIONS,
   BgStyle,
   CardStyle,
   computeInitials,
@@ -59,11 +63,13 @@ import {
   LinkItemKind,
   PageLayout,
   QUICK_PALETTES,
+  RADIUS_OPTIONS,
   RadiusStyle,
   sanitizeSlug,
   SocialDisplayStyle,
   THEME_PRESETS,
   ThemeMode,
+  ThemePreset,
 } from "@/types/meucupom";
 import { PublicBioView } from "./PublicBioView";
 
@@ -184,6 +190,198 @@ function setupLightDismissFallback(dialog: HTMLDialogElement | null) {
   };
 }
 
+function getThemePreviewStyle(preset: ThemePreset): {
+  backgroundColor: string;
+  backgroundImage?: string;
+  backgroundSize?: string;
+} {
+  const safeAccent = preset.accentColor || "#38BDF8";
+  const safeCta = preset.ctaColor || "#1E60CF";
+  const svgUrl = (svg: string) =>
+    `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+
+  switch (preset.bgStyle) {
+    case "solid":
+      return { backgroundColor: preset.bgColor, backgroundImage: "none" };
+    case "gradient":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `linear-gradient(135deg, color-mix(in oklab, ${safeCta} 45%, ${preset.bgColor}) 0%, ${preset.bgColor} 55%, color-mix(in oklab, ${safeAccent} 35%, ${preset.bgColor}) 100%)`,
+      };
+    case "mesh":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `radial-gradient(circle at 20% 20%, color-mix(in oklab, ${safeAccent} 50%, transparent) 0%, transparent 60%), radial-gradient(circle at 80% 30%, color-mix(in oklab, ${safeCta} 50%, transparent) 0%, transparent 60%)`,
+      };
+    case "aurora":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `radial-gradient(ellipse 90% 60% at 20% 0%, color-mix(in oklab, ${safeAccent} 55%, transparent), transparent 70%), radial-gradient(ellipse 80% 50% at 80% 20%, color-mix(in oklab, ${safeCta} 50%, transparent), transparent 70%)`,
+      };
+    case "spotlight":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `radial-gradient(circle at 50% 0%, color-mix(in oklab, ${safeAccent} 65%, transparent) 0%, color-mix(in oklab, ${safeCta} 30%, transparent) 35%, transparent 70%)`,
+      };
+    case "dots":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `radial-gradient(circle, color-mix(in oklab, ${safeAccent} 50%, transparent) 1.2px, transparent 1.2px)`,
+        backgroundSize: "8px 8px",
+      };
+    case "waves":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `radial-gradient(circle at 50% 0%, color-mix(in oklab, ${safeCta} 35%, transparent), transparent 60%), ${svgUrl(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="12" viewBox="0 0 32 12"><path d="M0 6 Q8 1 16 6 T32 6" fill="none" stroke="${safeAccent}" stroke-opacity="0.55" stroke-width="1.6"/></svg>`
+        )}`,
+        backgroundSize: "100% 100%, 32px 12px",
+      };
+    case "zigzag":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `radial-gradient(circle at 50% 0%, color-mix(in oklab, ${safeCta} 35%, transparent), transparent 60%), ${svgUrl(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="12" viewBox="0 0 20 12"><path d="M0 9 L10 3 L20 9" fill="none" stroke="${safeAccent}" stroke-opacity="0.55" stroke-width="1.6"/></svg>`
+        )}`,
+        backgroundSize: "100% 100%, 20px 12px",
+      };
+    case "scallop":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `${svgUrl(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="12" viewBox="0 0 24 12"><path d="M0 12 A12 12 0 0 1 24 12 M-12 6 A12 12 0 0 1 12 6 M12 6 A12 12 0 0 1 36 6" fill="none" stroke="${safeAccent}" stroke-opacity="0.5" stroke-width="1.4"/></svg>`
+        )}`,
+        backgroundSize: "24px 12px",
+      };
+    case "topo":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `radial-gradient(circle at 50% 0%, color-mix(in oklab, ${safeCta} 35%, transparent), transparent 60%), ${svgUrl(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><path d="M0 14 C12 6 28 20 48 14 M0 34 C16 26 32 40 48 34 M12 24 C12 16 20 14 26 18 C32 22 30 30 22 30 C14 30 12 26 12 24 Z" fill="none" stroke="${safeAccent}" stroke-opacity="0.5" stroke-width="1.4"/></svg>`
+        )}`,
+        backgroundSize: "100% 100%, 48px 48px",
+      };
+    case "hexagons":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `radial-gradient(circle at 50% 0%, color-mix(in oklab, ${safeCta} 35%, transparent), transparent 60%), ${svgUrl(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20"><path d="M6 0 L12 3 L12 10 L6 13 L0 10 L0 3 Z M18 10 L24 13 L24 20 M18 10 L12 13 L12 20 M18 0 L18 10" fill="none" stroke="${safeAccent}" stroke-opacity="0.5" stroke-width="1.2"/></svg>`
+        )}`,
+        backgroundSize: "100% 100%, 24px 20px",
+      };
+    case "diamonds":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `${svgUrl(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><path d="M9 0 L18 9 L9 18 L0 9 Z" fill="none" stroke="${safeAccent}" stroke-opacity="0.5" stroke-width="1.2"/></svg>`
+        )}`,
+        backgroundSize: "18px 18px",
+      };
+    case "crosses":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `${svgUrl(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M8 5 V11 M5 8 H11" fill="none" stroke="${safeAccent}" stroke-opacity="0.55" stroke-width="1.4"/></svg>`
+        )}`,
+        backgroundSize: "16px 16px",
+      };
+    case "confetti":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `${svgUrl(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><circle cx="8" cy="8" r="1.5" fill="${safeAccent}" fill-opacity="0.6"/><rect x="20" y="6" width="5" height="2" rx="1" fill="${safeCta}" fill-opacity="0.6"/><polygon points="10,26 12,22 14,26" fill="none" stroke="${safeAccent}" stroke-opacity="0.5" stroke-width="1"/></svg>`
+        )}`,
+        backgroundSize: "36px 36px",
+      };
+    case "grid-lines":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `radial-gradient(circle at 50% 0%, color-mix(in oklab, ${safeAccent} 35%, transparent), transparent 60%), linear-gradient(to right, color-mix(in oklab, ${safeAccent} 24%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklab, ${safeAccent} 24%, transparent) 1px, transparent 1px)`,
+        backgroundSize: "100% 100%, 12px 12px, 12px 12px",
+      };
+    case "sunset":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `linear-gradient(180deg, color-mix(in oklab, ${safeAccent} 60%, ${preset.bgColor}) 0%, color-mix(in oklab, ${safeCta} 45%, ${preset.bgColor}) 45%, ${preset.bgColor} 100%)`,
+      };
+    case "duotone":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `linear-gradient(135deg, color-mix(in oklab, ${safeCta} 45%, ${preset.bgColor}) 0%, ${preset.bgColor} 50%, color-mix(in oklab, ${safeAccent} 40%, ${preset.bgColor}) 100%)`,
+      };
+    case "orb":
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `radial-gradient(circle at 20% 30%, color-mix(in oklab, ${safeAccent} 55%, transparent) 0%, transparent 60%), radial-gradient(circle at 80% 70%, color-mix(in oklab, ${safeCta} 55%, transparent) 0%, transparent 60%)`,
+      };
+    default:
+      return {
+        backgroundColor: preset.bgColor,
+        backgroundImage: `radial-gradient(circle at 50% 0%, color-mix(in oklab, ${safeCta} 55%, transparent) 0%, transparent 70%), radial-gradient(circle at 80% 20%, color-mix(in oklab, ${safeAccent} 25%, transparent) 0%, transparent 50%)`,
+      };
+  }
+}
+
+function ThemePresetPreviewIcon({
+  preset,
+  isProTheme,
+}: {
+  preset: ThemePreset;
+  isProTheme: boolean;
+}) {
+  const bgStyle = useMemo(() => getThemePreviewStyle(preset), [preset]);
+
+  const cardRadius =
+    preset.radiusStyle === "pill"
+      ? "rounded-full"
+      : preset.radiusStyle === "extra"
+        ? "rounded-[8px]"
+        : preset.radiusStyle === "soft"
+          ? "rounded-[4px]"
+          : preset.radiusStyle === "sharp"
+            ? "rounded-[1px]"
+            : "rounded-[5px]";
+
+  return (
+    <div
+      aria-hidden="true"
+      className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/20 shadow-inner"
+      style={bgStyle}
+    >
+      {/* Mini card mockup */}
+      <div
+        className={`relative flex h-6 w-9 items-center justify-center border shadow-md ${cardRadius}`}
+        style={{
+          backgroundColor:
+            preset.cardStyle === "glass"
+              ? `color-mix(in oklab, ${preset.cardColor} 65%, transparent)`
+              : preset.cardColor,
+          borderColor: `color-mix(in oklab, ${preset.accentColor} 55%, transparent)`,
+          backdropFilter: preset.cardStyle === "glass" ? "blur(3px)" : undefined,
+        }}
+      >
+        {/* Tiny button mockup inside card */}
+        <div
+          className={`h-1.5 w-4 ${preset.radiusStyle === "sharp" ? "rounded-[1px]" : "rounded-full"}`}
+          style={{
+            background: `linear-gradient(135deg, ${preset.ctaColor}, ${preset.accentColor})`,
+          }}
+        />
+      </div>
+
+      {/* Pro crown pill badge if exclusive */}
+      {isProTheme ? (
+        <span
+          className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-amber-400/80 bg-[#140E04] text-amber-300 shadow-md"
+          title="Tema exclusivo Pro"
+        >
+          <Crown className="h-2.5 w-2.5 fill-amber-300" />
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 export function DashboardClient({
   initialProfile,
   initialItems,
@@ -221,6 +419,7 @@ export function DashboardClient({
   } | null>(null);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const [themeProNotice, setThemeProNotice] = useState<string | null>(null);
 
   const [itemForm, setItemForm] = useState<ItemFormState>(EMPTY_ITEM_FORM);
   const [deleteTarget, setDeleteTarget] = useState<LinkItemData | null>(null);
@@ -422,6 +621,25 @@ export function DashboardClient({
   async function saveProfilePatch(patch?: Partial<CreatorProfileData>) {
     const payload = patch ? { ...profile, ...patch } : profile;
     if (patch) setProfile(payload);
+
+    if (!userIsPro) {
+      if (!isBgStyleAllowedForPlan(payload.bgStyle, false)) {
+        notify(
+          "error",
+          `O estilo de fundo "${payload.bgStyle}" com desenho é exclusivo do Plano Pro. Escolha um dos 5 fundos grátis ou faça upgrade.`
+        );
+        setActiveTab("plan");
+        return;
+      }
+      if (!isRadiusStyleAllowedForPlan(payload.radiusStyle, false)) {
+        notify(
+          "error",
+          `O formato de borda "${payload.radiusStyle}" é exclusivo do Plano Pro. Escolha Arredondado, Suave ou Reto no plano Grátis.`
+        );
+        setActiveTab("plan");
+        return;
+      }
+    }
 
     setSavingProfile(true);
     try {
@@ -1626,57 +1844,122 @@ export function DashboardClient({
             <section aria-label="Personalizar aparência e layout" className="flex flex-col gap-6">
               {/* Presets */}
               <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-5">
-                <h2 className="text-base font-extrabold">Temas Prontos (1 clique)</h2>
-                <p className="mt-0.5 text-sm text-[#9CB3CE]">
-                  Aplique uma paleta pronta e depois ajuste cada detalhe se quiser.
-                </p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h2 className="text-base font-extrabold">Temas Prontos (1 clique)</h2>
+                    <p className="mt-0.5 text-sm text-[#9CB3CE]">
+                      Aplique uma combinação pronta de cores, desenhos e bordas.
+                    </p>
+                  </div>
+                  {!userIsPro ? (
+                    <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-xs font-semibold text-amber-200">
+                      Temas com desenhos exclusivos no Pro
+                    </span>
+                  ) : null}
+                </div>
 
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {THEME_PRESETS.map((preset) => (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      onClick={() =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          themeMode: preset.themeMode,
-                          bgStyle: preset.bgStyle,
-                          cardStyle: preset.cardStyle,
-                          radiusStyle: preset.radiusStyle,
-                          fontStyle: preset.fontStyle ?? prev.fontStyle,
-                          titleFontStyle: preset.titleFontStyle ?? prev.titleFontStyle,
-                          accentColor: preset.accentColor,
-                          ctaColor: preset.ctaColor,
-                          bgColor: preset.bgColor,
-                          cardColor: preset.cardColor,
-                          textColor: preset.textColor,
-                        }))
-                      }
-                      className="flex items-center gap-3 rounded-xl border border-white/12 bg-[#09101B] p-3 text-left transition hover:border-[#38BDF8]/60"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/15"
-                        style={{ backgroundColor: preset.bgColor }}
+                  {THEME_PRESETS.map((preset) => {
+                    const isProTheme = !isThemePresetAllowedForPlan(preset, false);
+                    const isSelected =
+                      profile.bgStyle === preset.bgStyle &&
+                      profile.cardStyle === preset.cardStyle &&
+                      profile.radiusStyle === preset.radiusStyle &&
+                      profile.bgColor === preset.bgColor;
+
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => {
+                          setProfile((prev) => ({
+                            ...prev,
+                            themeMode: preset.themeMode,
+                            bgStyle: preset.bgStyle,
+                            cardStyle: preset.cardStyle,
+                            radiusStyle: preset.radiusStyle,
+                            fontStyle: preset.fontStyle ?? prev.fontStyle,
+                            titleFontStyle: preset.titleFontStyle ?? prev.titleFontStyle,
+                            accentColor: preset.accentColor,
+                            ctaColor: preset.ctaColor,
+                            bgColor: preset.bgColor,
+                            cardColor: preset.cardColor,
+                            textColor: preset.textColor,
+                          }));
+                          if (isProTheme && !userIsPro) {
+                            setThemeProNotice(
+                              `Você está testando o tema "${preset.name}" no celular ao lado. Para salvar fundos com desenhos e bordas exclusivas, faça upgrade para o Plano Pro 👑.`
+                            );
+                          } else {
+                            setThemeProNotice(null);
+                          }
+                        }}
+                        className={`relative flex items-center gap-3.5 rounded-2xl border p-3 text-left transition ${
+                          isSelected
+                            ? "border-[#38BDF8] bg-[#38BDF8]/10 shadow-[0_4px_20px_rgba(56,189,248,0.15)]"
+                            : "border-white/12 bg-[#09101B] hover:border-white/25"
+                        }`}
                       >
-                        <span
-                          className="h-5 w-5 rounded-full"
-                          style={{
-                            background: `linear-gradient(135deg, ${preset.ctaColor}, ${preset.accentColor})`,
-                          }}
-                        />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-bold text-white">
-                          {preset.name}
-                        </span>
-                        <span className="block truncate text-xs text-[#9CB3CE]">
-                          {preset.description}
-                        </span>
-                      </span>
-                    </button>
-                  ))}
+                        <ThemePresetPreviewIcon preset={preset} isProTheme={isProTheme} />
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="block truncate text-sm font-bold text-white">
+                              {preset.name}
+                            </span>
+                            {isProTheme ? (
+                              <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-amber-400/40 bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-extrabold text-amber-300">
+                                <Crown className="h-2.5 w-2.5 fill-amber-300" aria-hidden="true" />
+                                <span>PRO</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                                Grátis
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="mt-0.5 truncate text-xs text-[#9CB3CE]">
+                            {preset.description}
+                          </p>
+
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-[#7D97B8]">
+                            <span className="rounded bg-white/5 px-1.5 py-0.5">
+                              Fundo:{" "}
+                              {BG_STYLE_OPTIONS.find((b) => b.id === preset.bgStyle)?.label.replace(
+                                "Desenho: ",
+                                ""
+                              ) || preset.bgStyle}
+                            </span>
+                            <span className="rounded bg-white/5 px-1.5 py-0.5">
+                              Borda:{" "}
+                              {RADIUS_OPTIONS.find((r) => r.id === preset.radiusStyle)?.label.split(
+                                " "
+                              )[0] || preset.radiusStyle}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
+
+                {themeProNotice ? (
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3.5 text-xs text-amber-200">
+                    <div className="flex items-center gap-2">
+                      <Crown className="h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
+                      <span>{themeProNotice}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("plan")}
+                      className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-lg bg-amber-400 px-3 font-extrabold text-[#08101C] hover:bg-amber-300"
+                    >
+                      <Crown className="h-3 w-3" aria-hidden="true" />
+                      <span>Ver Plano Pro</span>
+                    </button>
+                  </div>
+                ) : null}
               </div>
 
               {/* Layout & Structure */}
@@ -1720,9 +2003,16 @@ export function DashboardClient({
 
                 <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label htmlFor="bg-style" className="mb-1.5 block text-sm font-semibold">
-                      Estilo de fundo
-                    </label>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <label htmlFor="bg-style" className="block text-sm font-semibold">
+                        Estilo de fundo
+                      </label>
+                      {!userIsPro ? (
+                        <span className="text-[11px] font-semibold text-amber-300">
+                          5 grátis · 14 Pro
+                        </span>
+                      ) : null}
+                    </div>
                     <select
                       id="bg-style"
                       value={profile.bgStyle}
@@ -1731,26 +2021,28 @@ export function DashboardClient({
                       }
                       className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
                     >
-                      <option value="glow">Glow Radial (Original)</option>
-                      <option value="solid">Cor Sólida</option>
-                      <option value="gradient">Gradiente Suave</option>
-                      <option value="mesh">Mesh Colorido</option>
-                      <option value="aurora">Aurora Boreal</option>
-                      <option value="spotlight">Holofote no Topo</option>
-                      <option value="sunset">Horizonte Degradê</option>
-                      <option value="duotone">Duotone Diagonal</option>
-                      <option value="orb">Esferas Difusas</option>
-                      <option value="waves">Desenho: Ondas Suaves</option>
-                      <option value="zigzag">Desenho: Zig-Zag</option>
-                      <option value="scallop">Desenho: Ondas em Camadas</option>
-                      <option value="topo">Desenho: Curvas Topográficas</option>
-                      <option value="hexagons">Desenho: Hexágonos / Colmeia</option>
-                      <option value="diamonds">Desenho: Losangos</option>
-                      <option value="crosses">Desenho: Sinais (+)</option>
-                      <option value="confetti">Desenho: Formas &amp; Traços</option>
-                      <option value="dots">Desenho: Grade Pontilhada</option>
-                      <option value="grid-lines">Desenho: Grade / Blueprint</option>
+                      {BG_STYLE_OPTIONS.map((opt) => {
+                        const allowed = isBgStyleAllowedForPlan(opt.id, userIsPro);
+                        return (
+                          <option key={opt.id} value={opt.id} disabled={!allowed}>
+                            {opt.label}
+                            {!allowed ? " (Pro 👑)" : ""}
+                          </option>
+                        );
+                      })}
                     </select>
+                    {!userIsPro ? (
+                      <p className="mt-1 text-xs text-[#9CB3CE]">
+                        No plano Grátis: Glow, Sólido, Gradiente, Mesh e Pontilhado.{" "}
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("plan")}
+                          className="font-bold text-[#7DD3FC] underline hover:text-white"
+                        >
+                          Liberar 14 fundos com desenhos no Pro
+                        </button>
+                      </p>
+                    ) : null}
                   </div>
 
                   <div>
@@ -1777,9 +2069,16 @@ export function DashboardClient({
                   </div>
 
                   <div>
-                    <label htmlFor="radius-style" className="mb-1.5 block text-sm font-semibold">
-                      Arredondamento das bordas
-                    </label>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <label htmlFor="radius-style" className="block text-sm font-semibold">
+                        Arredondamento das bordas
+                      </label>
+                      {!userIsPro ? (
+                        <span className="text-[11px] font-semibold text-amber-300">
+                          3 grátis · 2 Pro
+                        </span>
+                      ) : null}
+                    </div>
                     <select
                       id="radius-style"
                       value={profile.radiusStyle}
@@ -1791,12 +2090,28 @@ export function DashboardClient({
                       }
                       className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
                     >
-                      <option value="rounded">Arredondado (Padrão)</option>
-                      <option value="soft">Suave (14px)</option>
-                      <option value="pill">Pílula / Botões redondos</option>
-                      <option value="extra">Super Arredondado</option>
-                      <option value="sharp">Reto / Geométrico</option>
+                      {RADIUS_OPTIONS.map((opt) => {
+                        const allowed = isRadiusStyleAllowedForPlan(opt.id, userIsPro);
+                        return (
+                          <option key={opt.id} value={opt.id} disabled={!allowed}>
+                            {opt.label}
+                            {!allowed ? " (Pro 👑)" : ""}
+                          </option>
+                        );
+                      })}
                     </select>
+                    {!userIsPro ? (
+                      <p className="mt-1 text-xs text-[#9CB3CE]">
+                        No plano Grátis: Arredondado (20px), Suave (14px) e Reto (8px).{" "}
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("plan")}
+                          className="font-bold text-[#7DD3FC] underline hover:text-white"
+                        >
+                          Liberar bordas Pílula e Super Arredondada no Pro
+                        </button>
+                      </p>
+                    ) : null}
                   </div>
 
                   <div>
