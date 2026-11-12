@@ -1,26 +1,275 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-jakarta), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.visually-hidden:where(:not(:focus-within, :active)) {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+
+/* Modal <dialog> scroll containment & backdrop styling */
+dialog.mc-dialog {
+  margin: auto;
+  padding: 0;
+  border: 1px solid rgba(148, 197, 255, 0.22);
+  border-radius: 20px;
+  background: #0e1624;
+  color: #f4f8fd;
+  max-width: min(520px, calc(100vw - 24px));
+  width: 100%;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(2, 6, 14, 0.72);
+}
+
+dialog.mc-dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog.mc-dialog::backdrop {
+  background: rgba(3, 7, 15, 0.72);
+  backdrop-filter: blur(6px);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+/* Validation after user interaction */
+.mc-input:is(:user-invalid, .user-invalid-fallback) {
+  border-color: #f87171 !important;
+}
+
+.mc-input:is(:user-invalid, .user-invalid-fallback) + .mc-error-msg {
+  display: flex;
+}
+
+.mc-error-msg {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  color: #fca5a5;
+  font-size: 0.8125rem;
+  margin-top: 6px;
+}
+
+/* Keep inputs >= 16px on mobile to avoid iOS Safari auto-zoom */
+input.mc-input,
+textarea.mc-input,
+select.mc-input {
+  font-size: max(1rem, 0.9375rem);
+}
+
+/* Featured link animations (uses theme accent & cta variables) */
+@keyframes mc-featured-sweep {
+  0% {
+    transform: translateX(-160%) skewX(-20deg);
+  }
+  55%,
+  100% {
+    transform: translateX(340%) skewX(-20deg);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes mc-featured-pulse-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px var(--mc-featured-accent, #38bdf8), 0 8px 24px -4px var(--mc-featured-accent, #38bdf8);
+  }
+  50% {
+    box-shadow: 0 0 0 3px var(--mc-featured-accent, #38bdf8), 0 12px 38px 0 var(--mc-featured-accent, #38bdf8);
+  }
+}
+
+@keyframes mc-featured-float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes mc-featured-bounce {
+  0%,
+  64%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  72% {
+    transform: translateY(-6px) scale(1.015);
+  }
+  80% {
+    transform: translateY(0) scale(0.995);
+  }
+  88% {
+    transform: translateY(-3px) scale(1.008);
+  }
+}
+
+@keyframes mc-featured-aura {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px var(--mc-featured-accent, #38bdf8),
+      -6px 8px 26px -2px var(--mc-featured-cta, #1e60cf),
+      6px -6px 26px -2px var(--mc-featured-accent, #38bdf8);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px var(--mc-featured-cta, #1e60cf),
+      6px 10px 34px 0 var(--mc-featured-accent, #38bdf8),
+      -6px -6px 34px 0 var(--mc-featured-cta, #1e60cf);
+  }
+}
+
+.mc-featured-shimmer {
+  position: relative;
+  overflow: hidden;
+  animation: mc-featured-pulse-ring 2.8s ease-in-out infinite;
+}
+
+.mc-featured-shimmer::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 48%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.24) 50%,
+    transparent 100%
+  );
+  animation: mc-featured-sweep 3s ease-in-out infinite;
+}
+
+.mc-featured-pulse {
+  animation: mc-featured-pulse-ring 2.2s ease-in-out infinite;
+}
+
+.mc-featured-float {
+  animation:
+    mc-featured-float 2.6s ease-in-out infinite,
+    mc-featured-pulse-ring 2.6s ease-in-out infinite;
+}
+
+.mc-featured-bounce {
+  animation:
+    mc-featured-bounce 3s ease-in-out infinite,
+    mc-featured-pulse-ring 3s ease-in-out infinite;
+}
+
+.mc-featured-gradient-border {
+  position: relative;
+  overflow: hidden;
+  animation: mc-featured-aura 2.6s ease-in-out infinite;
+}
+
+.mc-featured-gradient-border::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 42%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--mc-featured-accent, #38bdf8) 28%, rgba(255, 255, 255, 0.2)) 50%,
+    transparent 100%
+  );
+  animation: mc-featured-sweep 3.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+  .mc-featured-shimmer,
+  .mc-featured-shimmer::after,
+  .mc-featured-pulse,
+  .mc-featured-float,
+  .mc-featured-bounce,
+  .mc-featured-gradient-border,
+  .mc-featured-gradient-border::after {
+    animation: none !important;
+  }
+}
+
+/* Drag-and-drop reordering */
+html.mc-dragging,
+html.mc-dragging * {
+  cursor: grabbing !important;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.mc-drag-handle {
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.mc-drag-handle:active,
+.mc-drag-handle[aria-pressed="true"] {
+  cursor: grabbing;
+}
+
+.mc-sort-list[data-drop="true"]::before {
+  content: "";
+  position: fixed;
+  left: calc(var(--drop-x, 0px) - 5px);
+  top: calc(var(--drop-y, 0px) - 5px);
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--drop-marker-color, #38bdf8);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+  pointer-events: none;
+  z-index: 60;
+}
+
+.mc-sort-list[data-drop="true"]::after {
+  content: "";
+  position: fixed;
+  left: var(--drop-x, 0px);
+  top: calc(var(--drop-y, 0px) - 1.5px);
+  width: var(--drop-w, 200px);
+  height: 3px;
+  border-radius: 999px;
+  background: var(--drop-marker-color, #38bdf8);
+  pointer-events: none;
+  z-index: 59;
+}
+
+@media (forced-colors: active) {
+  .mc-sort-list[data-drop="true"]::before,
+  .mc-sort-list[data-drop="true"]::after {
+    background: Highlight;
+  }
 }
