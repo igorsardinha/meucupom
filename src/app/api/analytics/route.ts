@@ -13,10 +13,12 @@ export async function GET(request: Request) {
 
   const { profile } = await getOrCreateProfileForUser(session.user);
   const { searchParams } = new URL(request.url);
-  const days = searchParams.get("days") === "30" ? 30 : 7;
+  const rawDays = searchParams.get("days");
+  const days: 7 | 14 | 30 = rawDays === "30" ? 30 : rawDays === "14" ? 14 : 7;
   const pro = isProPlan(profile);
 
-  if (!pro) {
+  // 7 dias é gratuito para todos; 14 e 30 dias são exclusivos para assinantes Pro
+  if (days > 7 && !pro) {
     return NextResponse.json({
       locked: true,
       days,

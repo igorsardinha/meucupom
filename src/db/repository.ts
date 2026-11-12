@@ -989,7 +989,7 @@ export async function recordProfileEvent(input: {
 
 export async function getDailyAnalyticsForUser(
   userId: string,
-  days: 7 | 30
+  days: 7 | 14 | 30 | number
 ): Promise<DailyAnalyticsPoint[]> {
   await ensureDatabaseReady();
   const profileId = await getProfileIdForUser(userId);

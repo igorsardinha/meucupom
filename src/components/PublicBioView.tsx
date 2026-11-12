@@ -613,79 +613,8 @@ export function PublicBioView({ profile, items, previewMode = false }: PublicBio
         {/* Top bar */}
         <nav
           aria-label="Ações da página"
-          className="mb-6 flex flex-wrap items-center justify-between gap-2"
+          className="mb-6 flex items-center justify-end gap-2"
         >
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            {(() => {
-              const socialMode = profile.socialDisplayStyle || "both";
-              const showIcon = socialMode !== "text";
-              const showText = socialMode !== "icon";
-              const igText = profile.instagramHandle || "Instagram";
-              const ttText = profile.tiktokHandle || "TikTok";
-              const iconOnlyClass =
-                "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-transform active:scale-95";
-              const pillClass =
-                "inline-flex min-h-10 items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-transform active:scale-[0.98]";
-
-              return (
-                <>
-                  {profile.instagramHandle || igHref ? (
-                    igHref ? (
-                      <a
-                        href={igHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={!showText ? `Instagram ${igText}` : undefined}
-                        title={!showText ? `Instagram ${igText}` : undefined}
-                        style={{
-                          background: pillBg,
-                          borderColor: borderSubtle,
-                          color: resolvedText,
-                        }}
-                        className={showText ? pillClass : iconOnlyClass}
-                      >
-                        {showIcon ? <InstagramIcon className="h-4 w-4 shrink-0" /> : null}
-                        {showText ? <span className="max-w-[160px] truncate">{igText}</span> : null}
-                      </a>
-                    ) : (
-                      <span
-                        aria-label={!showText ? `Instagram ${igText}` : undefined}
-                        title={!showText ? `Instagram ${igText}` : undefined}
-                        style={{ background: pillBg, borderColor: borderSubtle }}
-                        className={showText ? pillClass : iconOnlyClass}
-                      >
-                        {showIcon ? <InstagramIcon className="h-4 w-4 shrink-0" /> : null}
-                        {showText ? <span className="max-w-[160px] truncate">{igText}</span> : null}
-                      </span>
-                    )
-                  ) : null}
-
-                  {profile.tiktokHandle || ttHref ? (
-                    <a
-                      href={
-                        ttHref ||
-                        `https://www.tiktok.com/@${profile.tiktokHandle.replace(/^@+/, "")}`
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={!showText ? `TikTok ${ttText}` : undefined}
-                      title={!showText ? `TikTok ${ttText}` : undefined}
-                      style={{
-                        background: pillBg,
-                        borderColor: borderSubtle,
-                        color: resolvedText,
-                      }}
-                      className={showText ? pillClass : iconOnlyClass}
-                    >
-                      {showIcon ? <TikTokIcon className="h-4 w-4 shrink-0" /> : null}
-                      {showText ? <span className="max-w-[150px] truncate">{ttText}</span> : null}
-                    </a>
-                  ) : null}
-                </>
-              );
-            })()}
-          </div>
-
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -773,6 +702,80 @@ export function PublicBioView({ profile, items, previewMode = false }: PublicBio
               </p>
             ) : null}
           </div>
+
+          {/* Social Links under bio text */}
+          {(() => {
+            const hasIg = Boolean(profile.instagramHandle || igHref);
+            const hasTt = Boolean(profile.tiktokHandle || ttHref);
+            if (!hasIg && !hasTt) return null;
+
+            const socialMode = profile.socialDisplayStyle || "both";
+            const showIcon = socialMode !== "text";
+            const showText = socialMode !== "icon";
+            const igText = profile.instagramHandle || "Instagram";
+            const ttText = profile.tiktokHandle || "TikTok";
+            const iconOnlyClass =
+              "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-transform hover:scale-105 active:scale-95 shadow-sm";
+            const pillClass =
+              "inline-flex min-h-9 items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-transform hover:scale-105 active:scale-[0.98] shadow-sm";
+
+            return (
+              <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
+                {hasIg ? (
+                  igHref ? (
+                    <a
+                      href={igHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={!showText ? `Instagram ${igText}` : undefined}
+                      title={!showText ? `Instagram ${igText}` : undefined}
+                      style={{
+                        background: pillBg,
+                        borderColor: borderSubtle,
+                        color: resolvedText,
+                      }}
+                      className={showText ? pillClass : iconOnlyClass}
+                    >
+                      {showIcon ? <InstagramIcon className="h-4 w-4 shrink-0" /> : null}
+                      {showText ? <span className="max-w-[160px] truncate">{igText}</span> : null}
+                    </a>
+                  ) : (
+                    <span
+                      aria-label={!showText ? `Instagram ${igText}` : undefined}
+                      title={!showText ? `Instagram ${igText}` : undefined}
+                      style={{ background: pillBg, borderColor: borderSubtle }}
+                      className={showText ? pillClass : iconOnlyClass}
+                    >
+                      {showIcon ? <InstagramIcon className="h-4 w-4 shrink-0" /> : null}
+                      {showText ? <span className="max-w-[160px] truncate">{igText}</span> : null}
+                    </span>
+                  )
+                ) : null}
+
+                {hasTt ? (
+                  <a
+                    href={
+                      ttHref ||
+                      `https://www.tiktok.com/@${profile.tiktokHandle.replace(/^@+/, "")}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={!showText ? `TikTok ${ttText}` : undefined}
+                    title={!showText ? `TikTok ${ttText}` : undefined}
+                    style={{
+                      background: pillBg,
+                      borderColor: borderSubtle,
+                      color: resolvedText,
+                    }}
+                    className={showText ? pillClass : iconOnlyClass}
+                  >
+                    {showIcon ? <TikTokIcon className="h-4 w-4 shrink-0" /> : null}
+                    {showText ? <span className="max-w-[150px] truncate">{ttText}</span> : null}
+                  </a>
+                ) : null}
+              </div>
+            );
+          })()}
         </header>
 
         {/* Partners & Links */}

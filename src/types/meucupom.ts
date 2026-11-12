@@ -105,7 +105,7 @@ export interface CreatorProfileData {
   showBranding: boolean;
   viewsCount: number;
   plan: "free" | "pro";
-  subscriptionStatus: "inactive" | "active" | "trialing" | "past_due" | "canceled";
+  subscriptionStatus: "inactive" | "active" | "trialing" | "past_due" | "canceled" | "permuta";
   mpPayerId: string;
   mpPreapprovalId: string;
   currentPeriodEnd: string | null;

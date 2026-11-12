@@ -34,7 +34,7 @@ interface AdminDashboardClientProps {
 }
 
 type AdminTab = "users" | "subscriptions" | "reports";
-type UserFilter = "all" | "pro" | "free" | "suspended";
+type UserFilter = "all" | "pro" | "permuta" | "free" | "suspended";
 
 const STATUS_LABELS: Record<CreatorProfileData["subscriptionStatus"], string> = {
   active: "Ativa",
@@ -42,6 +42,7 @@ const STATUS_LABELS: Record<CreatorProfileData["subscriptionStatus"], string> = 
   past_due: "Pendente/Pausada",
   canceled: "Cancelada",
   inactive: "Inativa",
+  permuta: "Permuta",
 };
 
 export function AdminDashboardClient({
@@ -186,16 +187,22 @@ export function AdminDashboardClient({
   const stats = useMemo(() => {
     const totalUsers = data.users.length;
     const proUsers = data.users.filter((u) => u.plan === "pro" && !u.isSuspended).length;
-    const activeSubscriptions = data.users.filter(
-      (u) => u.plan === "pro" && u.subscriptionStatus === "active"
+    // Permutas são contas Pro concedidas por parceria; NÃO entram no faturamento
+    const permutaUsers = data.users.filter(
+      (u) => u.plan === "pro" && u.subscriptionStatus === "permuta" && !u.isSuspended
+    ).length;
+    // Apenas assinaturas pagas ativas geram faturamento (MRR)
+    const paidSubscriptions = data.users.filter(
+      (u) => u.plan === "pro" && u.subscriptionStatus === "active" && !u.isSuspended
     ).length;
     const suspendedCount = data.users.filter((u) => u.isSuspended).length;
     const openReports = data.reports.filter((r) => r.status === "open").length;
-    const estimatedMrr = activeSubscriptions * proPriceBrl;
+    const estimatedMrr = paidSubscriptions * proPriceBrl;
     return {
       totalUsers,
       proUsers,
-      activeSubscriptions,
+      paidSubscriptions,
+      permutaUsers,
       suspendedCount,
       openReports,
       estimatedMrr,
@@ -205,7 +212,8 @@ export function AdminDashboardClient({
   const filteredUsers = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return data.users.filter((u) => {
-      if (userFilter === "pro" && u.plan !== "pro") return false;
+      if (userFilter === "pro" && (u.plan !== "pro" || u.subscriptionStatus === "permuta")) return false;
+      if (userFilter === "permuta" && u.subscriptionStatus !== "permuta") return false;
       if (userFilter === "free" && u.plan !== "free") return false;
       if (userFilter === "suspended" && !u.isSuspended) return false;
       if (!q) return true;
@@ -313,9 +321,22 @@ export function AdminDashboardClient({
             <p className="mt-1 text-2xl font-black text-white">{stats.proUsers}</p>
           </div>
           <div className="rounded-2xl border border-emerald-400/25 bg-[#0E1624] p-4">
-            <span className="text-xs font-semibold text-emerald-300">Receita mensal est.</span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-emerald-300">Receita mensal est.</span>
+              {stats.permutaUsers > 0 ? (
+                <span
+                  className="rounded-full bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-bold text-purple-300"
+                  title={`${stats.permutaUsers} contas em permuta (isentas de faturamento)`}
+                >
+                  {stats.permutaUsers} permuta{stats.permutaUsers > 1 ? "s" : ""}
+                </span>
+              ) : null}
+            </div>
             <p className="mt-1 text-2xl font-black text-white">
               R$ {stats.estimatedMrr.toFixed(2).replace(".", ",")}
+            </p>
+            <p className="mt-0.5 text-[10px] text-[#9CB3CE]">
+              {stats.paidSubscriptions} pagas · {stats.permutaUsers} permutas isentas
             </p>
           </div>
           <div className="rounded-2xl border border-red-400/20 bg-[#0E1624] p-4">
@@ -401,7 +422,8 @@ export function AdminDashboardClient({
               {(
                 [
                   { id: "all", label: "Todos" },
-                  { id: "pro", label: "Pro" },
+                  { id: "pro", label: "Pro Pagos" },
+                  { id: "permuta", label: "Permutas" },
                   { id: "free", label: "Grátis" },
                   { id: "suspended", label: "Suspensos" },
                 ] as const
@@ -478,16 +500,24 @@ export function AdminDashboardClient({
                           <div className="flex flex-wrap items-center gap-1.5">
                             <span
                               className={`rounded-full px-2.5 py-0.5 text-xs font-extrabold ${
-                                u.plan === "pro"
-                                  ? "bg-amber-400/20 text-amber-200"
-                                  : "bg-white/10 text-[#9CB3CE]"
+                                u.subscriptionStatus === "permuta"
+                                  ? "border border-purple-400/35 bg-purple-500/20 text-purple-200"
+                                  : u.plan === "pro"
+                                    ? "bg-amber-400/20 text-amber-200"
+                                    : "bg-white/10 text-[#9CB3CE]"
                               }`}
                             >
-                              {u.plan === "pro" ? "Pro" : "Grátis"}
+                              {u.subscriptionStatus === "permuta"
+                                ? "Permuta"
+                                : u.plan === "pro"
+                                  ? "Pro"
+                                  : "Grátis"}
                             </span>
-                            <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-[#9CB3CE]">
-                              {STATUS_LABELS[u.subscriptionStatus]}
-                            </span>
+                            {u.subscriptionStatus !== "permuta" ? (
+                              <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-[#9CB3CE]">
+                                {STATUS_LABELS[u.subscriptionStatus]}
+                              </span>
+                            ) : null}
                           </div>
                           {u.mpPreapprovalId ? (
                             <p className="mt-1 font-mono text-[11px] text-[#9CB3CE]">
@@ -510,44 +540,105 @@ export function AdminDashboardClient({
                             {u.profileId ? (
                               <>
                                 {u.plan !== "pro" ? (
-                                  <button
-                                    type="button"
-                                    disabled={isBusy}
-                                    onClick={() =>
-                                      updateUser(
-                                        u,
-                                        {
-                                          plan: "pro",
-                                          subscriptionStatus: "active",
-                                          currentPeriodEndDays: 30,
-                                        },
-                                        `Plano Pro ativado para ${u.email}.`
-                                      )
-                                    }
-                                    className="inline-flex min-h-8 items-center gap-1 rounded-lg bg-amber-400 px-2.5 text-xs font-extrabold text-[#08101C] hover:bg-amber-300 disabled:opacity-60"
-                                  >
-                                    <Crown className="h-3 w-3" aria-hidden="true" />
-                                    <span>Ativar Pro</span>
-                                  </button>
+                                  <>
+                                    <button
+                                      type="button"
+                                      disabled={isBusy}
+                                      onClick={() =>
+                                        updateUser(
+                                          u,
+                                          {
+                                            plan: "pro",
+                                            subscriptionStatus: "active",
+                                            currentPeriodEndDays: 30,
+                                          },
+                                          `Plano Pro (Pago) ativado para ${u.email}.`
+                                        )
+                                      }
+                                      className="inline-flex min-h-8 items-center gap-1 rounded-lg bg-amber-400 px-2.5 text-xs font-extrabold text-[#08101C] hover:bg-amber-300 disabled:opacity-60"
+                                    >
+                                      <Crown className="h-3 w-3" aria-hidden="true" />
+                                      <span>Ativar Pro</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={isBusy}
+                                      onClick={() =>
+                                        updateUser(
+                                          u,
+                                          {
+                                            plan: "pro",
+                                            subscriptionStatus: "permuta",
+                                            currentPeriodEndDays: 365,
+                                          },
+                                          `Permuta ativada para ${u.email} (isento de faturamento).`
+                                        )
+                                      }
+                                      className="inline-flex min-h-8 items-center rounded-lg border border-purple-400/40 bg-purple-500/15 px-2.5 text-xs font-bold text-purple-200 hover:bg-purple-500/25 disabled:opacity-60"
+                                    >
+                                      Permuta
+                                    </button>
+                                  </>
                                 ) : (
-                                  <button
-                                    type="button"
-                                    disabled={isBusy}
-                                    onClick={() =>
-                                      updateUser(
-                                        u,
-                                        {
-                                          plan: "free",
-                                          subscriptionStatus: "canceled",
-                                          currentPeriodEndDays: null,
-                                        },
-                                        `Conta ${u.email} movida para Grátis.`
-                                      )
-                                    }
-                                    className="inline-flex min-h-8 items-center rounded-lg border border-white/15 bg-[#09101B] px-2.5 text-xs font-bold text-[#E2ECF7] hover:border-white/30 disabled:opacity-60"
-                                  >
-                                    Mover p/ Grátis
-                                  </button>
+                                  <>
+                                    {u.subscriptionStatus === "permuta" ? (
+                                      <button
+                                        type="button"
+                                        disabled={isBusy}
+                                        onClick={() =>
+                                          updateUser(
+                                            u,
+                                            {
+                                              plan: "pro",
+                                              subscriptionStatus: "active",
+                                              currentPeriodEndDays: 30,
+                                            },
+                                            `Conta ${u.email} convertida para Pro Pago.`
+                                          )
+                                        }
+                                        className="inline-flex min-h-8 items-center rounded-lg border border-emerald-400/40 bg-emerald-500/15 px-2 text-xs font-bold text-emerald-200 hover:bg-emerald-500/25 disabled:opacity-60"
+                                      >
+                                        Tornar Pago
+                                      </button>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        disabled={isBusy}
+                                        onClick={() =>
+                                          updateUser(
+                                            u,
+                                            {
+                                              plan: "pro",
+                                              subscriptionStatus: "permuta",
+                                              currentPeriodEndDays: 365,
+                                            },
+                                            `Conta ${u.email} convertida para Permuta (isenta).`
+                                          )
+                                        }
+                                        className="inline-flex min-h-8 items-center rounded-lg border border-purple-400/40 bg-purple-500/15 px-2 text-xs font-bold text-purple-200 hover:bg-purple-500/25 disabled:opacity-60"
+                                      >
+                                        Mudar p/ Permuta
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      disabled={isBusy}
+                                      onClick={() =>
+                                        updateUser(
+                                          u,
+                                          {
+                                            plan: "free",
+                                            subscriptionStatus: "canceled",
+                                            currentPeriodEndDays: null,
+                                          },
+                                          `Conta ${u.email} movida para Grátis.`
+                                        )
+                                      }
+                                      className="inline-flex min-h-8 items-center rounded-lg border border-white/15 bg-[#09101B] px-2.5 text-xs font-bold text-[#E2ECF7] hover:border-white/30 disabled:opacity-60"
+                                    >
+                                      Mover p/ Grátis
+                                    </button>
+                                  </>
                                 )}
 
                                 <button
@@ -627,15 +718,30 @@ export function AdminDashboardClient({
                               <p className="text-xs text-[#9CB3CE]">{u.email}</p>
                             </td>
                             <td className="px-4 py-3.5">
-                              <span className="rounded-full bg-amber-400/20 px-2.5 py-0.5 text-xs font-extrabold text-amber-200">
-                                {u.plan === "pro" ? "Pro" : "Grátis"}
+                              <span
+                                className={`rounded-full px-2.5 py-0.5 text-xs font-extrabold ${
+                                  u.subscriptionStatus === "permuta"
+                                    ? "border border-purple-400/35 bg-purple-500/20 text-purple-200"
+                                    : u.plan === "pro"
+                                      ? "bg-amber-400/20 text-amber-200"
+                                      : "bg-white/10 text-[#9CB3CE]"
+                                }`}
+                              >
+                                {u.subscriptionStatus === "permuta"
+                                  ? "Permuta"
+                                  : u.plan === "pro"
+                                    ? "Pro"
+                                    : "Grátis"}
                               </span>
                             </td>
                             <td className="px-4 py-3.5 text-xs text-[#E2ECF7]">
                               {STATUS_LABELS[u.subscriptionStatus]}
                             </td>
                             <td className="px-4 py-3.5 font-mono text-xs text-[#9CB3CE]">
-                              {u.mpPreapprovalId || "Liberação manual (cortesia)"}
+                              {u.mpPreapprovalId ||
+                                (u.subscriptionStatus === "permuta"
+                                  ? "Parceria / Permuta (Isenta)"
+                                  : "Liberação manual")}
                             </td>
                             <td className="px-4 py-3.5 text-xs text-[#9CB3CE]">
                               {u.currentPeriodEnd

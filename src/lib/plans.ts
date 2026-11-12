@@ -12,7 +12,8 @@ export type SubscriptionStatus =
   | "active"
   | "trialing"
   | "past_due"
-  | "canceled";
+  | "canceled"
+  | "permuta";
 
 export const FREE_MAX_ACTIVE_OR_TOTAL_LINKS = 5;
 
@@ -49,7 +50,8 @@ export function isProPlan(profile: Pick<CreatorProfileData, "plan" | "subscripti
   return (
     profile.subscriptionStatus === "active" ||
     profile.subscriptionStatus === "trialing" ||
-    profile.subscriptionStatus === "inactive"
+    profile.subscriptionStatus === "inactive" ||
+    profile.subscriptionStatus === "permuta"
   );
 }
 

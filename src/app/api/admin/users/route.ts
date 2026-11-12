@@ -17,7 +17,7 @@ const patchUserSchema = z.object({
   userId: z.string().min(1),
   plan: z.enum(["free", "pro"]).optional(),
   subscriptionStatus: z
-    .enum(["inactive", "active", "trialing", "past_due", "canceled"])
+    .enum(["inactive", "active", "trialing", "past_due", "canceled", "permuta"])
     .optional(),
   isSuspended: z.boolean().optional(),
   mpPayerId: z.string().optional(),

@@ -10,11 +10,24 @@ let cachedRedis: Redis | null | undefined;
 
 function getRedis(): Redis | null {
   if (cachedRedis !== undefined) return cachedRedis;
-  if (
-    process.env.UPSTASH_REDIS_REST_URL?.trim() &&
-    process.env.UPSTASH_REDIS_REST_TOKEN?.trim()
-  ) {
-    cachedRedis = Redis.fromEnv();
+
+  const url =
+    process.env.UPSTASH_REDIS_REST_URL?.trim() ||
+    process.env.UPSTASH_REDIS_REST_KV_URL?.trim() ||
+    process.env.KV_REST_API_URL?.trim();
+
+  const token =
+    process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ||
+    process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN?.trim() ||
+    process.env.UPSTASH_REDIS_REST_KV_TOKEN?.trim() ||
+    process.env.KV_REST_API_TOKEN?.trim();
+
+  if (url && token) {
+    try {
+      cachedRedis = new Redis({ url, token });
+    } catch {
+      cachedRedis = null;
+    }
   } else {
     cachedRedis = null;
   }

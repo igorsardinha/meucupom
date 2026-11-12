@@ -4,8 +4,10 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Activity,
   AlertTriangle,
   ArrowLeft,
+  Award,
   BarChart3,
   Check,
   CheckCircle2,
@@ -33,6 +35,7 @@ import {
   Star,
   Tag,
   Trash2,
+  TrendingUp,
   Upload,
   User,
   X,
@@ -404,7 +407,7 @@ export function DashboardClient({
   const [billingLoading, setBillingLoading] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
-  const [analyticsDays, setAnalyticsDays] = useState<7 | 30>(7);
+  const [analyticsDays, setAnalyticsDays] = useState<7 | 14 | 30>(7);
   const [analyticsPoints, setAnalyticsPoints] = useState<DailyAnalyticsPoint[]>([]);
   const [analyticsLocked, setAnalyticsLocked] = useState(false);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
@@ -473,6 +476,20 @@ export function DashboardClient({
   );
   const totalClicks = useMemo(
     () => items.reduce((acc, item) => acc + item.clicksCount, 0),
+    [items]
+  );
+  const topCoupon = useMemo(
+    () =>
+      items
+        .filter((it) => it.kind === "coupon" && (it.copiesCount || 0) > 0)
+        .sort((a, b) => (b.copiesCount || 0) - (a.copiesCount || 0))[0] || null,
+    [items]
+  );
+  const topLink = useMemo(
+    () =>
+      items
+        .filter((it) => it.kind === "link" && (it.clicksCount || 0) > 0)
+        .sort((a, b) => (b.clicksCount || 0) - (a.clicksCount || 0))[0] || null,
     [items]
   );
   const contrastRatio = useMemo(
@@ -1201,29 +1218,29 @@ export function DashboardClient({
     <div className="min-h-dvh bg-[#070C14] text-[#F4F8FD]">
       {/* Top Navbar */}
       <header className="sticky top-0 z-30 border-b border-[#94C5FF]/12 bg-[#070C14]/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6 sm:py-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-2 sm:px-6 sm:py-3">
           {/* Brand */}
-          <Link href="/" className="flex items-center gap-2.5 transition hover:opacity-90">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[#1E60CF] to-[#38BDF8] text-xs font-black text-white shadow-md shadow-[#1E60CF]/20">
+          <Link href="/" className="flex shrink-0 items-center gap-2 transition hover:opacity-90 sm:gap-2.5">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[#1E60CF] to-[#38BDF8] text-xs font-black text-white shadow-md shadow-[#1E60CF]/20 sm:h-9 sm:w-9">
               MC
             </span>
             <div className="flex items-baseline gap-1">
-              <span className="text-base font-extrabold tracking-tight text-white sm:text-lg">meucupom</span>
-              <span className="text-xs font-bold text-[#38BDF8]">.bio</span>
+              <span className="text-sm font-extrabold tracking-tight text-white sm:text-lg">meucupom</span>
+              <span className="text-[11px] font-bold text-[#38BDF8] sm:text-xs">.bio</span>
             </div>
           </Link>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             {/* Commercial Public Link Pill */}
-            <div className="flex items-center rounded-full border border-[#38BDF8]/30 bg-[#0E1624] py-1 pl-3 pr-1 text-xs">
-              <span className="font-mono text-[#7DD3FC]">/{profile.slug}</span>
+            <div className="flex max-w-[125px] items-center rounded-full border border-[#38BDF8]/30 bg-[#0E1624] py-0.5 pl-2 pr-1 text-xs sm:max-w-none sm:py-1 sm:pl-3">
+              <span className="truncate font-mono text-[11px] text-[#7DD3FC] sm:text-xs">/{profile.slug}</span>
               <button
                 type="button"
                 onClick={handleCopyPublicUrl}
                 aria-label="Copiar link público"
                 title="Copiar link da sua página"
-                className="ml-2 inline-flex h-7 items-center gap-1 rounded-full bg-[#38BDF8]/15 px-2.5 text-[11px] font-bold text-[#7DD3FC] transition hover:bg-[#38BDF8]/25"
+                className="ml-1 inline-flex h-6 shrink-0 items-center gap-1 rounded-full bg-[#38BDF8]/15 px-1.5 text-[10px] font-bold text-[#7DD3FC] transition hover:bg-[#38BDF8]/25 sm:ml-1.5 sm:h-7 sm:px-2.5 sm:text-[11px]"
               >
                 {copiedUrl ? (
                   <>
@@ -1242,27 +1259,27 @@ export function DashboardClient({
                 target="_blank"
                 title="Abrir página pública em nova aba"
                 aria-label="Abrir página pública"
-                className="ml-1 inline-flex h-7 items-center rounded-full px-2 text-[#9CB3CE] transition hover:bg-white/10 hover:text-white"
+                className="ml-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#9CB3CE] transition hover:bg-white/10 hover:text-white sm:h-7 sm:w-7"
               >
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                <ExternalLink className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
               </Link>
             </div>
 
-            {/* Sign Out Button */}
+            {/* Sign Out Button - shrink-0 guarantees it always stays visible on mobile */}
             <button
               type="button"
               disabled={signingOut}
               onClick={handleSignOut}
               aria-label="Sair da conta"
               title="Sair da conta"
-              className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/10 px-3 text-xs font-semibold text-[#9CB3CE] transition hover:border-white/25 hover:text-white disabled:opacity-60"
+              className="inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-full border border-white/10 px-2 text-[11px] font-semibold text-[#9CB3CE] transition hover:border-white/25 hover:text-white disabled:opacity-60 sm:h-9 sm:gap-1.5 sm:px-3 sm:text-xs"
             >
               {signingOut ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                <Loader2 className="h-3 w-3 animate-spin sm:h-3.5 sm:w-3.5" aria-hidden="true" />
               ) : (
-                <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+                <LogOut className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
               )}
-              <span className="hidden md:inline">{signingOut ? "Saindo..." : "Sair"}</span>
+              <span className="hidden sm:inline">{signingOut ? "Saindo..." : "Sair"}</span>
             </button>
           </div>
         </div>
@@ -1686,59 +1703,42 @@ export function DashboardClient({
                                       : item.title}
                                   </h2>
 
-                                  <span
-                                    className={`rounded-md px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
-                                      item.kind === "coupon"
-                                        ? "border border-[#38BDF8]/30 bg-[#38BDF8]/15 text-[#7DD3FC]"
-                                        : item.kind === "divider"
-                                          ? "border border-white/15 bg-white/10 text-[#CBD5E1]"
-                                          : "border border-purple-500/30 bg-purple-500/15 text-purple-200"
-                                    }`}
-                                  >
-                                    {item.kind === "coupon"
-                                      ? "Cupom"
-                                      : item.kind === "divider"
-                                        ? "Divisória"
-                                        : "Link"}
-                                  </span>
+                                  {item.kind === "divider" ? (
+                                    <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-[#CBD5E1]">
+                                      Divisória
+                                    </span>
+                                  ) : null}
 
                                   {item.kind !== "divider" && item.isFeatured ? (
-                                    <span
-                                      style={{
-                                        backgroundColor: `${profile.accentColor}26`,
-                                        color: profile.accentColor,
-                                        borderColor: `${profile.accentColor}50`,
-                                      }}
-                                      className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-bold"
-                                    >
-                                      <Sparkles className="h-3 w-3" aria-hidden="true" />
+                                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+                                      <Sparkles className="h-2.5 w-2.5" aria-hidden="true" />
                                       <span>Destaque</span>
                                     </span>
                                   ) : null}
 
-                                  {!item.isActive ? (
-                                    <span className="rounded-md border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-200">
-                                      Oculto
+                                  {item.tag ? (
+                                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-[#9CB3CE]">
+                                      {item.tag}
                                     </span>
                                   ) : null}
 
-                                  {item.tag ? (
-                                    <span className="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-[#9CB3CE]">
-                                      {item.tag}
+                                  {!item.isActive ? (
+                                    <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-200">
+                                      Oculto
                                     </span>
                                   ) : null}
                                 </div>
 
                                 {item.kind === "coupon" && (
-                                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                  <div className="mt-1 flex flex-wrap items-center gap-2">
                                     {item.couponCode ? (
-                                      <span className="inline-flex items-center gap-1 rounded-lg border border-[#38BDF8]/40 bg-[#38BDF8]/12 px-2.5 py-0.5 font-mono text-xs font-black text-[#38BDF8]">
-                                        <Tag className="h-3 w-3" aria-hidden="true" />
-                                        {item.couponCode}
+                                      <span className="inline-flex items-center gap-1 rounded border border-[#38BDF8]/25 bg-[#38BDF8]/5 px-2 py-0.5 font-mono text-[11px] font-medium text-[#7DD3FC]">
+                                        <Tag className="h-2.5 w-2.5 text-[#38BDF8]" aria-hidden="true" />
+                                        <span>{item.couponCode}</span>
                                       </span>
                                     ) : null}
                                     {item.url ? (
-                                      <span className="max-w-[200px] truncate text-xs text-[#9CB3CE] sm:max-w-sm">
+                                      <span className="max-w-[200px] truncate text-xs text-[#7D97B8] sm:max-w-sm">
                                         {item.url}
                                       </span>
                                     ) : null}
@@ -1746,7 +1746,7 @@ export function DashboardClient({
                                 )}
 
                                 {item.kind === "link" && item.url ? (
-                                  <p className="mt-1 max-w-[240px] truncate text-xs text-[#9CB3CE] sm:max-w-md">
+                                  <p className="mt-0.5 max-w-[240px] truncate text-xs text-[#7D97B8] sm:max-w-md">
                                     {item.url}
                                   </p>
                                 ) : null}
@@ -2468,54 +2468,131 @@ export function DashboardClient({
                   <span>Atualizar</span>
                 </button>
               </div>
-              {/* Metrics Summary */}
+              {/* Metrics Summary - Linha 1: Métricas Gerais */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-4">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-[#9CB3CE]">
                     <Eye className="h-3.5 w-3.5 text-[#38BDF8]" aria-hidden="true" />
-                    <span>Visitas</span>
+                    <span>Visitas Totais</span>
                   </div>
                   <p className="mt-1.5 text-2xl font-extrabold">{profile.viewsCount}</p>
+                  <p className="mt-0.5 text-[11px] text-[#7D97B8]">Acessos à sua bio</p>
                 </div>
 
                 <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-4">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-[#9CB3CE]">
-                    <Copy className="h-3.5 w-3.5 text-[#34D399]" aria-hidden="true" />
-                    <span>Cópias</span>
+                  <div className="flex items-center justify-between gap-1 text-xs font-semibold text-[#9CB3CE]">
+                    <span className="flex items-center gap-1.5">
+                      <Copy className="h-3.5 w-3.5 text-[#34D399]" aria-hidden="true" />
+                      <span>Cópias</span>
+                    </span>
+                    {profile.viewsCount > 0 ? (
+                      <span className="rounded-full bg-[#34D399]/15 px-1.5 py-0.5 text-[10px] font-bold text-[#34D399]">
+                        {((totalCopies / profile.viewsCount) * 100).toFixed(1)}% CTR
+                      </span>
+                    ) : null}
                   </div>
-                  <p className="mt-1.5 text-2xl font-extrabold">{totalCopies}</p>
+                  <p className="mt-1.5 text-2xl font-extrabold text-[#34D399]">{totalCopies}</p>
+                  <p className="mt-0.5 text-[11px] text-[#7D97B8]">Cópias de cupom</p>
                 </div>
 
                 <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-4">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-[#9CB3CE]">
-                    <MousePointerClick className="h-3.5 w-3.5 text-[#A78BFA]" aria-hidden="true" />
-                    <span>Cliques</span>
+                  <div className="flex items-center justify-between gap-1 text-xs font-semibold text-[#9CB3CE]">
+                    <span className="flex items-center gap-1.5">
+                      <MousePointerClick className="h-3.5 w-3.5 text-[#A78BFA]" aria-hidden="true" />
+                      <span>Cliques</span>
+                    </span>
+                    {profile.viewsCount > 0 ? (
+                      <span className="rounded-full bg-[#A78BFA]/15 px-1.5 py-0.5 text-[10px] font-bold text-[#C4B5FD]">
+                        {((totalClicks / profile.viewsCount) * 100).toFixed(1)}% CTR
+                      </span>
+                    ) : null}
                   </div>
-                  <p className="mt-1.5 text-2xl font-extrabold">{totalClicks}</p>
+                  <p className="mt-1.5 text-2xl font-extrabold text-[#7DD3FC]">{totalClicks}</p>
+                  <p className="mt-0.5 text-[11px] text-[#7D97B8]">Cliques em links</p>
                 </div>
 
                 <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-4">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-[#9CB3CE]">
-                    <BarChart3 className="h-3.5 w-3.5 text-[#FB923C]" aria-hidden="true" />
+                    <Activity className="h-3.5 w-3.5 text-[#FB923C]" aria-hidden="true" />
                     <span>Engajamento</span>
                   </div>
-                  <p className="mt-1.5 text-2xl font-extrabold">
+                  <p className="mt-1.5 text-2xl font-extrabold text-[#FB923C]">
                     {profile.viewsCount > 0
                       ? `${Math.round(((totalCopies + totalClicks) / profile.viewsCount) * 100)}%`
                       : "0%"}
                   </p>
+                  <p className="mt-0.5 text-[11px] text-[#7D97B8]">Conversão da página</p>
                 </div>
               </div>
 
-              {/* Daily Analytics Chart (7 / 30 days) */}
+              {/* Metrics Summary - Linha 2: Inteligência e Desempenho Adicional */}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-4">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-[#9CB3CE]">
+                    <TrendingUp className="h-3.5 w-3.5 text-[#38BDF8]" aria-hidden="true" />
+                    <span>Média Diária</span>
+                  </div>
+                  <p className="mt-1.5 text-xl font-extrabold text-white">
+                    {analyticsPoints.length > 0
+                      ? (analyticsPoints.reduce((a, b) => a + b.views, 0) / analyticsPoints.length).toFixed(1)
+                      : "0.0"}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-[#7D97B8]">
+                    Acessos/dia nos últimos {analyticsDays}d
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-4">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-[#9CB3CE]">
+                    <BarChart3 className="h-3.5 w-3.5 text-[#34D399]" aria-hidden="true" />
+                    <span>Ações no Período</span>
+                  </div>
+                  <p className="mt-1.5 text-xl font-extrabold text-[#34D399]">
+                    {analyticsPoints.reduce((a, b) => a + b.views + b.copies + b.clicks, 0)}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-[#7D97B8]">
+                    Visitas + cliques + cópias
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-4">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-[#9CB3CE]">
+                    <Tag className="h-3.5 w-3.5 text-amber-300" aria-hidden="true" />
+                    <span>Top Cupom</span>
+                  </div>
+                  <p className="mt-1.5 truncate text-sm font-extrabold text-amber-200" title={topCoupon?.title || "Nenhum ainda"}>
+                    {topCoupon ? topCoupon.title : "Nenhum ainda"}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-[#7D97B8]">
+                    {topCoupon ? `${topCoupon.copiesCount} cópias` : "Sem dados de cópia"}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-4">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-[#9CB3CE]">
+                    <Award className="h-3.5 w-3.5 text-[#A78BFA]" aria-hidden="true" />
+                    <span>Top Link</span>
+                  </div>
+                  <p className="mt-1.5 truncate text-sm font-extrabold text-[#C4B5FD]" title={topLink?.title || "Nenhum ainda"}>
+                    {topLink ? topLink.title : "Nenhum ainda"}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-[#7D97B8]">
+                    {topLink ? `${topLink.clicksCount} cliques` : "Sem dados de clique"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Combo Chart: Colunas para Acessos + Linha para Cliques */}
               <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-base font-extrabold">Evolução diária</h2>
+                    <h2 className="text-base font-extrabold">Evolução do período</h2>
                     <p className="text-xs text-[#9CB3CE]">
-                      Visitas, cópias de cupom e cliques por dia
+                      Colunas para acessos (visitas) e gráfico de linha para cliques nos links
                     </p>
                   </div>
+
+                  {/* Interval Selector: 7 dias (Free), 14 dias (Pro), 30 dias (Pro) */}
                   <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-[#09101B] p-1">
                     <button
                       type="button"
@@ -2535,6 +2612,21 @@ export function DashboardClient({
                       type="button"
                       onClick={() => {
                         setAnalyticsLoading(true);
+                        setAnalyticsDays(14);
+                      }}
+                      className={`inline-flex min-h-8 items-center gap-1 rounded-lg px-3 text-xs font-bold transition ${
+                        analyticsDays === 14
+                          ? "bg-[#1E60CF] text-white"
+                          : "text-[#9CB3CE] hover:text-white"
+                      }`}
+                    >
+                      {!userIsPro ? <Lock className="h-3 w-3 text-amber-300" aria-hidden="true" /> : null}
+                      <span>14 dias</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAnalyticsLoading(true);
                         setAnalyticsDays(30);
                       }}
                       className={`inline-flex min-h-8 items-center gap-1 rounded-lg px-3 text-xs font-bold transition ${
@@ -2543,7 +2635,7 @@ export function DashboardClient({
                           : "text-[#9CB3CE] hover:text-white"
                       }`}
                     >
-                      {!userIsPro ? <Lock className="h-3 w-3" aria-hidden="true" /> : null}
+                      {!userIsPro ? <Lock className="h-3 w-3 text-amber-300" aria-hidden="true" /> : null}
                       <span>30 dias</span>
                     </button>
                   </div>
@@ -2569,45 +2661,164 @@ export function DashboardClient({
                     </button>
                   </div>
                 ) : analyticsLoading && analyticsPoints.length === 0 ? (
-                  <p className="py-6 text-center text-xs text-[#9CB3CE]">
-                    Carregando gráfico...
+                  <p className="py-8 text-center text-xs text-[#9CB3CE]">
+                    Carregando métricas e gráfico...
                   </p>
                 ) : analyticsPoints.length === 0 ? (
-                  <p className="py-6 text-center text-xs text-[#9CB3CE]">
+                  <p className="py-8 text-center text-xs text-[#9CB3CE]">
                     Ainda não há eventos registrados neste período.
                   </p>
                 ) : (
                   (() => {
-                    const maxDaily = Math.max(
+                    const maxVal = Math.max(
                       1,
-                      ...analyticsPoints.map((pt) => pt.views + pt.copies + pt.clicks)
+                      ...analyticsPoints.map((pt) => Math.max(pt.views, pt.clicks))
                     );
+                    const niceMax =
+                      maxVal <= 5 ? 5 : maxVal <= 10 ? 10 : Math.ceil(maxVal * 1.15);
+                    const n = analyticsPoints.length;
+
+                    // SVG Line calculation for clicks
+                    const xForIndex = (i: number) => ((i + 0.5) / n) * 1000;
+                    const yForValue = (val: number) => 145 - (val / niceMax) * 130;
+
+                    const pathD = analyticsPoints
+                      .map((pt, i) => `${i === 0 ? "M" : "L"} ${xForIndex(i).toFixed(1)} ${yForValue(pt.clicks).toFixed(1)}`)
+                      .join(" ");
+
+                    const areaD =
+                      n > 0
+                        ? `${pathD} L ${xForIndex(n - 1).toFixed(1)} 145 L ${xForIndex(0).toFixed(1)} 145 Z`
+                        : "";
+
                     return (
                       <div>
-                        <div className="flex h-36 items-end gap-1.5 overflow-x-auto pt-4">
-                          {analyticsPoints.map((pt) => {
-                            const total = pt.views + pt.copies + pt.clicks;
-                            const pct = Math.max(6, Math.round((total / maxDaily) * 100));
-                            return (
-                              <div
-                                key={pt.date}
-                                className="group flex min-w-[20px] flex-1 flex-col items-center gap-1.5"
-                                title={`${pt.date}: ${pt.views} visitas, ${pt.copies} cópias, ${pt.clicks} cliques`}
-                              >
-                                <div className="flex h-28 w-full items-end justify-center">
+                        {/* Chart Legend */}
+                        <div className="mb-3 flex flex-wrap items-center gap-4 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="h-3 w-3 rounded-sm bg-gradient-to-t from-[#1E60CF] to-[#38BDF8]" />
+                            <span className="font-semibold text-white">Colunas: Acessos (Visitas)</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="h-0.5 w-4 bg-[#34D399]" />
+                            <span className="font-semibold text-[#34D399]">Linha: Cliques em Links</span>
+                          </div>
+                          <div className="ml-auto text-[11px] text-[#7D97B8]">
+                            Passe o cursor sobre os dias para detalhes
+                          </div>
+                        </div>
+
+                        {/* Chart Canvas Area */}
+                        <div className="relative h-48 sm:h-56 w-full pt-4">
+                          {/* Y-Axis Horizontal Grid Lines */}
+                          <div className="pointer-events-none absolute inset-x-0 top-4 bottom-7 flex flex-col justify-between border-b border-white/10 text-[10px] text-[#7D97B8]">
+                            <div className="flex items-center justify-between border-b border-dashed border-white/5 pb-1">
+                              <span>{niceMax}</span>
+                              <span className="border-t border-dashed border-white/10 w-full ml-2 opacity-30" />
+                            </div>
+                            <div className="flex items-center justify-between border-b border-dashed border-white/5 pb-1">
+                              <span>{Math.round(niceMax / 2)}</span>
+                              <span className="border-t border-dashed border-white/10 w-full ml-2 opacity-30" />
+                            </div>
+                            <div className="flex items-center justify-between pb-1">
+                              <span>0</span>
+                              <span className="border-t border-dashed border-white/10 w-full ml-2 opacity-30" />
+                            </div>
+                          </div>
+
+                          {/* SVG Line Overlay for Cliques */}
+                          <svg
+                            viewBox="0 0 1000 160"
+                            preserveAspectRatio="none"
+                            className="pointer-events-none absolute inset-x-0 top-4 h-[145px] w-full overflow-visible z-20"
+                          >
+                            <defs>
+                              <linearGradient id="clicksGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#34D399" stopOpacity="0.25" />
+                                <stop offset="100%" stopColor="#34D399" stopOpacity="0.0" />
+                              </linearGradient>
+                            </defs>
+                            {areaD ? <path d={areaD} fill="url(#clicksGradient)" /> : null}
+                            {pathD ? (
+                              <path
+                                d={pathD}
+                                fill="none"
+                                stroke="#34D399"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            ) : null}
+                            {analyticsPoints.map((pt, i) => {
+                              const cx = xForIndex(i);
+                              const cy = yForValue(pt.clicks);
+                              return (
+                                <g key={pt.date}>
+                                  <circle cx={cx} cy={cy} r="4" fill="#0E1624" stroke="#34D399" strokeWidth="2" />
+                                  <circle cx={cx} cy={cy} r="2" fill="#34D399" />
+                                </g>
+                              );
+                            })}
+                          </svg>
+
+                          {/* Columns for Visitas */}
+                          <div className="relative z-10 flex h-[145px] w-full items-end justify-between gap-1 sm:gap-2 px-1">
+                            {analyticsPoints.map((pt) => {
+                              const pct = Math.max(3, Math.round((pt.views / niceMax) * 100));
+                              const dateParts = pt.date.split("-");
+                              const shortDate = `${dateParts[2]}/${dateParts[1]}`;
+                              return (
+                                <div
+                                  key={pt.date}
+                                  className="group relative flex h-full flex-1 flex-col items-center justify-end"
+                                >
+                                  {/* Floating Hover Tooltip */}
+                                  <div className="pointer-events-none absolute -top-16 z-40 hidden -translate-x-1/2 rounded-xl border border-white/20 bg-[#070C14] px-2.5 py-1.5 text-center text-[10px] shadow-2xl group-hover:block whitespace-nowrap left-1/2">
+                                    <p className="font-extrabold text-white">{shortDate}</p>
+                                    <p className="font-bold text-[#38BDF8]">{pt.views} visitas</p>
+                                    <p className="font-bold text-[#34D399]">{pt.clicks} cliques</p>
+                                    {pt.copies > 0 ? (
+                                      <p className="font-bold text-amber-300">{pt.copies} cópias</p>
+                                    ) : null}
+                                  </div>
+
+                                  {/* Bar */}
                                   <div
-                                    className="w-full max-w-[22px] rounded-t-md bg-gradient-to-t from-[#1E60CF] to-[#38BDF8] transition-all group-hover:brightness-125"
-                                    style={{ height: `${total === 0 ? 4 : pct}%` }}
+                                    className="w-full max-w-[20px] sm:max-w-[28px] rounded-t-sm sm:rounded-t-md bg-gradient-to-t from-[#1E60CF] via-[#256EE8] to-[#38BDF8] opacity-85 transition-all group-hover:opacity-100 group-hover:brightness-125"
+                                    style={{ height: `${pt.views === 0 ? 3 : pct}%` }}
                                   />
                                 </div>
-                                <span className="text-[10px] text-[#9CB3CE]">
-                                  {pt.date.slice(5)}
+                              );
+                            })}
+                          </div>
+
+                          {/* X-Axis Date Labels */}
+                          <div className="flex justify-between w-full pt-2 text-[10px] text-[#9CB3CE]">
+                            {analyticsPoints.map((pt, idx) => {
+                              const dateParts = pt.date.split("-");
+                              const shortDate = `${dateParts[2]}/${dateParts[1]}`;
+                              const showOnMobile =
+                                analyticsDays === 7 ||
+                                (analyticsDays === 14 && idx % 2 === 0) ||
+                                (analyticsDays === 30 && idx % 4 === 0) ||
+                                idx === analyticsPoints.length - 1;
+
+                              return (
+                                <span
+                                  key={pt.date}
+                                  className={`flex-1 text-center font-mono ${
+                                    showOnMobile ? "inline" : "hidden sm:inline"
+                                  }`}
+                                >
+                                  {shortDate}
                                 </span>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
-                        <div className="mt-3 flex flex-wrap gap-4 border-t border-white/10 pt-3 text-xs text-[#9CB3CE]">
+
+                        {/* Period Summary Footer */}
+                        <div className="mt-4 flex flex-wrap gap-4 border-t border-white/10 pt-3 text-xs text-[#9CB3CE]">
                           <span>
                             Visitas no período:{" "}
                             <strong className="text-white">
@@ -2615,15 +2826,21 @@ export function DashboardClient({
                             </strong>
                           </span>
                           <span>
-                            Cópias no período:{" "}
+                            Cliques no período:{" "}
                             <strong className="text-[#34D399]">
+                              {analyticsPoints.reduce((a, b) => a + b.clicks, 0)}
+                            </strong>
+                          </span>
+                          <span>
+                            Cópias no período:{" "}
+                            <strong className="text-amber-300">
                               {analyticsPoints.reduce((a, b) => a + b.copies, 0)}
                             </strong>
                           </span>
                           <span>
-                            Cliques no período:{" "}
+                            Média diária:{" "}
                             <strong className="text-[#7DD3FC]">
-                              {analyticsPoints.reduce((a, b) => a + b.clicks, 0)}
+                              {(analyticsPoints.reduce((a, b) => a + b.views, 0) / analyticsPoints.length).toFixed(1)} acessos/dia
                             </strong>
                           </span>
                         </div>
@@ -2675,8 +2892,307 @@ export function DashboardClient({
           {/* TAB 4: PERFIL & PLANO */}
           {activeTab === "profile" || activeTab === "plan" ? (
             <section aria-label="Perfil e plano de assinatura" className="flex flex-col gap-6">
+              {/* Profile Form */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  saveProfilePatch();
+                }}
+                className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-5"
+              >
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-[#38BDF8]" aria-hidden="true" />
+                    <h2 className="text-base font-extrabold">Dados do seu perfil</h2>
+                  </div>
+                  {userEmail ? (
+                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-[#9CB3CE]">
+                      {userEmail}
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="prof-name" className="mb-1 block text-sm font-semibold">
+                      Nome de exibição
+                    </label>
+                    <input
+                      id="prof-name"
+                      type="text"
+                      required
+                      value={profile.displayName}
+                      onChange={(e) =>
+                        setProfile((p) => ({ ...p, displayName: e.target.value }))
+                      }
+                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="prof-slug" className="mb-1 block text-sm font-semibold">
+                      Endereço público (slug)
+                    </label>
+                    <input
+                      id="prof-slug"
+                      type="text"
+                      required
+                      minLength={3}
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      value={profile.slug}
+                      onChange={(e) =>
+                        setProfile((p) => ({ ...p, slug: sanitizeSlug(e.target.value) }))
+                      }
+                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 font-mono text-white"
+                    />
+                    {slugCheck && slugCheck.slug === sanitizeSlug(profile.slug) ? (
+                      <p
+                        className={`mt-1 text-xs font-semibold ${
+                          slugCheck.available ? "text-emerald-300" : "text-red-300"
+                        }`}
+                      >
+                        {slugCheck.available
+                          ? `/${slugCheck.slug} disponível para uso`
+                          : slugCheck.reason || "Este endereço não está disponível."}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <span className="mb-1.5 block text-sm font-semibold">
+                      Foto de perfil
+                    </span>
+                    <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-white/12 bg-[#09101B] p-3.5">
+                      <div className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-[#38BDF8] bg-gradient-to-br from-[#1E60CF] to-[#38BDF8]">
+                        {isSafeMediaSrc(profile.avatarUrl) ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={profile.avatarUrl}
+                            alt={`Foto atual de ${profile.displayName}`}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-lg font-extrabold text-white">
+                            {computeInitials(profile.displayName)}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <label
+                          htmlFor="prof-avatar-upload"
+                          className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl bg-[#1E60CF] px-4 text-sm font-bold text-white transition hover:bg-[#256EE8] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#38BDF8]"
+                        >
+                          <Upload className="h-4 w-4" aria-hidden="true" />
+                          <span>Carregar foto</span>
+                          <input
+                            id="prof-avatar-upload"
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp,image/gif"
+                            onChange={handleAvatarFileChange}
+                            className="visually-hidden"
+                          />
+                        </label>
+
+                        {profile.avatarUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => saveProfilePatch({ avatarUrl: "" })}
+                            className="inline-flex min-h-[44px] items-center rounded-xl border border-white/15 px-3.5 text-sm font-semibold text-[#9CB3CE] hover:text-white"
+                          >
+                            Remover foto
+                          </button>
+                        ) : null}
+
+                        <p className="w-full text-xs text-[#9CB3CE]">
+                          Envie uma imagem do seu aparelho (PNG, JPG ou WebP). Sem foto, usamos suas iniciais automaticamente ({computeInitials(profile.displayName)}).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label htmlFor="prof-bio" className="mb-1 block text-sm font-semibold">
+                      Bio curta
+                    </label>
+                    <textarea
+                      id="prof-bio"
+                      rows={2}
+                      value={profile.bio}
+                      onChange={(e) => setProfile((p) => ({ ...p, bio: e.target.value }))}
+                      className="mc-input w-full rounded-xl border border-white/15 bg-[#09101B] p-3 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="prof-ig" className="mb-1 block text-sm font-semibold">
+                      @ do Instagram
+                    </label>
+                    <input
+                      id="prof-ig"
+                      type="text"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      value={profile.instagramHandle}
+                      onChange={(e) =>
+                        setProfile((p) => ({ ...p, instagramHandle: e.target.value }))
+                      }
+                      placeholder="@seuperfil"
+                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="prof-ig-url" className="mb-1 block text-sm font-semibold">
+                      Link do Instagram
+                    </label>
+                    <input
+                      id="prof-ig-url"
+                      type="url"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      value={profile.instagramUrl}
+                      onChange={(e) =>
+                        setProfile((p) => ({ ...p, instagramUrl: e.target.value }))
+                      }
+                      placeholder="https://instagram.com/seuperfil"
+                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="prof-tt" className="mb-1 block text-sm font-semibold">
+                      @ do TikTok
+                    </label>
+                    <input
+                      id="prof-tt"
+                      type="text"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      value={profile.tiktokHandle}
+                      onChange={(e) =>
+                        setProfile((p) => ({ ...p, tiktokHandle: e.target.value }))
+                      }
+                      placeholder="@seutiktok"
+                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="prof-tt-url" className="mb-1 block text-sm font-semibold">
+                      Link do TikTok
+                    </label>
+                    <input
+                      id="prof-tt-url"
+                      type="url"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      value={profile.tiktokUrl}
+                      onChange={(e) =>
+                        setProfile((p) => ({ ...p, tiktokUrl: e.target.value }))
+                      }
+                      placeholder="https://tiktok.com/@seutiktok"
+                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="prof-sec" className="mb-1 block text-sm font-semibold">
+                      Título da lista
+                    </label>
+                    <input
+                      id="prof-sec"
+                      type="text"
+                      value={profile.sectionTitle}
+                      onChange={(e) =>
+                        setProfile((p) => ({ ...p, sectionTitle: e.target.value }))
+                      }
+                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="prof-tip" className="mb-1 block text-sm font-semibold">
+                      Dica rápida
+                    </label>
+                    <input
+                      id="prof-tip"
+                      type="text"
+                      value={profile.helperTip}
+                      onChange={(e) =>
+                        setProfile((p) => ({ ...p, helperTip: e.target.value }))
+                      }
+                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label htmlFor="prof-footer" className="mb-1 block text-sm font-semibold">
+                      Texto do rodapé
+                    </label>
+                    <input
+                      id="prof-footer"
+                      type="text"
+                      value={profile.footerText}
+                      onChange={(e) =>
+                        setProfile((p) => ({ ...p, footerText: e.target.value }))
+                      }
+                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <label
+                        className={`flex items-center gap-3 text-sm font-semibold ${
+                          userIsPro ? "cursor-pointer" : "cursor-not-allowed opacity-75"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          disabled={!userIsPro}
+                          checked={userIsPro ? profile.showBranding : true}
+                          onChange={(e) =>
+                            setProfile((p) => ({ ...p, showBranding: e.target.checked }))
+                          }
+                          className="h-4 w-4 accent-[#38BDF8]"
+                        />
+                        <span>Exibir selo &quot;Feito com meucupom&quot; no rodapé</span>
+                      </label>
+                      {!userIsPro ? (
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("plan")}
+                          className="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-2.5 py-1 text-[11px] font-bold text-amber-200 hover:bg-amber-400/25"
+                        >
+                          <Lock className="h-3 w-3" aria-hidden="true" />
+                          <span>Remover no Pro</span>
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={savingProfile}
+                    className="inline-flex min-h-[46px] items-center gap-2 rounded-xl bg-[#1E60CF] px-5 text-sm font-bold text-white shadow-lg hover:bg-[#256EE8] disabled:opacity-60"
+                  >
+                    {savingProfile ? (
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Save className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    <span>Salvar perfil</span>
+                  </button>
+                </div>
+              </form>
+
               {/* Plan & Subscription Card */}
-              <div className="rounded-2xl border border-[#94C5FF]/16 bg-[#0E1624] p-5 sm:p-6">
+              <div id="plan-section" className="rounded-2xl border border-[#94C5FF]/16 bg-[#0E1624] p-5 sm:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
@@ -2814,305 +3330,6 @@ export function DashboardClient({
                   );
                 })}
               </div>
-
-              {/* Profile Form */}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  saveProfilePatch();
-                }}
-                className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-5"
-              >
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-[#38BDF8]" aria-hidden="true" />
-                    <h2 className="text-base font-extrabold">Dados do seu perfil</h2>
-                  </div>
-                  {userEmail ? (
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-[#9CB3CE]">
-                      {userEmail}
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="prof-name" className="mb-1 block text-sm font-semibold">
-                      Nome de exibição
-                    </label>
-                    <input
-                      id="prof-name"
-                      type="text"
-                      required
-                      value={profile.displayName}
-                      onChange={(e) =>
-                        setProfile((p) => ({ ...p, displayName: e.target.value }))
-                      }
-                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="prof-slug" className="mb-1 block text-sm font-semibold">
-                      Endereço público (slug)
-                    </label>
-                    <input
-                      id="prof-slug"
-                      type="text"
-                      required
-                      minLength={3}
-                      autoCorrect="off"
-                      autoCapitalize="none"
-                      spellCheck={false}
-                      value={profile.slug}
-                      onChange={(e) =>
-                        setProfile((p) => ({ ...p, slug: sanitizeSlug(e.target.value) }))
-                      }
-                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 font-mono text-white"
-                    />
-                    {slugCheck && slugCheck.slug === sanitizeSlug(profile.slug) ? (
-                      <p
-                        className={`mt-1 text-xs font-semibold ${
-                          slugCheck.available ? "text-emerald-300" : "text-red-300"
-                        }`}
-                      >
-                        {slugCheck.available
-                          ? `/${slugCheck.slug} disponível para uso`
-                          : slugCheck.reason || "Este endereço não está disponível."}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <div>
-                    <label htmlFor="prof-ig" className="mb-1 block text-sm font-semibold">
-                      @ do Instagram
-                    </label>
-                    <input
-                      id="prof-ig"
-                      type="text"
-                      autoCorrect="off"
-                      autoCapitalize="none"
-                      value={profile.instagramHandle}
-                      onChange={(e) =>
-                        setProfile((p) => ({ ...p, instagramHandle: e.target.value }))
-                      }
-                      placeholder="@seuperfil"
-                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="prof-ig-url" className="mb-1 block text-sm font-semibold">
-                      Link do Instagram
-                    </label>
-                    <input
-                      id="prof-ig-url"
-                      type="url"
-                      autoCorrect="off"
-                      autoCapitalize="none"
-                      value={profile.instagramUrl}
-                      onChange={(e) =>
-                        setProfile((p) => ({ ...p, instagramUrl: e.target.value }))
-                      }
-                      placeholder="https://instagram.com/seuperfil"
-                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="prof-tt" className="mb-1 block text-sm font-semibold">
-                      @ do TikTok
-                    </label>
-                    <input
-                      id="prof-tt"
-                      type="text"
-                      autoCorrect="off"
-                      autoCapitalize="none"
-                      value={profile.tiktokHandle}
-                      onChange={(e) =>
-                        setProfile((p) => ({ ...p, tiktokHandle: e.target.value }))
-                      }
-                      placeholder="@seutiktok"
-                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="prof-tt-url" className="mb-1 block text-sm font-semibold">
-                      Link do TikTok
-                    </label>
-                    <input
-                      id="prof-tt-url"
-                      type="url"
-                      autoCorrect="off"
-                      autoCapitalize="none"
-                      value={profile.tiktokUrl}
-                      onChange={(e) =>
-                        setProfile((p) => ({ ...p, tiktokUrl: e.target.value }))
-                      }
-                      placeholder="https://tiktok.com/@seutiktok"
-                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <span className="mb-1.5 block text-sm font-semibold">
-                      Foto de perfil
-                    </span>
-                    <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-white/12 bg-[#09101B] p-3.5">
-                      <div className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-[#38BDF8] bg-gradient-to-br from-[#1E60CF] to-[#38BDF8]">
-                        {isSafeMediaSrc(profile.avatarUrl) ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={profile.avatarUrl}
-                            alt={`Foto atual de ${profile.displayName}`}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-lg font-extrabold text-white">
-                            {computeInitials(profile.displayName)}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2.5">
-                        <label
-                          htmlFor="prof-avatar-upload"
-                          className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl bg-[#1E60CF] px-4 text-sm font-bold text-white transition hover:bg-[#256EE8] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#38BDF8]"
-                        >
-                          <Upload className="h-4 w-4" aria-hidden="true" />
-                          <span>Carregar foto</span>
-                          <input
-                            id="prof-avatar-upload"
-                            type="file"
-                            accept="image/png,image/jpeg,image/webp,image/gif"
-                            onChange={handleAvatarFileChange}
-                            className="visually-hidden"
-                          />
-                        </label>
-
-                        {profile.avatarUrl ? (
-                          <button
-                            type="button"
-                            onClick={() => saveProfilePatch({ avatarUrl: "" })}
-                            className="inline-flex min-h-[44px] items-center rounded-xl border border-white/15 px-3.5 text-sm font-semibold text-[#9CB3CE] hover:text-white"
-                          >
-                            Remover foto
-                          </button>
-                        ) : null}
-
-                        <p className="w-full text-xs text-[#9CB3CE]">
-                          Envie uma imagem do seu aparelho (PNG, JPG ou WebP). Sem foto, usamos suas iniciais automaticamente ({computeInitials(profile.displayName)}).
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label htmlFor="prof-bio" className="mb-1 block text-sm font-semibold">
-                      Bio curta
-                    </label>
-                    <textarea
-                      id="prof-bio"
-                      rows={2}
-                      value={profile.bio}
-                      onChange={(e) => setProfile((p) => ({ ...p, bio: e.target.value }))}
-                      className="mc-input w-full rounded-xl border border-white/15 bg-[#09101B] p-3 text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="prof-sec" className="mb-1 block text-sm font-semibold">
-                      Título da lista
-                    </label>
-                    <input
-                      id="prof-sec"
-                      type="text"
-                      value={profile.sectionTitle}
-                      onChange={(e) =>
-                        setProfile((p) => ({ ...p, sectionTitle: e.target.value }))
-                      }
-                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="prof-tip" className="mb-1 block text-sm font-semibold">
-                      Dica rápida
-                    </label>
-                    <input
-                      id="prof-tip"
-                      type="text"
-                      value={profile.helperTip}
-                      onChange={(e) =>
-                        setProfile((p) => ({ ...p, helperTip: e.target.value }))
-                      }
-                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label htmlFor="prof-footer" className="mb-1 block text-sm font-semibold">
-                      Texto do rodapé
-                    </label>
-                    <input
-                      id="prof-footer"
-                      type="text"
-                      value={profile.footerText}
-                      onChange={(e) =>
-                        setProfile((p) => ({ ...p, footerText: e.target.value }))
-                      }
-                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <label
-                        className={`flex items-center gap-3 text-sm font-semibold ${
-                          userIsPro ? "cursor-pointer" : "cursor-not-allowed opacity-75"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          disabled={!userIsPro}
-                          checked={userIsPro ? profile.showBranding : true}
-                          onChange={(e) =>
-                            setProfile((p) => ({ ...p, showBranding: e.target.checked }))
-                          }
-                          className="h-4 w-4 accent-[#38BDF8]"
-                        />
-                        <span>Exibir selo &quot;Feito com meucupom&quot; no rodapé</span>
-                      </label>
-                      {!userIsPro ? (
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab("plan")}
-                          className="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-2.5 py-1 text-[11px] font-bold text-amber-200 hover:bg-amber-400/25"
-                        >
-                          <Lock className="h-3 w-3" aria-hidden="true" />
-                          <span>Remover no Pro</span>
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={savingProfile}
-                    className="inline-flex min-h-[46px] items-center gap-2 rounded-xl bg-[#1E60CF] px-5 text-sm font-bold text-white shadow-lg hover:bg-[#256EE8] disabled:opacity-60"
-                  >
-                    {savingProfile ? (
-                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                    ) : (
-                      <Save className="h-4 w-4" aria-hidden="true" />
-                    )}
-                    <span>Salvar perfil</span>
-                  </button>
-                </div>
-              </form>
 
               {/* Super Admin Access Card if isAdmin */}
               {isAdmin ? (

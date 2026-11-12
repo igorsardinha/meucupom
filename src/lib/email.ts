@@ -1,7 +1,15 @@
 import { Resend } from "resend";
 
+function getResendApiKey(): string {
+  return (
+    process.env.RESEND_API_KEY?.trim() ||
+    process.env.RESEND_API_KEY_RESEND_API_KEY?.trim() ||
+    ""
+  );
+}
+
 export function isEmailEnabled(): boolean {
-  return Boolean(process.env.RESEND_API_KEY?.trim());
+  return Boolean(getResendApiKey());
 }
 
 export async function sendTransactionalEmail(input: {
@@ -10,8 +18,11 @@ export async function sendTransactionalEmail(input: {
   html: string;
   text: string;
 }): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.EMAIL_FROM?.trim() || "meucupom <noreply@meucupom.app>";
+  const apiKey = getResendApiKey();
+  const domain = process.env.RESEND_API_KEY_RESEND_EMAIL_DOMAIN?.trim();
+  const from =
+    process.env.EMAIL_FROM?.trim() ||
+    (domain ? `meucupom <noreply@${domain}>` : "meucupom <noreply@meucupom.app>");
 
   if (!apiKey) {
     console.info(
