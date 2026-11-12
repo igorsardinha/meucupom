@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
+  ArrowLeft,
   BarChart3,
   Check,
   CheckCircle2,
@@ -390,7 +391,12 @@ export function DashboardClient({
   isAdmin = false,
 }: DashboardClientProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabKey>("items");
+  const [activeTab, setActiveTabRaw] = useState<TabKey>("items");
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const setActiveTab = (tab: TabKey) => {
+    setActiveTabRaw(tab);
+    setMobilePreviewOpen(false);
+  };
   const [profile, setProfile] = useState<CreatorProfileData>(initialProfile);
   const [items, setItems] = useState<LinkItemData[]>(initialItems);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -418,7 +424,6 @@ export function DashboardClient({
     text: string;
   } | null>(null);
   const [copiedUrl, setCopiedUrl] = useState(false);
-  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const [themeProNotice, setThemeProNotice] = useState<string | null>(null);
 
   const [itemForm, setItemForm] = useState<ItemFormState>(EMPTY_ITEM_FORM);
@@ -1239,22 +1244,14 @@ export function DashboardClient({
               <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
 
-            <button
-              type="button"
-              onClick={() => setMobilePreviewOpen((p) => !p)}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-[#38BDF8]/35 bg-[#38BDF8]/12 px-3.5 text-xs font-bold text-[#7DD3FC] lg:hidden"
-            >
-              <Smartphone className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>{mobilePreviewOpen ? "Editor" : "Preview"}</span>
-            </button>
-
             {isAdmin ? (
               <Link
                 href="/admin"
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/12 px-3.5 text-xs font-bold text-amber-200 hover:bg-amber-400/20"
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/12 px-3 text-xs font-bold text-amber-200 hover:bg-amber-400/20"
+                title="Painel Super Admin"
               >
                 <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>Super Admin</span>
+                <span className="hidden sm:inline">Admin</span>
               </Link>
             ) : null}
 
@@ -1281,7 +1278,7 @@ export function DashboardClient({
         <div
           role="status"
           aria-live="polite"
-          className={`fixed right-4 bottom-4 z-50 flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold shadow-2xl ${
+          className={`fixed right-4 bottom-20 z-50 flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold shadow-2xl lg:bottom-4 ${
             statusBanner.type === "error"
               ? "border-red-400/50 bg-[#2A0F14] text-red-100"
               : "border-emerald-400/50 bg-[#0A241C] text-emerald-100"
@@ -1297,7 +1294,7 @@ export function DashboardClient({
       ) : null}
 
       {/* Main Split Grid */}
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_390px]">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 py-6 pb-28 sm:px-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:pb-12">
         {/* Left: Editor */}
         <div className={mobilePreviewOpen ? "hidden lg:block" : "block"}>
           {/* 3-Step Guided Onboarding */}
@@ -1472,11 +1469,11 @@ export function DashboardClient({
             </section>
           ) : null}
 
-          {/* Navigation Tabs */}
+          {/* Navigation Tabs (Desktop only - Mobile uses the sticky bottom navigation) */}
           <div
             role="tablist"
             aria-label="Seções do painel"
-            className="mb-6 grid grid-cols-2 gap-2 rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-1.5 sm:grid-cols-4"
+            className="mb-6 hidden grid-cols-2 gap-2 rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-1.5 sm:grid-cols-4 lg:grid"
           >
             <button
               type="button"
@@ -1568,30 +1565,30 @@ export function DashboardClient({
                   </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="grid w-full grid-cols-3 gap-2 sm:w-auto sm:flex sm:flex-wrap">
                   <button
                     type="button"
                     onClick={() => openCreateDialog("coupon")}
-                    className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-[#1E60CF] px-4 text-sm font-bold text-white shadow-md hover:bg-[#256EE8]"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-[#1E60CF] px-3 py-2 text-xs font-bold text-white shadow-md hover:bg-[#256EE8] sm:px-4 sm:text-sm"
                   >
-                    <Plus className="h-4 w-4" aria-hidden="true" />
-                    <span>Novo Cupom</span>
+                    <Plus className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span className="truncate">Novo Cupom</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => openCreateDialog("link")}
-                    className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-[#38BDF8]/35 bg-[#38BDF8]/12 px-4 text-sm font-bold text-[#7DD3FC] hover:bg-[#38BDF8]/20"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[#38BDF8]/35 bg-[#38BDF8]/12 px-3 py-2 text-xs font-bold text-[#7DD3FC] hover:bg-[#38BDF8]/20 sm:px-4 sm:text-sm"
                   >
-                    <Link2 className="h-4 w-4" aria-hidden="true" />
-                    <span>Novo Link</span>
+                    <Link2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span className="truncate">Novo Link</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => openCreateDialog("divider")}
-                    className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 text-sm font-bold text-[#E2ECF7] hover:bg-white/10"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-bold text-[#E2ECF7] hover:bg-white/10 sm:px-4 sm:text-sm"
                   >
-                    <Minus className="h-4 w-4" aria-hidden="true" />
-                    <span>Nova Divisória</span>
+                    <Minus className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span className="truncate">Divisória</span>
                   </button>
                 </div>
               </div>
@@ -1842,6 +1839,31 @@ export function DashboardClient({
           {/* TAB 2: APPEARANCE */}
           {activeTab === "appearance" ? (
             <section aria-label="Personalizar aparência e layout" className="flex flex-col gap-6">
+              {/* Top Header & Quick Save */}
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-4 sm:p-5">
+                <div>
+                  <h1 className="text-base font-extrabold tracking-tight sm:text-lg">
+                    Aparência da Página
+                  </h1>
+                  <p className="mt-0.5 text-xs text-[#9CB3CE] sm:text-sm">
+                    Temas prontos, desenhos de fundo, bordas e paleta de cores.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={savingProfile}
+                  onClick={() => saveProfilePatch()}
+                  className="inline-flex min-h-[42px] items-center gap-2 rounded-xl bg-[#1E60CF] px-4 text-xs font-bold text-white shadow-md hover:bg-[#256EE8] disabled:opacity-60 sm:min-h-[46px] sm:text-sm"
+                >
+                  {savingProfile ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Save className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  <span>Salvar aparência</span>
+                </button>
+              </div>
+
               {/* Presets */}
               <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -3047,18 +3069,170 @@ export function DashboardClient({
             mobilePreviewOpen ? "block" : "hidden lg:block"
           } lg:sticky lg:top-20 lg:self-start`}
         >
-          <div className="mb-2 flex items-center justify-between px-1 text-xs font-bold uppercase tracking-wider text-[#9CB3CE]">
+          {/* Mobile Top Bar when in Preview Mode */}
+          <div className="mb-3 flex items-center justify-between rounded-2xl border border-white/12 bg-[#0E1624] p-3 shadow-md lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMobilePreviewOpen(false)}
+              className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-bold text-white hover:bg-white/10"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              <span>Voltar ao editor</span>
+            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyPublicUrl}
+                className="inline-flex min-h-[38px] items-center gap-1 rounded-xl border border-[#38BDF8]/30 bg-[#38BDF8]/15 px-3 text-xs font-bold text-[#7DD3FC]"
+              >
+                {copiedUrl ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                <span>{copiedUrl ? "Copiado" : "Copiar"}</span>
+              </button>
+
+              <Link
+                href={`/${profile.slug}`}
+                target="_blank"
+                className="inline-flex min-h-[38px] items-center gap-1 rounded-xl bg-[#1E60CF] px-3 text-xs font-bold text-white shadow hover:bg-[#256EE8]"
+              >
+                <span>Abrir</span>
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="mb-2 hidden items-center justify-between px-1 text-xs font-bold uppercase tracking-wider text-[#9CB3CE] lg:flex">
             <span>Preview ao vivo</span>
             <span className="font-mono text-[#7DD3FC]">/{profile.slug}</span>
           </div>
 
-          <div className="mx-auto max-w-[390px] rounded-[36px] border-[6px] border-[#1A263A] bg-[#04070D] p-1.5 shadow-[0_24px_64px_rgba(0,0,0,0.6)]">
-            <div className="h-[680px] overflow-y-auto rounded-[28px]">
+          <div className="mx-auto max-w-[390px] rounded-[32px] border-[4px] border-[#1A263A] bg-[#04070D] p-1.5 shadow-[0_24px_64px_rgba(0,0,0,0.6)] sm:rounded-[36px] sm:border-[6px]">
+            <div className="h-[680px] overflow-y-auto rounded-[26px] sm:rounded-[28px]">
               <PublicBioView profile={profile} items={items} previewMode />
             </div>
           </div>
         </aside>
       </div>
+
+      {/* Mobile Sticky Bottom Navigation Bar */}
+      <nav
+        aria-label="Navegação móvel inferior"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-white/12 bg-[#090F1C]/95 backdrop-blur-xl pb-[env(safe-area-inset-bottom,8px)] shadow-[0_-8px_30px_rgba(0,0,0,0.6)] lg:hidden"
+      >
+        <div className="mx-auto flex max-w-md items-center justify-around px-2 py-1.5">
+          {/* Tab 1: Links & Cupons */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("items");
+              setMobilePreviewOpen(false);
+            }}
+            className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1 transition ${
+              !mobilePreviewOpen && activeTab === "items"
+                ? "text-[#38BDF8]"
+                : "text-[#9CB3CE] hover:text-white"
+            }`}
+          >
+            <Tag className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <span className="text-[11px] font-bold">Links</span>
+            {!mobilePreviewOpen && activeTab === "items" ? (
+              <span className="h-1 w-4 rounded-full bg-[#38BDF8]" />
+            ) : (
+              <span className="h-1 w-4" />
+            )}
+          </button>
+
+          {/* Tab 2: Aparência */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("appearance");
+              setMobilePreviewOpen(false);
+            }}
+            className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1 transition ${
+              !mobilePreviewOpen && activeTab === "appearance"
+                ? "text-[#38BDF8]"
+                : "text-[#9CB3CE] hover:text-white"
+            }`}
+          >
+            <Palette className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <span className="text-[11px] font-bold">Aparência</span>
+            {!mobilePreviewOpen && activeTab === "appearance" ? (
+              <span className="h-1 w-4 rounded-full bg-[#38BDF8]" />
+            ) : (
+              <span className="h-1 w-4" />
+            )}
+          </button>
+
+          {/* Tab 3: Preview (Center / Prominent) */}
+          <button
+            type="button"
+            onClick={() => setMobilePreviewOpen((p) => !p)}
+            className="relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition"
+          >
+            <div
+              className={`grid h-8 w-8 place-items-center rounded-xl transition ${
+                mobilePreviewOpen
+                  ? "bg-[#38BDF8] text-[#070C14] shadow-lg shadow-[#38BDF8]/40 ring-2 ring-[#7DD3FC]"
+                  : "border border-[#38BDF8]/40 bg-[#1E60CF]/25 text-[#7DD3FC]"
+              }`}
+            >
+              <Smartphone className="h-4 w-4" aria-hidden="true" />
+            </div>
+            <span
+              className={`text-[11px] font-extrabold ${
+                mobilePreviewOpen ? "text-[#38BDF8]" : "text-[#9CB3CE]"
+              }`}
+            >
+              {mobilePreviewOpen ? "Editor" : "Preview"}
+            </span>
+          </button>
+
+          {/* Tab 4: Perfil & Métricas */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("profile");
+              setMobilePreviewOpen(false);
+            }}
+            className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1 transition ${
+              !mobilePreviewOpen && activeTab === "profile"
+                ? "text-[#38BDF8]"
+                : "text-[#9CB3CE] hover:text-white"
+            }`}
+          >
+            <BarChart3 className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <span className="text-[11px] font-bold">Perfil</span>
+            {!mobilePreviewOpen && activeTab === "profile" ? (
+              <span className="h-1 w-4 rounded-full bg-[#38BDF8]" />
+            ) : (
+              <span className="h-1 w-4" />
+            )}
+          </button>
+
+          {/* Tab 5: Plano Pro */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("plan");
+              setMobilePreviewOpen(false);
+            }}
+            className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1 transition ${
+              !mobilePreviewOpen && activeTab === "plan"
+                ? "text-amber-300"
+                : "text-[#9CB3CE] hover:text-white"
+            }`}
+          >
+            <Crown className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <span className="text-[11px] font-bold">Plano</span>
+            {!mobilePreviewOpen && activeTab === "plan" ? (
+              <span className="h-1 w-4 rounded-full bg-amber-300" />
+            ) : (
+              <span className="h-1 w-4" />
+            )}
+          </button>
+        </div>
+      </nav>
 
       {/* Add / Edit Item Modal (<dialog>) */}
       <dialog
