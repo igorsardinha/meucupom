@@ -96,3 +96,6 @@ Sem essas chaves, o app funciona localmente com fallbacks seguros (link de reset
 5. **Páginas Legais e Denúncias**:
    - `/termos` e `/privacidade` já estão publicadas e linkadas na home e no login.
    - Visitantes podem reportar páginas suspeitas diretamente pelo modal **"Denunciar página"** no rodapé público (`POST /api/report`).
+
+
+<!-- trigger vercel rebuild -->
