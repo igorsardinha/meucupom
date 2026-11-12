@@ -185,7 +185,7 @@ export function AuthForm({
               ) : (
                 <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
               )}
-              <span>Testar agora com conta Demo (@igorsardinha)</span>
+              <span>Testar agora com conta Demo (@modelo)</span>
             </button>
           ) : null}
         </div>

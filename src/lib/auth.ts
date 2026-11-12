@@ -140,13 +140,48 @@ function createAuthInstance() {
       process.env.BETTER_AUTH_SECRET?.trim() ||
       "meucupom-local-dev-secret-change-me-in-production-2026",
     baseURL: process.env.BETTER_AUTH_URL?.trim() || undefined,
-    trustedOrigins: [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
-      ...(process.env.NEXT_PUBLIC_APP_URL ? [process.env.NEXT_PUBLIC_APP_URL] : []),
-      ...(isAppleOAuthEnabled() ? ["https://appleid.apple.com"] : []),
-    ],
+    trustedOrigins: async (request) => {
+      const origins = new Set<string>([
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://meucupom.bio",
+        "https://www.meucupom.bio",
+        "https://*.vercel.app",
+      ]);
+
+      const candidates = [
+        process.env.BETTER_AUTH_URL?.trim(),
+        process.env.NEXT_PUBLIC_APP_URL?.trim(),
+        process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+        process.env.VERCEL_BRANCH_URL ? `https://${process.env.VERCEL_BRANCH_URL}` : undefined,
+        process.env.VERCEL_PROJECT_PRODUCTION_URL
+          ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+          : undefined,
+      ];
+
+      for (const item of candidates) {
+        if (item) origins.add(item.replace(/\/+$/, ""));
+      }
+
+      if (request) {
+        const originHeader = request.headers.get("origin")?.trim();
+        const hostHeader =
+          request.headers.get("x-forwarded-host")?.trim() ||
+          request.headers.get("host")?.trim();
+        if (originHeader && hostHeader) {
+          try {
+            const parsed = new URL(originHeader);
+            if (parsed.host === hostHeader) {
+              origins.add(parsed.origin);
+            }
+          } catch {
+            // Ignore malformed origin header
+          }
+        }
+      }
+
+      return Array.from(origins);
+    },
     database: drizzleAdapter(handle.db, {
       provider: handle.dialect === "pg" ? "pg" : "sqlite",
       schema: handle.schema,

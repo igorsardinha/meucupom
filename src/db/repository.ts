@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, asc, eq, gte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
 import {
   FREE_MAX_ACTIVE_OR_TOTAL_LINKS,
   isAnimationAllowedForPlan,
@@ -1124,6 +1124,250 @@ export async function syncMercadoPagoSubscription(input: {
         .update(handle.schema.creatorProfile)
         .set(updates)
         .where(eq(handle.schema.creatorProfile.mpPreapprovalId, input.mpPreapprovalId));
+    }
+  }
+}
+
+export interface AdminUserSummary {
+  userId: string;
+  userName: string;
+  email: string;
+  userCreatedAt: string;
+  profileId: string | null;
+  slug: string;
+  displayName: string;
+  plan: "free" | "pro";
+  subscriptionStatus: CreatorProfileData["subscriptionStatus"];
+  mpPayerId: string;
+  mpPreapprovalId: string;
+  currentPeriodEnd: string | null;
+  viewsCount: number;
+  itemsCount: number;
+  isSuspended: boolean;
+  onboardingCompleted: boolean;
+}
+
+export interface AdminReportSummary {
+  id: string;
+  profileId: string | null;
+  slug: string;
+  reason: string;
+  details: string;
+  status: "open" | "resolved" | "dismissed";
+  createdAt: string;
+}
+
+export interface AdminOverviewData {
+  users: AdminUserSummary[];
+  reports: AdminReportSummary[];
+}
+
+export async function getAdminOverviewData(): Promise<AdminOverviewData> {
+  await ensureDatabaseReady();
+  const handle = getDbHandle();
+
+  const [userRows, profileRows, itemRows, reportRows] =
+    handle.dialect === "sqlite"
+      ? await Promise.all([
+          handle.db
+            .select({
+              id: handle.schema.user.id,
+              name: handle.schema.user.name,
+              email: handle.schema.user.email,
+              createdAt: handle.schema.user.createdAt,
+            })
+            .from(handle.schema.user)
+            .orderBy(desc(handle.schema.user.createdAt)),
+          handle.db.select().from(handle.schema.creatorProfile),
+          handle.db
+            .select({
+              profileId: handle.schema.linkItem.profileId,
+              kind: handle.schema.linkItem.kind,
+            })
+            .from(handle.schema.linkItem),
+          handle.db
+            .select()
+            .from(handle.schema.abuseReport)
+            .orderBy(desc(handle.schema.abuseReport.createdAt)),
+        ])
+      : await Promise.all([
+          handle.db
+            .select({
+              id: handle.schema.user.id,
+              name: handle.schema.user.name,
+              email: handle.schema.user.email,
+              createdAt: handle.schema.user.createdAt,
+            })
+            .from(handle.schema.user)
+            .orderBy(desc(handle.schema.user.createdAt)),
+          handle.db.select().from(handle.schema.creatorProfile),
+          handle.db
+            .select({
+              profileId: handle.schema.linkItem.profileId,
+              kind: handle.schema.linkItem.kind,
+            })
+            .from(handle.schema.linkItem),
+          handle.db
+            .select()
+            .from(handle.schema.abuseReport)
+            .orderBy(desc(handle.schema.abuseReport.createdAt)),
+        ]);
+
+  const itemCountByProfile = new Map<string, number>();
+  for (const item of itemRows) {
+    if (item.kind !== "divider") {
+      itemCountByProfile.set(
+        item.profileId,
+        (itemCountByProfile.get(item.profileId) ?? 0) + 1
+      );
+    }
+  }
+
+  const profileByUser = new Map<string, Record<string, unknown>>();
+  for (const prof of profileRows) {
+    profileByUser.set(prof.userId, prof as unknown as Record<string, unknown>);
+  }
+
+  const users: AdminUserSummary[] = userRows.map((u) => {
+    const rawProf = profileByUser.get(u.id);
+    const prof = rawProf ? mapProfile(rawProf) : null;
+    return {
+      userId: u.id,
+      userName: u.name,
+      email: u.email,
+      userCreatedAt: new Date(u.createdAt).toISOString(),
+      profileId: prof?.id ?? null,
+      slug: prof?.slug ?? "",
+      displayName: prof?.displayName ?? u.name,
+      plan: prof?.plan ?? "free",
+      subscriptionStatus: prof?.subscriptionStatus ?? "inactive",
+      mpPayerId: prof?.mpPayerId ?? "",
+      mpPreapprovalId: prof?.mpPreapprovalId ?? "",
+      currentPeriodEnd: prof?.currentPeriodEnd ?? null,
+      viewsCount: prof?.viewsCount ?? 0,
+      itemsCount: prof ? (itemCountByProfile.get(prof.id) ?? 0) : 0,
+      isSuspended: prof?.isSuspended ?? false,
+      onboardingCompleted: prof?.onboardingCompleted ?? false,
+    };
+  });
+
+  const reports: AdminReportSummary[] = reportRows.map((r) => ({
+    id: r.id,
+    profileId: r.profileId ?? null,
+    slug: r.slug,
+    reason: r.reason,
+    details: r.details,
+    status:
+      r.status === "resolved" || r.status === "dismissed" ? r.status : "open",
+    createdAt: new Date(r.createdAt).toISOString(),
+  }));
+
+  return { users, reports };
+}
+
+export async function adminUpdateUserProfile(input: {
+  userId: string;
+  plan?: "free" | "pro";
+  subscriptionStatus?: CreatorProfileData["subscriptionStatus"];
+  isSuspended?: boolean;
+  mpPayerId?: string;
+  mpPreapprovalId?: string;
+  currentPeriodEnd?: Date | null;
+}): Promise<boolean> {
+  await ensureDatabaseReady();
+  const handle = getDbHandle();
+
+  const updates: Record<string, unknown> = {
+    updatedAt: new Date(),
+  };
+  if (input.plan !== undefined) updates.plan = input.plan;
+  if (input.subscriptionStatus !== undefined) {
+    updates.subscriptionStatus = input.subscriptionStatus;
+  }
+  if (input.isSuspended !== undefined) updates.isSuspended = input.isSuspended;
+  if (input.mpPayerId !== undefined) updates.mpPayerId = input.mpPayerId;
+  if (input.mpPreapprovalId !== undefined) {
+    updates.mpPreapprovalId = input.mpPreapprovalId;
+  }
+  if (input.currentPeriodEnd !== undefined) {
+    updates.currentPeriodEnd = input.currentPeriodEnd;
+  }
+
+  if (handle.dialect === "sqlite") {
+    await handle.db
+      .update(handle.schema.creatorProfile)
+      .set(updates)
+      .where(eq(handle.schema.creatorProfile.userId, input.userId));
+  } else {
+    await handle.db
+      .update(handle.schema.creatorProfile)
+      .set(updates)
+      .where(eq(handle.schema.creatorProfile.userId, input.userId));
+  }
+  return true;
+}
+
+export async function adminUpdateReportStatus(input: {
+  reportId: string;
+  status: "open" | "resolved" | "dismissed";
+  suspendTarget?: boolean;
+}): Promise<void> {
+  await ensureDatabaseReady();
+  const handle = getDbHandle();
+
+  const existing =
+    handle.dialect === "sqlite"
+      ? await handle.db
+          .select()
+          .from(handle.schema.abuseReport)
+          .where(eq(handle.schema.abuseReport.id, input.reportId))
+          .limit(1)
+      : await handle.db
+          .select()
+          .from(handle.schema.abuseReport)
+          .where(eq(handle.schema.abuseReport.id, input.reportId))
+          .limit(1);
+
+  const report = existing[0];
+  if (!report) return;
+
+  if (handle.dialect === "sqlite") {
+    await handle.db
+      .update(handle.schema.abuseReport)
+      .set({ status: input.status })
+      .where(eq(handle.schema.abuseReport.id, input.reportId));
+  } else {
+    await handle.db
+      .update(handle.schema.abuseReport)
+      .set({ status: input.status })
+      .where(eq(handle.schema.abuseReport.id, input.reportId));
+  }
+
+  if (input.suspendTarget) {
+    if (report.profileId) {
+      if (handle.dialect === "sqlite") {
+        await handle.db
+          .update(handle.schema.creatorProfile)
+          .set({ isSuspended: true, updatedAt: new Date() })
+          .where(eq(handle.schema.creatorProfile.id, report.profileId));
+      } else {
+        await handle.db
+          .update(handle.schema.creatorProfile)
+          .set({ isSuspended: true, updatedAt: new Date() })
+          .where(eq(handle.schema.creatorProfile.id, report.profileId));
+      }
+    } else if (report.slug) {
+      if (handle.dialect === "sqlite") {
+        await handle.db
+          .update(handle.schema.creatorProfile)
+          .set({ isSuspended: true, updatedAt: new Date() })
+          .where(eq(handle.schema.creatorProfile.slug, report.slug));
+      } else {
+        await handle.db
+          .update(handle.schema.creatorProfile)
+          .set({ isSuspended: true, updatedAt: new Date() })
+          .where(eq(handle.schema.creatorProfile.slug, report.slug));
+      }
     }
   }
 }

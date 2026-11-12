@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { DashboardClient } from "@/components/DashboardClient";
 import { getOrCreateProfileForUser } from "@/db/repository";
+import { isSuperAdminEmail } from "@/lib/admin";
 import { getAuth } from "@/lib/auth";
 import { isMercadoPagoEnabled } from "@/lib/mercadopago";
 
@@ -21,6 +22,7 @@ async function DashboardLoader() {
       initialItems={data.items}
       userEmail={session.user.email}
       mercadoPagoEnabled={isMercadoPagoEnabled()}
+      isAdmin={isSuperAdminEmail(session.user.email)}
     />
   );
 }

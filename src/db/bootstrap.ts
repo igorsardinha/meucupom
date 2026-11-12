@@ -126,6 +126,7 @@ const SQLITE_DDL = [
     "slug" text NOT NULL,
     "reason" text NOT NULL,
     "details" text NOT NULL DEFAULT '',
+    "status" text NOT NULL DEFAULT 'open',
     "created_at" integer NOT NULL
   )`,
 ];
@@ -251,6 +252,7 @@ const PG_DDL = [
     "slug" text NOT NULL,
     "reason" text NOT NULL,
     "details" text NOT NULL DEFAULT '',
+    "status" text NOT NULL DEFAULT 'open',
     "created_at" timestamp NOT NULL
   )`,
 ];
@@ -265,7 +267,7 @@ async function seedShowcaseProfile() {
     const existing = await handle.db
       .select({ id: handle.schema.creatorProfile.id })
       .from(handle.schema.creatorProfile)
-      .where(eq(handle.schema.creatorProfile.slug, "igorsardinha"))
+      .where(eq(handle.schema.creatorProfile.slug, "modelo"))
       .limit(1);
 
     if (existing.length > 0) {
@@ -291,30 +293,40 @@ async function seedShowcaseProfile() {
     if (existingUser.length === 0) {
       await handle.db.insert(handle.schema.user).values({
         id: userId,
-        name: "Igor Sardinha",
+        name: "Criador Modelo",
         email: DEMO_USER_EMAIL,
         emailVerified: true,
-        image: "/demo-avatar.jpg",
+        image: "",
         createdAt: now,
         updatedAt: now,
       });
+    } else {
+      const existingByUser = await handle.db
+        .select({ id: handle.schema.creatorProfile.id })
+        .from(handle.schema.creatorProfile)
+        .where(eq(handle.schema.creatorProfile.userId, userId))
+        .limit(1);
+      if (existingByUser.length > 0) {
+        await seedDemoEventsIfEmpty(existingByUser[0].id, now);
+        return;
+      }
     }
 
     const profileId = crypto.randomUUID();
     await handle.db.insert(handle.schema.creatorProfile).values({
       id: profileId,
       userId,
-      slug: "igorsardinha",
-      displayName: "Igor Sardinha",
-      initials: "IS",
-      avatarUrl: "/demo-avatar.jpg",
-      instagramHandle: "@igorsardinha",
-      instagramUrl: "https://instagram.com/igorsardinha",
-      tiktokHandle: "",
-      tiktokUrl: "",
-      bio: "Corrida · Triathlon · Links e cupons oficiais dos meus parceiros",
+      slug: "modelo",
+      displayName: "Criador Modelo",
+      initials: "CM",
+      avatarUrl: "",
+      instagramHandle: "@criadormodelo",
+      instagramUrl: "https://instagram.com",
+      tiktokHandle: "@criadormodelo",
+      tiktokUrl: "https://tiktok.com",
+      bio: "Links oficiais, parceiros e cupons selecionados para você economizar.",
       ...DEFAULT_PROFILE_CUSTOMIZATION,
-      viewsCount: 142,
+      viewsCount: 186,
       plan: "pro",
       subscriptionStatus: "active",
       mpPayerId: "",
@@ -336,7 +348,7 @@ async function seedShowcaseProfile() {
   const existing = await handle.db
     .select({ id: handle.schema.creatorProfile.id })
     .from(handle.schema.creatorProfile)
-    .where(eq(handle.schema.creatorProfile.slug, "igorsardinha"))
+    .where(eq(handle.schema.creatorProfile.slug, "modelo"))
     .limit(1);
 
   if (existing.length > 0) {
@@ -362,30 +374,40 @@ async function seedShowcaseProfile() {
   if (existingUser.length === 0) {
     await handle.db.insert(handle.schema.user).values({
       id: userId,
-      name: "Igor Sardinha",
+      name: "Criador Modelo",
       email: DEMO_USER_EMAIL,
       emailVerified: true,
-      image: "/demo-avatar.jpg",
+      image: "",
       createdAt: now,
       updatedAt: now,
     });
+  } else {
+    const existingByUser = await handle.db
+      .select({ id: handle.schema.creatorProfile.id })
+      .from(handle.schema.creatorProfile)
+      .where(eq(handle.schema.creatorProfile.userId, userId))
+      .limit(1);
+    if (existingByUser.length > 0) {
+      await seedDemoEventsIfEmpty(existingByUser[0].id, now);
+      return;
+    }
   }
 
   const profileId = crypto.randomUUID();
   await handle.db.insert(handle.schema.creatorProfile).values({
     id: profileId,
     userId,
-    slug: "igorsardinha",
-    displayName: "Igor Sardinha",
-    initials: "IS",
-    avatarUrl: "/demo-avatar.jpg",
-    instagramHandle: "@igorsardinha",
-    instagramUrl: "https://instagram.com/igorsardinha",
-    tiktokHandle: "",
-    tiktokUrl: "",
-    bio: "Corrida · Triathlon · Links e cupons oficiais dos meus parceiros",
+    slug: "modelo",
+    displayName: "Criador Modelo",
+    initials: "CM",
+    avatarUrl: "",
+    instagramHandle: "@criadormodelo",
+    instagramUrl: "https://instagram.com",
+    tiktokHandle: "@criadormodelo",
+    tiktokUrl: "https://tiktok.com",
+    bio: "Links oficiais, parceiros e cupons selecionados para você economizar.",
     ...DEFAULT_PROFILE_CUSTOMIZATION,
-    viewsCount: 142,
+    viewsCount: 186,
     plan: "pro",
     subscriptionStatus: "active",
     mpPayerId: "",
@@ -482,20 +504,20 @@ function buildShowcaseItems(profileId: string, now: Date) {
       id: crypto.randomUUID(),
       profileId,
       kind: "coupon",
-      title: "Dobro",
-      badge: "DB",
+      title: "Loja Urbana",
+      badge: "LU",
       logoUrl: "",
-      accentColor: "#0387D8",
-      tag: "Nutrição",
-      description: "Suplementos e nutrição esportiva plant-based",
-      couponCode: "DOBROIGORSARDINHA",
-      url: "https://soudobro.com.br/?utm_source=creators&utm_medium=DOBROIGORSARDINHA&utm_campaign=dobro",
-      ctaLabel: "Ir para Dobro",
+      accentColor: "#0EA5E9",
+      tag: "Moda & Tech",
+      description: "Roupas tecnológicas e acessórios para o dia a dia",
+      couponCode: "BEMVINDO10",
+      url: "https://exemplo.com.br",
+      ctaLabel: "Ir para Loja Urbana",
       sortOrder: 0,
       isActive: true,
-      isFeatured: false,
-      clicksCount: 38,
-      copiesCount: 64,
+      isFeatured: true,
+      clicksCount: 64,
+      copiesCount: 98,
       createdAt: now,
       updatedAt: now,
     },
@@ -503,20 +525,20 @@ function buildShowcaseItems(profileId: string, now: Date) {
       id: crypto.randomUUID(),
       profileId,
       kind: "coupon",
-      title: "Insider",
-      badge: "IN",
+      title: "Nutri & Vida",
+      badge: "NV",
       logoUrl: "",
-      accentColor: "#2F6CB5",
-      tag: "Techwear",
-      description: "Roupas tecnológicas para treino e dia a dia",
-      couponCode: "IGORSARDINHA",
-      url: "https://www.insiderstore.com.br/discount/IGORSARDINHA?redirect=/collections/ultimas-pecas/?utm_source=influmkt&utm_medium=3c994aaa&utm_campaign=IGORSARDINHA&cupom=IGORSARDINHA",
-      ctaLabel: "Ir para Insider",
+      accentColor: "#10B981",
+      tag: "Bem-estar",
+      description: "Suplementos e snacks saudáveis com desconto especial",
+      couponCode: "DESCONTO15",
+      url: "https://exemplo.com.br",
+      ctaLabel: "Ir para Nutri & Vida",
       sortOrder: 1,
       isActive: true,
-      isFeatured: true,
-      clicksCount: 51,
-      copiesCount: 83,
+      isFeatured: false,
+      clicksCount: 41,
+      copiesCount: 72,
       createdAt: now,
       updatedAt: now,
     },
@@ -524,62 +546,41 @@ function buildShowcaseItems(profileId: string, now: Date) {
       id: crypto.randomUUID(),
       profileId,
       kind: "coupon",
-      title: "Two-e",
-      badge: "2E",
+      title: "Café da Manhã",
+      badge: "CF",
       logoUrl: "",
-      accentColor: "#38BDF8",
-      tag: "Esportivo",
-      description: "Vestuário esportivo de performance",
-      couponCode: "SARDINHA10",
-      url: "https://two-e.com.br/?coupon=SARDINHA10",
-      ctaLabel: "Ir para Two-e",
+      accentColor: "#F59E0B",
+      tag: "Assinatura",
+      description: "Cafés especiais moídos na hora na sua casa",
+      couponCode: "CAFE20",
+      url: "https://exemplo.com.br",
+      ctaLabel: "Ir para Café da Manhã",
       sortOrder: 2,
       isActive: true,
       isFeatured: false,
-      clicksCount: 24,
-      copiesCount: 39,
+      clicksCount: 29,
+      copiesCount: 51,
       createdAt: now,
       updatedAt: now,
     },
     {
       id: crypto.randomUUID(),
       profileId,
-      kind: "coupon",
-      title: "Buzzini",
-      badge: "BZ",
+      kind: "link",
+      title: "Canal no YouTube",
+      badge: "YT",
       logoUrl: "",
-      accentColor: "#1E60CF",
-      tag: "Assessoria",
-      description: "Assessoria esportiva · Corrida e triathlon",
-      couponCode: "SARDINHA10",
-      url: "https://buzzini.com.br",
-      ctaLabel: "Ir para Buzzini",
+      accentColor: "#EF4444",
+      tag: "Conteúdo",
+      description: "Reviews, comparativos e novidades toda semana",
+      couponCode: "",
+      url: "https://youtube.com",
+      ctaLabel: "Assistir agora",
       sortOrder: 3,
       isActive: true,
       isFeatured: false,
-      clicksCount: 19,
-      copiesCount: 27,
-      createdAt: now,
-      updatedAt: now,
-    },
-    {
-      id: crypto.randomUUID(),
-      profileId,
-      kind: "coupon",
-      title: "Probiótica",
-      badge: "PB",
-      logoUrl: "",
-      accentColor: "#0EA5E9",
-      tag: "Suplementos",
-      description: "Suplementos esportivos para performance e recuperação",
-      couponCode: "SOUPROIGORSARDINHA",
-      url: "https://www.probiotica.com.br?utm_source=creators&utm_medium=SOUPROIGORSARDINHA&utm_campaign=probi",
-      ctaLabel: "Ir para Probiótica",
-      sortOrder: 4,
-      isActive: true,
-      isFeatured: false,
-      clicksCount: 31,
-      copiesCount: 45,
+      clicksCount: 37,
+      copiesCount: 0,
       createdAt: now,
       updatedAt: now,
     },
@@ -664,6 +665,14 @@ async function runColumnMigrations() {
         `ALTER TABLE "link_item" ADD COLUMN "is_featured" integer NOT NULL DEFAULT 0`
       );
     }
+
+    const reportCols = await handle.client.execute(`PRAGMA table_info("abuse_report")`);
+    const reportNames = new Set(reportCols.rows.map((r) => String(r.name)));
+    if (!reportNames.has("status")) {
+      await handle.client.execute(
+        `ALTER TABLE "abuse_report" ADD COLUMN "status" text NOT NULL DEFAULT 'open'`
+      );
+    }
     return;
   }
 
@@ -708,6 +717,9 @@ async function runColumnMigrations() {
   );
   await handle.pool.query(
     `ALTER TABLE "link_item" ADD COLUMN IF NOT EXISTS "is_featured" boolean NOT NULL DEFAULT false`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "abuse_report" ADD COLUMN IF NOT EXISTS "status" text NOT NULL DEFAULT 'open'`
   );
 }
 

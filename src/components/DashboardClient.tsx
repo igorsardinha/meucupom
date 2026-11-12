@@ -26,6 +26,7 @@ import {
   Pencil,
   Plus,
   Save,
+  ShieldCheck,
   Smartphone,
   Sparkles,
   Star,
@@ -71,6 +72,7 @@ interface DashboardClientProps {
   initialItems: LinkItemData[];
   userEmail: string;
   mercadoPagoEnabled: boolean;
+  isAdmin?: boolean;
 }
 
 type TabKey = "items" | "appearance" | "profile" | "plan";
@@ -187,6 +189,7 @@ export function DashboardClient({
   initialItems,
   userEmail,
   mercadoPagoEnabled,
+  isAdmin = false,
 }: DashboardClientProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabKey>("items");
@@ -195,6 +198,7 @@ export function DashboardClient({
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingItem, setSavingItem] = useState(false);
   const [billingLoading, setBillingLoading] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const [analyticsDays, setAnalyticsDays] = useState<7 | 30>(7);
   const [analyticsPoints, setAnalyticsPoints] = useState<DailyAnalyticsPoint[]>([]);
@@ -388,9 +392,31 @@ export function DashboardClient({
   }
 
   async function handleSignOut() {
-    await authClient.signOut();
-    router.push("/entrar");
-    router.refresh();
+    setSigningOut(true);
+    try {
+      const res = await authClient.signOut();
+      if (res?.error) {
+        await fetch("/api/auth/sign-out", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+        });
+      }
+    } catch {
+      try {
+        await fetch("/api/auth/sign-out", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+        });
+      } catch {
+        // Proceed with hard navigation to clear client state
+      }
+    } finally {
+      window.location.href = `${window.location.origin}/entrar`;
+    }
   }
 
   async function saveProfilePatch(patch?: Partial<CreatorProfileData>) {
@@ -1004,14 +1030,29 @@ export function DashboardClient({
               <span>{mobilePreviewOpen ? "Editor" : "Preview"}</span>
             </button>
 
+            {isAdmin ? (
+              <Link
+                href="/admin"
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/12 px-3.5 text-xs font-bold text-amber-200 hover:bg-amber-400/20"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>Super Admin</span>
+              </Link>
+            ) : null}
+
             <button
               type="button"
+              disabled={signingOut}
               onClick={handleSignOut}
               aria-label="Sair da conta"
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-white/10 px-3 text-xs font-semibold text-[#9CB3CE] hover:border-white/25 hover:text-white"
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-white/10 px-3 text-xs font-semibold text-[#9CB3CE] hover:border-white/25 hover:text-white disabled:opacity-60"
             >
-              <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">Sair</span>
+              {signingOut ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              ) : (
+                <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
+              <span className="hidden sm:inline">{signingOut ? "Saindo..." : "Sair"}</span>
             </button>
           </div>
         </div>
@@ -2804,7 +2845,7 @@ export function DashboardClient({
                   onChange={(e) =>
                     setItemForm((f) => ({ ...f, couponCode: e.target.value.toUpperCase() }))
                   }
-                  placeholder="Ex: IGORSARDINHA"
+                  placeholder="Ex: BEMVINDO10"
                   className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 font-mono font-bold text-[#38BDF8]"
                 />
               </div>

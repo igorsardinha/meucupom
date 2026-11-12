@@ -137,5 +137,6 @@ export const abuseReport = sqliteTable("abuse_report", {
   slug: text("slug").notNull(),
   reason: text("reason").notNull(),
   details: text("details").notNull().default(""),
+  status: text("status").notNull().default("open"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });

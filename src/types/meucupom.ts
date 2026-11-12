@@ -144,9 +144,9 @@ export interface ThemePreset {
 
 export const THEME_PRESETS: ThemePreset[] = [
   {
-    id: "sardinha-blue",
-    name: "Azul Original",
-    description: "Visual clássico inspirado na página original",
+    id: "ocean-blue",
+    name: "Azul Oceano",
+    description: "Fundo escuro com destaque azul vibrante",
     themeMode: "dark",
     bgStyle: "glow",
     cardStyle: "solid",

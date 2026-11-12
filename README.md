@@ -16,7 +16,7 @@ Plataforma multiusuário de páginas de links e cupons para criadores e atletas,
 - **Autenticação (`/entrar`)**:
   - Login social com **Google** e **Instagram** via `better-auth`.
   - Cadastro/login com e-mail e senha.
-  - Botão de **Conta Demo (`@igorsardinha`)** em ambiente local para testar tudo imediatamente sem chaves externas.
+  - Botão de **Conta Demo (`@modelo`)** em ambiente local para testar tudo imediatamente sem chaves externas.
 
 ---
 
@@ -29,11 +29,12 @@ npm run dev
 
 Abra `http://localhost:3000`:
 - Página inicial: `http://localhost:3000`
-- Exemplo público pré-carregado: `http://localhost:3000/igorsardinha`
+- Exemplo público pré-carregado: `http://localhost:3000/modelo`
 - Login / Cadastro / Conta Demo: `http://localhost:3000/entrar`
 - Painel editor: `http://localhost:3000/painel`
+- Painel Super Admin (somente para e-mails em `ADMIN_EMAILS`): `http://localhost:3000/admin`
 
-Na primeira execução, o banco SQLite local (`./data/meucupom.db`) e a página de exemplo `@igorsardinha` são criados automaticamente.
+Na primeira execução, o banco SQLite local (`./data/meucupom.db`) e a página de exemplo `@modelo` são criados automaticamente.
 
 ---
 

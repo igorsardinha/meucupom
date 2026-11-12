@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -11,19 +10,22 @@ import {
   Sparkles,
 } from "lucide-react";
 import { PublicBioView } from "@/components/PublicBioView";
-import { getPublicPageBySlug } from "@/db/repository";
 import { PLAN_CARDS } from "@/lib/plans";
+import {
+  NEUTRAL_SHOWCASE_ITEMS,
+  NEUTRAL_SHOWCASE_PROFILE,
+  NEUTRAL_SHOWCASE_SLUG,
+} from "@/lib/showcase";
 
-async function ShowcasePhone() {
-  const data = await getPublicPageBySlug("igorsardinha");
-  if (!data) {
-    return null;
-  }
-
+function ShowcasePhone() {
   return (
     <div className="mx-auto w-full max-w-[380px] rounded-[36px] border-[6px] border-[#1A263A] bg-[#04070D] p-1.5 shadow-[0_28px_72px_rgba(2,6,14,0.75)]">
       <div className="h-[640px] overflow-y-auto rounded-[28px]">
-        <PublicBioView profile={data.profile} items={data.items} previewMode />
+        <PublicBioView
+          profile={NEUTRAL_SHOWCASE_PROFILE}
+          items={NEUTRAL_SHOWCASE_ITEMS}
+          previewMode
+        />
       </div>
     </div>
   );
@@ -82,7 +84,7 @@ export default function HomePage() {
 
         <nav className="flex items-center gap-2.5">
           <Link
-            href="/igorsardinha"
+            href={`/${NEUTRAL_SHOWCASE_SLUG}`}
             className="hidden min-h-10 items-center rounded-full border border-[#94C5FF]/20 bg-white/5 px-4 text-sm font-semibold text-[#E2ECF7] transition hover:border-[#38BDF8]/50 sm:inline-flex"
           >
             Ver exemplo
@@ -130,10 +132,10 @@ export default function HomePage() {
               </Link>
 
               <Link
-                href="/igorsardinha"
+                href={`/${NEUTRAL_SHOWCASE_SLUG}`}
                 className="inline-flex min-h-[50px] items-center gap-2 rounded-2xl border border-[#94C5FF]/20 bg-[#0E1624] px-5 text-base font-bold text-white transition hover:border-[#38BDF8]/50"
               >
-                <span>Ver página @igorsardinha</span>
+                <span>Ver modelo de página</span>
               </Link>
             </div>
 
@@ -145,15 +147,7 @@ export default function HomePage() {
           </div>
 
           <div>
-            <Suspense
-              fallback={
-                <div className="mx-auto flex h-[640px] max-w-[380px] items-center justify-center rounded-[36px] border border-white/10 bg-[#0E1624] text-sm text-[#9CB3CE]">
-                  Carregando preview...
-                </div>
-              }
-            >
-              <ShowcasePhone />
-            </Suspense>
+            <ShowcasePhone />
           </div>
         </section>
 
