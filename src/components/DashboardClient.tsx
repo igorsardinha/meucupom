@@ -82,7 +82,7 @@ interface DashboardClientProps {
   isAdmin?: boolean;
 }
 
-type TabKey = "items" | "appearance" | "profile" | "plan";
+type TabKey = "items" | "appearance" | "analytics" | "profile" | "plan";
 
 interface ItemFormState {
   id: string | null;
@@ -408,6 +408,7 @@ export function DashboardClient({
   const [analyticsPoints, setAnalyticsPoints] = useState<DailyAnalyticsPoint[]>([]);
   const [analyticsLocked, setAnalyticsLocked] = useState(false);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsReloadToken, setAnalyticsReloadToken] = useState(0);
 
   const [slugCheck, setSlugCheck] = useState<{
     slug: string;
@@ -520,10 +521,11 @@ export function DashboardClient({
   }, []);
 
   useEffect(() => {
-    if (activeTab !== "profile") return;
+    if (activeTab !== "analytics") return;
     let cancelled = false;
 
     async function loadAnalytics() {
+      setAnalyticsLoading(true);
       try {
         const res = await fetch(`/api/analytics?days=${analyticsDays}`);
         const data = (await res.json()) as {
@@ -548,7 +550,7 @@ export function DashboardClient({
     return () => {
       cancelled = true;
     };
-  }, [activeTab, analyticsDays]);
+  }, [activeTab, analyticsDays, analyticsReloadToken]);
 
   useEffect(() => {
     const candidate = sanitizeSlug(profile.slug);
@@ -1198,76 +1200,69 @@ export function DashboardClient({
   return (
     <div className="min-h-dvh bg-[#070C14] text-[#F4F8FD]">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-30 border-b border-[#94C5FF]/12 bg-[#070C14]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2 font-extrabold tracking-tight">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[#1E60CF] to-[#38BDF8] text-sm font-black text-white">
-                MC
-              </span>
-              <span className="text-lg">meucupom</span>
-            </Link>
-            <span className="hidden rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-[#9CB3CE] sm:inline-block">
-              {userEmail}
+      <header className="sticky top-0 z-30 border-b border-[#94C5FF]/12 bg-[#070C14]/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6 sm:py-3">
+          {/* Brand */}
+          <Link href="/" className="flex items-center gap-2.5 transition hover:opacity-90">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[#1E60CF] to-[#38BDF8] text-xs font-black text-white shadow-md shadow-[#1E60CF]/20">
+              MC
             </span>
-          </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-base font-extrabold tracking-tight text-white sm:text-lg">meucupom</span>
+              <span className="text-xs font-bold text-[#38BDF8]">.bio</span>
+            </div>
+          </Link>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center rounded-full border border-[#38BDF8]/30 bg-[#0E1624] pl-3 pr-1 py-1 text-xs sm:text-sm">
+          {/* Right Actions */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Commercial Public Link Pill */}
+            <div className="flex items-center rounded-full border border-[#38BDF8]/30 bg-[#0E1624] py-1 pl-3 pr-1 text-xs">
               <span className="font-mono text-[#7DD3FC]">/{profile.slug}</span>
               <button
                 type="button"
                 onClick={handleCopyPublicUrl}
-                aria-label="Copiar URL da sua página"
-                className="ml-2 inline-flex h-8 items-center gap-1 rounded-full bg-[#38BDF8]/15 px-2.5 text-xs font-bold text-[#7DD3FC] hover:bg-[#38BDF8]/25"
+                aria-label="Copiar link público"
+                title="Copiar link da sua página"
+                className="ml-2 inline-flex h-7 items-center gap-1 rounded-full bg-[#38BDF8]/15 px-2.5 text-[11px] font-bold text-[#7DD3FC] transition hover:bg-[#38BDF8]/25"
               >
                 {copiedUrl ? (
                   <>
-                    <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>Copiado</span>
+                    <Check className="h-3 w-3" aria-hidden="true" />
+                    <span className="hidden sm:inline">Copiado</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>Copiar</span>
+                    <Copy className="h-3 w-3" aria-hidden="true" />
+                    <span className="hidden sm:inline">Copiar</span>
                   </>
                 )}
               </button>
+              <Link
+                href={`/${profile.slug}`}
+                target="_blank"
+                title="Abrir página pública em nova aba"
+                aria-label="Abrir página pública"
+                className="ml-1 inline-flex h-7 items-center rounded-full px-2 text-[#9CB3CE] transition hover:bg-white/10 hover:text-white"
+              >
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
             </div>
 
-            <Link
-              href={`/${profile.slug}`}
-              target="_blank"
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 text-xs font-bold text-white hover:bg-white/10 sm:text-sm"
-            >
-              <span>Abrir</span>
-              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
-
-            {isAdmin ? (
-              <Link
-                href="/admin"
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/12 px-3 text-xs font-bold text-amber-200 hover:bg-amber-400/20"
-                title="Painel Super Admin"
-              >
-                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                <span className="hidden sm:inline">Admin</span>
-              </Link>
-            ) : null}
-
+            {/* Sign Out Button */}
             <button
               type="button"
               disabled={signingOut}
               onClick={handleSignOut}
               aria-label="Sair da conta"
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-white/10 px-3 text-xs font-semibold text-[#9CB3CE] hover:border-white/25 hover:text-white disabled:opacity-60"
+              title="Sair da conta"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/10 px-3 text-xs font-semibold text-[#9CB3CE] transition hover:border-white/25 hover:text-white disabled:opacity-60"
             >
               {signingOut ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
               ) : (
                 <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
               )}
-              <span className="hidden sm:inline">{signingOut ? "Saindo..." : "Sair"}</span>
+              <span className="hidden md:inline">{signingOut ? "Saindo..." : "Sair"}</span>
             </button>
           </div>
         </div>
@@ -1473,7 +1468,7 @@ export function DashboardClient({
           <div
             role="tablist"
             aria-label="Seções do painel"
-            className="mb-6 hidden grid-cols-2 gap-2 rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-1.5 sm:grid-cols-4 lg:grid"
+            className="mb-6 hidden grid-cols-4 gap-2 rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-1.5 lg:grid"
           >
             <button
               type="button"
@@ -1508,31 +1503,31 @@ export function DashboardClient({
             <button
               type="button"
               role="tab"
-              aria-selected={activeTab === "profile"}
-              onClick={() => setActiveTab("profile")}
+              aria-selected={activeTab === "analytics"}
+              onClick={() => setActiveTab("analytics")}
               className={`flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold transition sm:text-sm ${
-                activeTab === "profile"
+                activeTab === "analytics"
                   ? "bg-[#1E60CF] text-white shadow-md"
                   : "text-[#9CB3CE] hover:text-white"
               }`}
             >
               <BarChart3 className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>Perfil &amp; Métricas</span>
+              <span>Métricas</span>
             </button>
 
             <button
               type="button"
               role="tab"
-              aria-selected={activeTab === "plan"}
-              onClick={() => setActiveTab("plan")}
+              aria-selected={activeTab === "profile" || activeTab === "plan"}
+              onClick={() => setActiveTab("profile")}
               className={`flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold transition sm:text-sm ${
-                activeTab === "plan"
+                activeTab === "profile" || activeTab === "plan"
                   ? "bg-[#1E60CF] text-white shadow-md"
                   : "text-[#9CB3CE] hover:text-white"
               }`}
             >
-              <Crown className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>Plano</span>
+              <User className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>Perfil &amp; Plano</span>
             </button>
           </div>
 
@@ -1627,16 +1622,16 @@ export function DashboardClient({
                                 }
                               : undefined
                           }
-                          className={`rounded-2xl border p-4 transition-colors ${
+                          className={`rounded-2xl border p-3 sm:p-4 transition-colors ${
                             isDragging || isGrabbed
-                              ? "border-[#38BDF8] bg-[#131F33]"
+                              ? "border-[#38BDF8] bg-[#131F33] shadow-lg shadow-[#38BDF8]/10"
                               : item.isActive
-                                ? "border-[#94C5FF]/16 bg-[#0E1624]"
-                                : "border-white/10 bg-[#0B111C] opacity-70"
+                                ? "border-[#94C5FF]/14 bg-[#0E1624] hover:border-[#38BDF8]/35"
+                                : "border-white/10 bg-[#0B111C]/80 opacity-60"
                           }`}
                         >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="flex min-w-0 flex-1 items-start gap-2.5">
+                          <div className="flex items-start justify-between gap-2.5 sm:gap-3">
+                            <div className="flex min-w-0 flex-1 items-start gap-2 sm:gap-3">
                               <button
                                 type="button"
                                 ref={(el) => {
@@ -1654,180 +1649,207 @@ export function DashboardClient({
                                     grabOriginalOrderRef.current = null;
                                   }
                                 }}
-                                className={`mc-drag-handle mt-0.5 grid h-10 w-8 shrink-0 place-items-center rounded-xl border transition ${
+                                className={`mc-drag-handle mt-0.5 grid h-10 w-7 shrink-0 place-items-center rounded-xl border transition sm:w-8 ${
                                   isGrabbed
                                     ? "border-[#38BDF8] bg-[#38BDF8]/20 text-white"
-                                    : "border-transparent text-[#7D97B8] hover:border-white/15 hover:bg-white/5 hover:text-white focus-visible:border-[#38BDF8] focus-visible:bg-[#38BDF8]/15 focus-visible:text-white"
+                                    : "border-white/10 text-[#7D97B8] hover:border-white/20 hover:bg-white/5 hover:text-white focus-visible:border-[#38BDF8] focus-visible:bg-[#38BDF8]/15 focus-visible:text-white"
                                 }`}
                               >
                                 <GripVertical className="h-4 w-4" aria-hidden="true" />
                               </button>
 
                               <span
-                                className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl border text-xs font-extrabold"
-                            style={{
-                              borderColor:
-                                item.kind === "divider"
-                                  ? "rgba(148, 197, 255, 0.25)"
-                                  : `${item.accentColor}66`,
-                              backgroundColor:
-                                item.kind === "divider"
-                                  ? "rgba(255, 255, 255, 0.05)"
-                                  : `${item.accentColor}22`,
-                            }}
-                          >
-                            {item.kind === "divider" ? (
-                              <Minus className="h-4 w-4 text-[#9CB3CE]" aria-hidden="true" />
-                            ) : (
-                              computeInitials(item.title)
-                            )}
-                          </span>
-
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h2 className="font-bold text-white">
-                                {item.kind === "divider"
-                                  ? item.title || "Divisória (espaçamento)"
-                                  : item.title}
-                              </h2>
-                              {item.kind !== "divider" && item.isFeatured ? (
-                                <span
-                                  style={{
-                                    backgroundColor: `${profile.accentColor}26`,
-                                    color: profile.accentColor,
-                                  }}
-                                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold"
-                                >
-                                  <Sparkles className="h-3 w-3" aria-hidden="true" />
-                                  <span>Destaque</span>
-                                </span>
-                              ) : null}
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                                  item.kind === "coupon"
-                                    ? "bg-[#38BDF8]/15 text-[#7DD3FC]"
-                                    : item.kind === "divider"
-                                      ? "bg-white/10 text-[#CBD5E1]"
-                                      : "bg-purple-500/20 text-purple-200"
-                                }`}
+                                className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl border text-xs font-black shadow-inner"
+                                style={{
+                                  borderColor:
+                                    item.kind === "divider"
+                                      ? "rgba(148, 197, 255, 0.25)"
+                                      : `${item.accentColor}66`,
+                                  backgroundColor:
+                                    item.kind === "divider"
+                                      ? "rgba(255, 255, 255, 0.05)"
+                                      : `${item.accentColor}22`,
+                                }}
                               >
-                                {item.kind === "coupon"
-                                  ? "Cupom"
-                                  : item.kind === "divider"
-                                    ? "Divisória"
-                                    : "Link"}
+                                {item.kind === "divider" ? (
+                                  <Minus className="h-4 w-4 text-[#9CB3CE]" aria-hidden="true" />
+                                ) : (
+                                  computeInitials(item.title)
+                                )}
                               </span>
-                              {item.tag ? (
-                                <span className="rounded-full bg-white/8 px-2 py-0.5 text-[11px] font-semibold text-[#9CB3CE]">
-                                  {item.tag}
-                                </span>
-                              ) : null}
-                              {!item.isActive ? (
-                                <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[11px] font-bold text-amber-200">
-                                  Oculto
-                                </span>
-                              ) : null}
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                  <h2 className="text-sm font-bold text-white sm:text-base">
+                                    {item.kind === "divider"
+                                      ? item.title || "Divisória (espaçamento)"
+                                      : item.title}
+                                  </h2>
+
+                                  <span
+                                    className={`rounded-md px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
+                                      item.kind === "coupon"
+                                        ? "border border-[#38BDF8]/30 bg-[#38BDF8]/15 text-[#7DD3FC]"
+                                        : item.kind === "divider"
+                                          ? "border border-white/15 bg-white/10 text-[#CBD5E1]"
+                                          : "border border-purple-500/30 bg-purple-500/15 text-purple-200"
+                                    }`}
+                                  >
+                                    {item.kind === "coupon"
+                                      ? "Cupom"
+                                      : item.kind === "divider"
+                                        ? "Divisória"
+                                        : "Link"}
+                                  </span>
+
+                                  {item.kind !== "divider" && item.isFeatured ? (
+                                    <span
+                                      style={{
+                                        backgroundColor: `${profile.accentColor}26`,
+                                        color: profile.accentColor,
+                                        borderColor: `${profile.accentColor}50`,
+                                      }}
+                                      className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-bold"
+                                    >
+                                      <Sparkles className="h-3 w-3" aria-hidden="true" />
+                                      <span>Destaque</span>
+                                    </span>
+                                  ) : null}
+
+                                  {!item.isActive ? (
+                                    <span className="rounded-md border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-200">
+                                      Oculto
+                                    </span>
+                                  ) : null}
+
+                                  {item.tag ? (
+                                    <span className="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-[#9CB3CE]">
+                                      {item.tag}
+                                    </span>
+                                  ) : null}
+                                </div>
+
+                                {item.kind === "coupon" && (
+                                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                    {item.couponCode ? (
+                                      <span className="inline-flex items-center gap-1 rounded-lg border border-[#38BDF8]/40 bg-[#38BDF8]/12 px-2.5 py-0.5 font-mono text-xs font-black text-[#38BDF8]">
+                                        <Tag className="h-3 w-3" aria-hidden="true" />
+                                        {item.couponCode}
+                                      </span>
+                                    ) : null}
+                                    {item.url ? (
+                                      <span className="max-w-[200px] truncate text-xs text-[#9CB3CE] sm:max-w-sm">
+                                        {item.url}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                )}
+
+                                {item.kind === "link" && item.url ? (
+                                  <p className="mt-1 max-w-[240px] truncate text-xs text-[#9CB3CE] sm:max-w-md">
+                                    {item.url}
+                                  </p>
+                                ) : null}
+
+                                {item.kind === "divider" && item.description ? (
+                                  <p className="mt-1 truncate text-xs text-[#9CB3CE]">
+                                    {item.description}
+                                  </p>
+                                ) : null}
+
+                                {item.kind !== "divider" ? (
+                                  <div className="mt-2 flex items-center gap-2.5 text-[11px] text-[#7D97B8]">
+                                    <span className="inline-flex items-center gap-1">
+                                      <Copy className="h-3 w-3 text-[#34D399]" aria-hidden="true" />
+                                      <span className="font-bold text-white">{item.copiesCount}</span>{" "}
+                                      {item.copiesCount === 1 ? "cópia" : "cópias"}
+                                    </span>
+                                    <span className="text-white/20">·</span>
+                                    <span className="inline-flex items-center gap-1">
+                                      <MousePointerClick className="h-3 w-3 text-[#7DD3FC]" aria-hidden="true" />
+                                      <span className="font-bold text-white">{item.clicksCount}</span>{" "}
+                                      {item.clicksCount === 1 ? "clique" : "cliques"}
+                                    </span>
+                                  </div>
+                                ) : null}
+                              </div>
                             </div>
 
-                            {item.kind === "coupon" && item.couponCode ? (
-                              <p className="mt-1 font-mono text-xs font-bold text-[#38BDF8]">
-                                Cupom: {item.couponCode}
-                              </p>
-                            ) : null}
-                            {item.kind === "divider" ? (
-                              item.description ? (
-                                <p className="mt-0.5 truncate text-xs text-[#9CB3CE]">
-                                  {item.description}
-                                </p>
-                              ) : null
-                            ) : (
-                              <>
-                                <p className="mt-0.5 truncate text-xs text-[#9CB3CE]">{item.url}</p>
-                                <p className="mt-1.5 text-xs text-[#7D97B8]">
-                                  {item.copiesCount} cópias · {item.clicksCount} cliques
-                                </p>
-                              </>
-                            )}
-                          </div>
-                        </div>
+                            {/* Actions Toolbar: grouped in a sleek non-wrapping row */}
+                            <div className="flex shrink-0 items-center gap-1 rounded-xl border border-white/8 bg-[#09101B] p-1">
+                              {item.kind !== "divider" ? (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleItemFeatured(item)}
+                                  aria-pressed={item.isFeatured}
+                                  aria-label={
+                                    item.isFeatured
+                                      ? `Remover destaque de ${item.title}`
+                                      : `Destacar ${item.title}`
+                                  }
+                                  title={
+                                    item.isFeatured ? "Destaque ativo (clique para remover)" : "Destacar link"
+                                  }
+                                  className={`grid h-8 w-8 place-items-center rounded-lg transition ${
+                                    item.isFeatured
+                                      ? "bg-amber-400/20 text-amber-300"
+                                      : "text-[#9CB3CE] hover:bg-white/10 hover:text-white"
+                                  }`}
+                                >
+                                  <Star
+                                    className={`h-4 w-4 ${item.isFeatured ? "fill-amber-300" : ""}`}
+                                    aria-hidden="true"
+                                  />
+                                </button>
+                              ) : null}
 
-                        <div className="flex items-center gap-1">
-                          {item.kind !== "divider" ? (
-                            <button
-                              type="button"
-                              onClick={() => toggleItemFeatured(item)}
-                              aria-pressed={item.isFeatured}
-                              aria-label={
-                                item.isFeatured
-                                  ? `Remover destaque de ${item.title}`
-                                  : `Destacar ${item.title}`
-                              }
-                              title={
-                                item.isFeatured ? "Link destaque ativo" : "Marcar como destaque"
-                              }
-                              style={
-                                item.isFeatured
-                                  ? {
-                                      borderColor: `${profile.accentColor}80`,
-                                      backgroundColor: `${profile.accentColor}26`,
-                                      color: profile.accentColor,
-                                    }
-                                  : undefined
-                              }
-                              className={`grid h-9 w-9 place-items-center rounded-lg border transition ${
-                                item.isFeatured
-                                  ? ""
-                                  : "border-white/10 text-[#9CB3CE] hover:bg-white/10 hover:text-white"
-                              }`}
-                            >
-                              <Star
-                                style={
-                                  item.isFeatured ? { fill: profile.accentColor } : undefined
+                              <button
+                                type="button"
+                                onClick={() => toggleItemActive(item)}
+                                aria-label={
+                                  item.isActive
+                                    ? `Ocultar ${item.title}`
+                                    : `Mostrar ${item.title}`
                                 }
-                                className="h-4 w-4"
-                                aria-hidden="true"
-                              />
-                            </button>
-                          ) : null}
-                          <button
-                            type="button"
-                            onClick={() => toggleItemActive(item)}
-                            aria-label={
-                              item.isActive
-                                ? `Ocultar ${item.title}`
-                                : `Mostrar ${item.title}`
-                            }
-                            title={item.isActive ? "Visível na página" : "Oculto"}
-                            className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-[#9CB3CE] hover:bg-white/10 hover:text-white"
-                          >
-                            {item.isActive ? (
-                              <Eye className="h-4 w-4" aria-hidden="true" />
-                            ) : (
-                              <EyeOff className="h-4 w-4" aria-hidden="true" />
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openEditDialog(item)}
-                            aria-label={`Editar ${item.title}`}
-                            className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-[#9CB3CE] hover:bg-white/10 hover:text-white"
-                          >
-                            <Pencil className="h-4 w-4" aria-hidden="true" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setDeleteTarget(item);
-                              deleteDialogRef.current?.showModal();
-                            }}
-                            aria-label={`Excluir ${item.title}`}
-                            className="grid h-9 w-9 place-items-center rounded-lg border border-red-400/20 text-red-300 hover:bg-red-500/15"
-                          >
-                            <Trash2 className="h-4 w-4" aria-hidden="true" />
-                          </button>
-                        </div>
-                      </div>
-                    </li>
+                                title={item.isActive ? "Item visível (clique para ocultar)" : "Item oculto (clique para exibir)"}
+                                className={`grid h-8 w-8 place-items-center rounded-lg transition ${
+                                  item.isActive
+                                    ? "text-[#9CB3CE] hover:bg-white/10 hover:text-white"
+                                    : "bg-amber-500/15 text-amber-300"
+                                }`}
+                              >
+                                {item.isActive ? (
+                                  <Eye className="h-4 w-4" aria-hidden="true" />
+                                ) : (
+                                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                                )}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => openEditDialog(item)}
+                                aria-label={`Editar ${item.title}`}
+                                title="Editar item"
+                                className="grid h-8 w-8 place-items-center rounded-lg text-[#9CB3CE] transition hover:bg-white/10 hover:text-white"
+                              >
+                                <Pencil className="h-4 w-4" aria-hidden="true" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDeleteTarget(item);
+                                  deleteDialogRef.current?.showModal();
+                                }}
+                                aria-label={`Excluir ${item.title}`}
+                                title="Excluir item"
+                                className="grid h-8 w-8 place-items-center rounded-lg text-red-400 transition hover:bg-red-500/20 hover:text-red-300"
+                              >
+                                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                              </button>
+                            </div>
+                          </div>
+                        </li>
                       );
                     })}
                   </ul>
@@ -2419,9 +2441,33 @@ export function DashboardClient({
             </section>
           ) : null}
 
-          {/* TAB 3: PROFILE & ANALYTICS */}
-          {activeTab === "profile" ? (
-            <section aria-label="Perfil e métricas" className="flex flex-col gap-6">
+          {/* TAB 3: METRICS / ANALYTICS */}
+          {activeTab === "analytics" ? (
+            <section aria-label="Métricas e Analytics" className="flex flex-col gap-6">
+              {/* Metrics Section Header */}
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-4 sm:p-5">
+                <div>
+                  <h1 className="text-base font-extrabold tracking-tight sm:text-lg">
+                    Métricas de Desempenho
+                  </h1>
+                  <p className="mt-0.5 text-xs text-[#9CB3CE] sm:text-sm">
+                    Acompanhe acessos, cliques em links e cópias de cupons em tempo real.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={analyticsLoading}
+                  onClick={() => setAnalyticsReloadToken((t) => t + 1)}
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-semibold text-[#9CB3CE] transition hover:text-white"
+                >
+                  {analyticsLoading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
+                  )}
+                  <span>Atualizar</span>
+                </button>
+              </div>
               {/* Metrics Summary */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-4">
@@ -2623,6 +2669,151 @@ export function DashboardClient({
                   </div>
                 </div>
               ) : null}
+            </section>
+          ) : null}
+
+          {/* TAB 4: PERFIL & PLANO */}
+          {activeTab === "profile" || activeTab === "plan" ? (
+            <section aria-label="Perfil e plano de assinatura" className="flex flex-col gap-6">
+              {/* Plan & Subscription Card */}
+              <div className="rounded-2xl border border-[#94C5FF]/16 bg-[#0E1624] p-5 sm:p-6">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Crown
+                        className={`h-5 w-5 ${
+                          userIsPro ? "text-amber-300" : "text-[#9CB3CE]"
+                        }`}
+                        aria-hidden="true"
+                      />
+                      <h2 className="text-lg font-extrabold text-white">
+                        Seu plano atual: {userIsPro ? "Pro" : "Grátis"}
+                      </h2>
+                    </div>
+                    <p className="mt-1 text-sm text-[#9CB3CE]">
+                      {userIsPro
+                        ? `Status da assinatura: ${profile.subscriptionStatus}. Todos os recursos liberados.`
+                        : `Você está usando ${linkCount} de ${FREE_MAX_ACTIVE_OR_TOTAL_LINKS} links/cupons disponíveis no plano Grátis.`}
+                    </p>
+                    {profile.currentPeriodEnd ? (
+                      <p className="mt-1 text-xs text-[#7DD3FC]">
+                        Ciclo vigente até{" "}
+                        {new Date(profile.currentPeriodEnd).toLocaleDateString("pt-BR")}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2.5">
+                    {!userIsPro ? (
+                      <button
+                        type="button"
+                        disabled={billingLoading}
+                        onClick={handleStartCheckout}
+                        className="inline-flex min-h-[46px] items-center gap-2 rounded-xl bg-amber-400 px-5 text-sm font-extrabold text-[#08101C] shadow-lg hover:bg-amber-300 disabled:opacity-60"
+                      >
+                        {billingLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Crown className="h-4 w-4" aria-hidden="true" />
+                        )}
+                        <span>Assinar Plano Pro</span>
+                      </button>
+                    ) : null}
+
+                    {profile.mpPreapprovalId && !userIsPro ? (
+                      <button
+                        type="button"
+                        disabled={billingLoading}
+                        onClick={handleSyncSubscription}
+                        className="inline-flex min-h-[46px] items-center gap-2 rounded-xl border border-white/15 bg-[#09101B] px-4 text-sm font-bold text-white hover:border-[#38BDF8] disabled:opacity-60"
+                      >
+                        <CreditCard className="h-4 w-4 text-[#38BDF8]" aria-hidden="true" />
+                        <span>Verificar pagamento</span>
+                      </button>
+                    ) : null}
+
+                    {profile.mpPreapprovalId && userIsPro ? (
+                      <button
+                        type="button"
+                        disabled={billingLoading}
+                        onClick={handleCancelSubscription}
+                        className="inline-flex min-h-[46px] items-center gap-2 rounded-xl border border-red-400/35 bg-red-500/10 px-4 text-sm font-bold text-red-200 hover:bg-red-500/20 disabled:opacity-60"
+                      >
+                        <CreditCard className="h-4 w-4 text-red-300" aria-hidden="true" />
+                        <span>Cancelar assinatura</span>
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+
+                {!mercadoPagoEnabled && !userIsPro ? (
+                  <p className="mt-4 rounded-xl border border-white/10 bg-[#09101B] px-3.5 py-2.5 text-xs text-[#9CB3CE]">
+                    Pagamentos via Mercado Pago ainda não configurados neste ambiente (`MP_ACCESS_TOKEN`).
+                  </p>
+                ) : null}
+              </div>
+
+              {/* Plan Comparison Cards */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {PLAN_CARDS.map((card) => {
+                  const isCurrent =
+                    (card.id === "pro" && userIsPro) || (card.id === "free" && !userIsPro);
+                  const isHighlighted = card.id === "pro";
+                  return (
+                    <div
+                      key={card.id}
+                      className={`flex flex-col justify-between rounded-2xl border p-5 ${
+                        isHighlighted
+                          ? "border-[#38BDF8]/45 bg-gradient-to-b from-[#10223A] to-[#0D1624]"
+                          : "border-[#94C5FF]/14 bg-[#0E1624]"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="text-base font-extrabold text-white">{card.name}</h3>
+                          {isCurrent ? (
+                            <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-bold text-emerald-300">
+                              Plano atual
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-2xl font-black text-white">
+                          {card.priceLabel}
+                          <span className="text-xs font-semibold text-[#9CB3CE]">
+                            {" "}
+                            {card.periodLabel}
+                          </span>
+                        </p>
+                        <p className="mt-1 text-xs text-[#9CB3CE]">{card.description}</p>
+
+                        <ul className="mt-4 space-y-2 text-xs text-[#E2ECF7]">
+                          {card.features.map((feat) => (
+                            <li key={feat} className="flex items-start gap-2">
+                              <CheckCircle2
+                                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#38BDF8]"
+                                aria-hidden="true"
+                              />
+                              <span>{feat}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {card.id === "pro" && !userIsPro ? (
+                        <button
+                          type="button"
+                          disabled={billingLoading}
+                          onClick={handleStartCheckout}
+                          className="mt-5 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-[#1E60CF] px-4 text-sm font-bold text-white hover:bg-[#256EE8] disabled:opacity-60"
+                        >
+                          <Crown className="h-4 w-4" aria-hidden="true" />
+                          <span>Assinar Plano Pro</span>
+                        </button>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
 
               {/* Profile Form */}
               <form
@@ -2632,9 +2823,16 @@ export function DashboardClient({
                 }}
                 className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-5"
               >
-                <div className="mb-4 flex items-center gap-2">
-                  <User className="h-4 w-4 text-[#38BDF8]" aria-hidden="true" />
-                  <h2 className="text-base font-extrabold">Dados do seu perfil</h2>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-[#38BDF8]" aria-hidden="true" />
+                    <h2 className="text-base font-extrabold">Dados do seu perfil</h2>
+                  </div>
+                  {userEmail ? (
+                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-[#9CB3CE]">
+                      {userEmail}
+                    </span>
+                  ) : null}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -2915,149 +3113,30 @@ export function DashboardClient({
                   </button>
                 </div>
               </form>
-            </section>
-          ) : null}
 
-          {/* TAB 4: PLAN & BILLING */}
-          {activeTab === "plan" ? (
-            <section aria-label="Plano e assinatura" className="flex flex-col gap-6">
-              <div className="rounded-2xl border border-[#94C5FF]/16 bg-[#0E1624] p-5 sm:p-6">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Crown
-                        className={`h-5 w-5 ${
-                          userIsPro ? "text-amber-300" : "text-[#9CB3CE]"
-                        }`}
-                        aria-hidden="true"
-                      />
-                      <h2 className="text-lg font-extrabold text-white">
-                        Seu plano atual: {userIsPro ? "Pro" : "Grátis"}
-                      </h2>
+              {/* Super Admin Access Card if isAdmin */}
+              {isAdmin ? (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 sm:p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-400/20 text-amber-300">
+                      <ShieldCheck className="h-5 w-5" aria-hidden="true" />
                     </div>
-                    <p className="mt-1 text-sm text-[#9CB3CE]">
-                      {userIsPro
-                        ? `Status da assinatura: ${profile.subscriptionStatus}. Todos os recursos liberados.`
-                        : `Você está usando ${linkCount} de ${FREE_MAX_ACTIVE_OR_TOTAL_LINKS} links/cupons disponíveis no plano Grátis.`}
-                    </p>
-                    {profile.currentPeriodEnd ? (
-                      <p className="mt-1 text-xs text-[#7DD3FC]">
-                        Ciclo vigente até{" "}
-                        {new Date(profile.currentPeriodEnd).toLocaleDateString("pt-BR")}
+                    <div>
+                      <h3 className="text-sm font-bold text-amber-200">Painel Super Admin</h3>
+                      <p className="text-xs text-[#9CB3CE]">
+                        Gerencie todos os usuários, assinaturas e status do sistema.
                       </p>
-                    ) : null}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2.5">
-                    {!userIsPro ? (
-                      <button
-                        type="button"
-                        disabled={billingLoading}
-                        onClick={handleStartCheckout}
-                        className="inline-flex min-h-[46px] items-center gap-2 rounded-xl bg-amber-400 px-5 text-sm font-extrabold text-[#08101C] shadow-lg hover:bg-amber-300 disabled:opacity-60"
-                      >
-                        {billingLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                        ) : (
-                          <Crown className="h-4 w-4" aria-hidden="true" />
-                        )}
-                        <span>Assinar Plano Pro</span>
-                      </button>
-                    ) : null}
-
-                    {profile.mpPreapprovalId && !userIsPro ? (
-                      <button
-                        type="button"
-                        disabled={billingLoading}
-                        onClick={handleSyncSubscription}
-                        className="inline-flex min-h-[46px] items-center gap-2 rounded-xl border border-white/15 bg-[#09101B] px-4 text-sm font-bold text-white hover:border-[#38BDF8] disabled:opacity-60"
-                      >
-                        <CreditCard className="h-4 w-4 text-[#38BDF8]" aria-hidden="true" />
-                        <span>Verificar pagamento</span>
-                      </button>
-                    ) : null}
-
-                    {profile.mpPreapprovalId && userIsPro ? (
-                      <button
-                        type="button"
-                        disabled={billingLoading}
-                        onClick={handleCancelSubscription}
-                        className="inline-flex min-h-[46px] items-center gap-2 rounded-xl border border-red-400/35 bg-red-500/10 px-4 text-sm font-bold text-red-200 hover:bg-red-500/20 disabled:opacity-60"
-                      >
-                        <CreditCard className="h-4 w-4 text-red-300" aria-hidden="true" />
-                        <span>Cancelar assinatura</span>
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-
-                {!mercadoPagoEnabled && !userIsPro ? (
-                  <p className="mt-4 rounded-xl border border-white/10 bg-[#09101B] px-3.5 py-2.5 text-xs text-[#9CB3CE]">
-                    Pagamentos via Mercado Pago ainda não configurados neste ambiente (`MP_ACCESS_TOKEN`).
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {PLAN_CARDS.map((card) => {
-                  const isCurrent =
-                    (card.id === "pro" && userIsPro) || (card.id === "free" && !userIsPro);
-                  const isHighlighted = card.id === "pro";
-                  return (
-                    <div
-                      key={card.id}
-                      className={`flex flex-col justify-between rounded-2xl border p-5 ${
-                        isHighlighted
-                          ? "border-[#38BDF8]/45 bg-gradient-to-b from-[#10223A] to-[#0D1624]"
-                          : "border-[#94C5FF]/14 bg-[#0E1624]"
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between gap-2">
-                          <h3 className="text-base font-extrabold text-white">{card.name}</h3>
-                          {isCurrent ? (
-                            <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-bold text-emerald-300">
-                              Plano atual
-                            </span>
-                          ) : null}
-                        </div>
-                        <p className="mt-1 text-2xl font-black text-white">
-                          {card.priceLabel}
-                          <span className="text-xs font-semibold text-[#9CB3CE]">
-                            {" "}
-                            {card.periodLabel}
-                          </span>
-                        </p>
-                        <p className="mt-1 text-xs text-[#9CB3CE]">{card.description}</p>
-
-                        <ul className="mt-4 space-y-2 text-xs text-[#E2ECF7]">
-                          {card.features.map((feat) => (
-                            <li key={feat} className="flex items-start gap-2">
-                              <CheckCircle2
-                                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#38BDF8]"
-                                aria-hidden="true"
-                              />
-                              <span>{feat}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {card.id === "pro" && !userIsPro ? (
-                        <button
-                          type="button"
-                          disabled={billingLoading}
-                          onClick={handleStartCheckout}
-                          className="mt-5 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-[#1E60CF] px-4 text-sm font-bold text-white hover:bg-[#256EE8] disabled:opacity-60"
-                        >
-                          <Crown className="h-4 w-4" aria-hidden="true" />
-                          <span>Assinar Plano Pro</span>
-                        </button>
-                      ) : null}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                  <Link
+                    href="/admin"
+                    className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-amber-400 px-4 text-xs font-extrabold text-[#08101C] hover:bg-amber-300"
+                  >
+                    <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                    <span>Acessar Painel</span>
+                  </Link>
+                </div>
+              ) : null}
             </section>
           ) : null}
         </div>
@@ -3119,7 +3198,7 @@ export function DashboardClient({
         aria-label="Navegação móvel inferior"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-white/12 bg-[#090F1C]/95 backdrop-blur-xl pb-[env(safe-area-inset-bottom,8px)] shadow-[0_-8px_30px_rgba(0,0,0,0.6)] lg:hidden"
       >
-        <div className="mx-auto flex max-w-md items-center justify-around px-2 py-1.5">
+        <div className="mx-auto flex max-w-md items-center justify-between px-3 py-1">
           {/* Tab 1: Links & Cupons */}
           <button
             type="button"
@@ -3127,14 +3206,14 @@ export function DashboardClient({
               setActiveTab("items");
               setMobilePreviewOpen(false);
             }}
-            className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1 transition ${
+            className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 py-1 transition ${
               !mobilePreviewOpen && activeTab === "items"
                 ? "text-[#38BDF8]"
                 : "text-[#9CB3CE] hover:text-white"
             }`}
           >
             <Tag className="h-5 w-5 shrink-0" aria-hidden="true" />
-            <span className="text-[11px] font-bold">Links</span>
+            <span className="text-[10px] font-bold">Links</span>
             {!mobilePreviewOpen && activeTab === "items" ? (
               <span className="h-1 w-4 rounded-full bg-[#38BDF8]" />
             ) : (
@@ -3149,14 +3228,14 @@ export function DashboardClient({
               setActiveTab("appearance");
               setMobilePreviewOpen(false);
             }}
-            className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1 transition ${
+            className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 py-1 transition ${
               !mobilePreviewOpen && activeTab === "appearance"
                 ? "text-[#38BDF8]"
                 : "text-[#9CB3CE] hover:text-white"
             }`}
           >
             <Palette className="h-5 w-5 shrink-0" aria-hidden="true" />
-            <span className="text-[11px] font-bold">Aparência</span>
+            <span className="text-[10px] font-bold">Aparência</span>
             {!mobilePreviewOpen && activeTab === "appearance" ? (
               <span className="h-1 w-4 rounded-full bg-[#38BDF8]" />
             ) : (
@@ -3164,69 +3243,72 @@ export function DashboardClient({
             )}
           </button>
 
-          {/* Tab 3: Preview (Center / Prominent) */}
-          <button
-            type="button"
-            onClick={() => setMobilePreviewOpen((p) => !p)}
-            className="relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition"
-          >
-            <div
-              className={`grid h-8 w-8 place-items-center rounded-xl transition ${
+          {/* Tab 3: Central Elevated Floating Rounded PREVIEW Button */}
+          <div className="relative -mt-6 flex flex-1 items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setMobilePreviewOpen((p) => !p)}
+              aria-label={mobilePreviewOpen ? "Voltar ao editor da página" : "Abrir preview ao vivo no celular"}
+              title={mobilePreviewOpen ? "Voltar ao editor" : "Ver preview ao vivo"}
+              className={`group flex h-14 w-14 flex-col items-center justify-center rounded-full shadow-xl transition-all duration-200 active:scale-95 ${
                 mobilePreviewOpen
-                  ? "bg-[#38BDF8] text-[#070C14] shadow-lg shadow-[#38BDF8]/40 ring-2 ring-[#7DD3FC]"
-                  : "border border-[#38BDF8]/40 bg-[#1E60CF]/25 text-[#7DD3FC]"
+                  ? "bg-gradient-to-tr from-emerald-500 to-teal-400 text-white ring-4 ring-[#090F1C] shadow-emerald-500/40"
+                  : "bg-gradient-to-tr from-[#1E60CF] via-[#256EE8] to-[#38BDF8] text-white ring-4 ring-[#090F1C] shadow-[#1E60CF]/50"
               }`}
             >
-              <Smartphone className="h-4 w-4" aria-hidden="true" />
-            </div>
-            <span
-              className={`text-[11px] font-extrabold ${
-                mobilePreviewOpen ? "text-[#38BDF8]" : "text-[#9CB3CE]"
-              }`}
-            >
-              {mobilePreviewOpen ? "Editor" : "Preview"}
-            </span>
-          </button>
+              {mobilePreviewOpen ? (
+                <>
+                  <ArrowLeft className="h-5 w-5 shrink-0 transition-transform group-hover:-translate-x-0.5" aria-hidden="true" />
+                  <span className="text-[9px] font-black uppercase tracking-wider">Editor</span>
+                </>
+              ) : (
+                <>
+                  <Smartphone className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110" aria-hidden="true" />
+                  <span className="text-[9px] font-black uppercase tracking-wider">Preview</span>
+                </>
+              )}
+            </button>
+          </div>
 
-          {/* Tab 4: Perfil & Métricas */}
+          {/* Tab 4: Métricas */}
           <button
             type="button"
             onClick={() => {
-              setActiveTab("profile");
+              setActiveTab("analytics");
               setMobilePreviewOpen(false);
             }}
-            className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1 transition ${
-              !mobilePreviewOpen && activeTab === "profile"
+            className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 py-1 transition ${
+              !mobilePreviewOpen && activeTab === "analytics"
                 ? "text-[#38BDF8]"
                 : "text-[#9CB3CE] hover:text-white"
             }`}
           >
             <BarChart3 className="h-5 w-5 shrink-0" aria-hidden="true" />
-            <span className="text-[11px] font-bold">Perfil</span>
-            {!mobilePreviewOpen && activeTab === "profile" ? (
+            <span className="text-[10px] font-bold">Métricas</span>
+            {!mobilePreviewOpen && activeTab === "analytics" ? (
               <span className="h-1 w-4 rounded-full bg-[#38BDF8]" />
             ) : (
               <span className="h-1 w-4" />
             )}
           </button>
 
-          {/* Tab 5: Plano Pro */}
+          {/* Tab 5: Perfil & Plano */}
           <button
             type="button"
             onClick={() => {
-              setActiveTab("plan");
+              setActiveTab("profile");
               setMobilePreviewOpen(false);
             }}
-            className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1 transition ${
-              !mobilePreviewOpen && activeTab === "plan"
-                ? "text-amber-300"
+            className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 py-1 transition ${
+              !mobilePreviewOpen && (activeTab === "profile" || activeTab === "plan")
+                ? "text-[#38BDF8]"
                 : "text-[#9CB3CE] hover:text-white"
             }`}
           >
-            <Crown className="h-5 w-5 shrink-0" aria-hidden="true" />
-            <span className="text-[11px] font-bold">Plano</span>
-            {!mobilePreviewOpen && activeTab === "plan" ? (
-              <span className="h-1 w-4 rounded-full bg-amber-300" />
+            <User className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <span className="text-[10px] font-bold">Perfil</span>
+            {!mobilePreviewOpen && (activeTab === "profile" || activeTab === "plan") ? (
+              <span className="h-1 w-4 rounded-full bg-[#38BDF8]" />
             ) : (
               <span className="h-1 w-4" />
             )}
