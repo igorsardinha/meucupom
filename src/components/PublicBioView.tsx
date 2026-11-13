@@ -6,6 +6,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   Check,
+  ChevronDown,
   Clock,
   Copy,
   Flame,
@@ -305,6 +306,7 @@ export function PublicBioView({
     getColorSchemeServerSnapshot
   );
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [liveStatus, setLiveStatus] = useState("");
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
@@ -1062,100 +1064,159 @@ export function PublicBioView({
 
                 if (profile.layout === "ultra-compact") {
                   const hasCoupon = item.kind === "coupon" && Boolean(item.couponCode);
+                  const isExpanded = expandedItemId === item.id;
+
                   return (
                     <li
                       key={item.id}
                       style={cardSurfaceStyle(itemAccent, item.isFeatured)}
-                      className={`flex items-center justify-between gap-2.5 p-2.5 sm:px-3 sm:py-2.5 ${
+                      className={`flex flex-col transition-all duration-200 ${
                         item.isFeatured
                           ? featuredAnimationClass
-                          : "transition-transform duration-150 hover:-translate-y-0.5"
-                      }`}
+                          : "hover:-translate-y-0.5"
+                      } ${isExpanded ? "p-3 sm:p-3.5" : "p-2.5 sm:px-3 sm:py-2.5"}`}
                     >
-                      <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                        <BrandBadge
-                          key={`${item.logoUrl}|${item.url}`}
-                          item={item}
-                          cardColor={resolvedCard}
-                          textColor={resolvedText}
-                          size="sm"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <h3
-                              style={{ fontFamily: titleFontFamily }}
-                              className="truncate text-[0.875rem] font-bold tracking-tight"
-                            >
-                              {item.title}
-                            </h3>
-                            {item.isFeatured ? (
-                              <span
-                                style={{ background: featuredBadgeBg, color: featuredBadgeInk }}
-                                className="inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[0.625rem] font-extrabold uppercase tracking-wider shadow-sm"
+                      {/* Clickable Header Row: click to expand options */}
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setExpandedItemId(isExpanded ? null : item.id);
+                          }
+                        }}
+                        aria-expanded={isExpanded}
+                        className="flex cursor-pointer items-center justify-between gap-2.5 select-none"
+                      >
+                        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                          <BrandBadge
+                            key={`${item.logoUrl}|${item.url}`}
+                            item={item}
+                            cardColor={resolvedCard}
+                            textColor={resolvedText}
+                            size="sm"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <h3
+                                style={{ fontFamily: titleFontFamily }}
+                                className="truncate text-[0.875rem] font-bold tracking-tight"
                               >
-                                <FeaturedBadgeIcon iconKey={item.featuredIcon} className="h-2.5 w-2.5" />
-                                <span>{item.featuredLabel || "Destaque"}</span>
-                              </span>
+                                {item.title}
+                              </h3>
+                              {item.isFeatured ? (
+                                <span
+                                  style={{ background: featuredBadgeBg, color: featuredBadgeInk }}
+                                  className="inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[0.625rem] font-extrabold uppercase tracking-wider shadow-sm"
+                                >
+                                  <FeaturedBadgeIcon iconKey={item.featuredIcon} className="h-2.5 w-2.5" />
+                                  <span>{item.featuredLabel || "Destaque"}</span>
+                                </span>
+                              ) : null}
+                            </div>
+                            {item.expiresAt ? (
+                              <div className="mt-0.5">
+                                <CountdownBadge expiresAt={item.expiresAt} />
+                              </div>
                             ) : null}
                           </div>
-                          {item.expiresAt ? (
-                            <div className="mt-0.5">
-                              <CountdownBadge expiresAt={item.expiresAt} />
-                            </div>
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-2">
+                          {hasCoupon ? (
+                            <span
+                              style={{
+                                background: pillBg,
+                                borderColor: borderSubtle,
+                                color: resolvedText,
+                              }}
+                              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[0.6875rem] font-bold tracking-wide"
+                            >
+                              <Tag className="h-2.5 w-2.5 opacity-70" aria-hidden="true" />
+                              <span>{item.couponCode}</span>
+                            </span>
                           ) : null}
+
+                          <span
+                            className={`grid h-6 w-6 place-items-center rounded-full transition-transform duration-200 ${
+                              isExpanded ? "rotate-180 bg-white/10" : "opacity-60"
+                            }`}
+                            aria-hidden="true"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </span>
                         </div>
                       </div>
 
-                      <div className="flex shrink-0 items-center gap-1.5">
-                        {hasCoupon ? (
-                          <button
-                            type="button"
-                            onClick={() => handleCopyCoupon(item)}
-                            aria-label={`Copiar cupom ${item.couponCode} da ${item.title}`}
-                            style={{
-                              background: isCopied ? "rgba(52, 211, 153, 0.16)" : couponBg,
-                              borderColor: isCopied ? "#34D399" : borderStrong,
-                              borderStyle: isCopied ? "solid" : "dashed",
-                              borderRadius: controlRadius,
-                              color: resolvedText,
-                            }}
-                            className="inline-flex min-h-[34px] items-center gap-1.5 border px-2.5 py-1 text-xs font-bold transition-colors"
-                          >
-                            <code className="font-mono text-[0.75rem] font-bold">
-                              {item.couponCode}
-                            </code>
-                            {isCopied ? (
-                              <Check className="h-3 w-3 text-[#34D399]" aria-hidden="true" />
-                            ) : (
-                              <Copy className="h-3 w-3 opacity-70" aria-hidden="true" />
-                            )}
-                          </button>
-                        ) : null}
-
-                        <a
-                          href={item.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => handleLinkClick(item)}
-                          aria-label={item.ctaLabel || `Acessar ${item.title}`}
-                          style={{
-                            background: resolvedCta,
-                            color: ctaInk,
-                            borderRadius: controlRadius,
-                          }}
-                          className={`inline-flex min-h-[34px] shrink-0 items-center justify-center gap-1 font-bold shadow-sm transition-opacity hover:opacity-95 ${
-                            hasCoupon
-                              ? "h-[34px] w-[34px] px-0"
-                              : "px-3 text-xs"
-                          }`}
-                          title={item.ctaLabel || "Acessar"}
-                        >
-                          {!hasCoupon ? (
-                            <span className="max-w-[120px] truncate">{item.ctaLabel || "Acessar"}</span>
+                      {/* Expanded Action Panel: revealed on click */}
+                      {isExpanded ? (
+                        <div className="mt-2.5 pt-2.5 border-t border-white/10 flex flex-col gap-2">
+                          {item.description ? (
+                            <p style={{ color: mutedText }} className="text-xs leading-relaxed">
+                              {item.description}
+                            </p>
                           ) : null}
-                          <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-                        </a>
-                      </div>
+
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                            {hasCoupon ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCopyCoupon(item);
+                                }}
+                                aria-label={`Copiar cupom ${item.couponCode} da ${item.title}`}
+                                style={{
+                                  background: isCopied ? "rgba(52, 211, 153, 0.16)" : couponBg,
+                                  borderColor: isCopied ? "#34D399" : borderStrong,
+                                  borderStyle: isCopied ? "solid" : "dashed",
+                                  borderRadius: controlRadius,
+                                  color: resolvedText,
+                                }}
+                                className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-2 border px-3 py-2 text-xs font-bold transition-all active:scale-[0.98]"
+                              >
+                                {isCopied ? (
+                                  <>
+                                    <Check className="h-4 w-4 text-[#34D399]" aria-hidden="true" />
+                                    <span className="text-[#34D399]">
+                                      Copiado: <strong>{item.couponCode}</strong>
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="h-4 w-4 opacity-75" aria-hidden="true" />
+                                    <span>
+                                      Copiar cupom: <strong className="font-mono">{item.couponCode}</strong>
+                                    </span>
+                                  </>
+                                )}
+                              </button>
+                            ) : null}
+
+                            <a
+                              href={item.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLinkClick(item);
+                              }}
+                              aria-label={item.ctaLabel || `Ir para ${item.title}`}
+                              style={{
+                                background: resolvedCta,
+                                color: ctaInk,
+                                borderRadius: controlRadius,
+                              }}
+                              className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold shadow-sm transition-opacity hover:opacity-95 active:scale-[0.98]"
+                            >
+                              <span>{item.ctaLabel || (hasCoupon ? `Ir para ${item.title}` : "Acessar")}</span>
+                              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                            </a>
+                          </div>
+                        </div>
+                      ) : null}
                     </li>
                   );
                 }
