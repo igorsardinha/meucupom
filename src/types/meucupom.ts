@@ -141,6 +141,33 @@ export interface PublicPagePayload {
   items: LinkItemData[];
 }
 
+export interface PlatformCouponData {
+  id: string;
+  code: string;
+  influencerName: string;
+  influencerEmail: string;
+  description: string;
+  plan: "pro";
+  durationDays: number;
+  maxUses: number;
+  usedCount: number;
+  isActive: boolean;
+  expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlatformCouponRedemptionData {
+  id: string;
+  couponId: string;
+  couponCode: string;
+  userId: string;
+  profileId: string;
+  userEmail: string;
+  userName: string;
+  redeemedAt: string;
+}
+
 export interface ThemePreset {
   id: string;
   name: string;

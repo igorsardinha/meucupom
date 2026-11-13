@@ -588,6 +588,9 @@ export function DashboardClient({
   const [savingItem, setSavingItem] = useState(false);
   const [billingLoading, setBillingLoading] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponMessage, setCouponMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
 
   const [analyticsDays, setAnalyticsDays] = useState<7 | 14 | 30>(7);
   const [analyticsPoints, setAnalyticsPoints] = useState<DailyAnalyticsPoint[]>([]);
@@ -1003,6 +1006,50 @@ export function DashboardClient({
       notify("error", "Erro de conexão ao cancelar assinatura.");
     } finally {
       setBillingLoading(false);
+    }
+  }
+
+  async function handleRedeemCoupon(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = couponInput.trim().toUpperCase();
+    if (!trimmed) {
+      notify("error", "Digite o código do cupom.");
+      return;
+    }
+    setCouponLoading(true);
+    setCouponMessage(null);
+    try {
+      const res = await fetch("/api/billing/coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: trimmed }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        message?: string;
+        error?: string;
+        profile?: CreatorProfileData;
+      };
+      if (!res.ok || !data.ok) {
+        const errMsg = data.error || "Não foi possível validar este cupom.";
+        setCouponMessage({ type: "error", text: errMsg });
+        notify("error", errMsg);
+        return;
+      }
+      if (data.profile) {
+        setProfile(data.profile);
+      }
+      setCouponInput("");
+      const successMsg = data.message || "Cupom aplicado com sucesso!";
+      setCouponMessage({ type: "ok", text: successMsg });
+      notify("ok", successMsg);
+      router.refresh();
+    } catch {
+      const errMsg = "Erro de conexão ao aplicar cupom.";
+      setCouponMessage({ type: "error", text: errMsg });
+      notify("error", errMsg);
+    } finally {
+      setCouponLoading(false);
     }
   }
 
@@ -3911,6 +3958,76 @@ export function DashboardClient({
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Influencer / Partner Coupon Card */}
+              <div className="rounded-2xl border border-[#94C5FF]/16 bg-gradient-to-br from-[#0F1E33] via-[#0E1624] to-[#0A101D] p-5 shadow-lg">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#1E60CF]/25 text-[#38BDF8]">
+                      <Gift className="h-5 w-5" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-extrabold text-white">
+                          Cupom de Parceiro ou Influenciador
+                        </h3>
+                        <span className="rounded-full border border-[#38BDF8]/30 bg-[#1E60CF]/20 px-2 py-0.5 text-[10px] font-bold text-[#38BDF8]">
+                          PRO
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-[#9CB3CE]">
+                        Recebeu um cupom de algum criador parceiro? Digite abaixo para resgatar dias de Plano Pro gratuitamente.
+                      </p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleRedeemCoupon} className="flex w-full items-center gap-2 sm:w-auto">
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      placeholder="Ex: PARCEIRO30"
+                      className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-bold uppercase tracking-wider text-white placeholder:normal-case placeholder:font-normal placeholder:text-[#6A829F] focus:border-[#38BDF8] focus:outline-none sm:w-48"
+                      maxLength={32}
+                      disabled={couponLoading}
+                    />
+                    <button
+                      type="submit"
+                      disabled={couponLoading || !couponInput.trim()}
+                      className="inline-flex min-h-[38px] shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#1E60CF] px-4 text-xs font-bold text-white transition hover:bg-[#256EE8] disabled:opacity-50"
+                    >
+                      {couponLoading ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                          <span>Aplicando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Tag className="h-3.5 w-3.5" aria-hidden="true" />
+                          <span>Aplicar</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </div>
+
+                {couponMessage ? (
+                  <div
+                    className={`mt-3 flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold ${
+                      couponMessage.type === "ok"
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                        : "border-red-500/30 bg-red-500/10 text-red-300"
+                    }`}
+                  >
+                    {couponMessage.type === "ok" ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" aria-hidden="true" />
+                    )}
+                    <span>{couponMessage.text}</span>
+                  </div>
+                ) : null}
               </div>
 
               {/* Super Admin Access Card if isAdmin */}

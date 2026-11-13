@@ -17,6 +17,7 @@ import {
   isSafeMediaSrc,
   isSlugBlocked,
   LinkItemData,
+  PlatformCouponData,
   PublicPagePayload,
   sanitizeSlug,
 } from "@/types/meucupom";
@@ -1233,6 +1234,7 @@ export interface AdminReportSummary {
 export interface AdminOverviewData {
   users: AdminUserSummary[];
   reports: AdminReportSummary[];
+  coupons: PlatformCouponData[];
 }
 
 export async function getAdminOverviewData(): Promise<AdminOverviewData> {
@@ -1335,7 +1337,9 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
     createdAt: new Date(r.createdAt).toISOString(),
   }));
 
-  return { users, reports };
+  const coupons = await listPlatformCoupons();
+
+  return { users, reports, coupons };
 }
 
 export async function adminUpdateUserProfile(input: {
@@ -1443,4 +1447,352 @@ export async function adminUpdateReportStatus(input: {
       }
     }
   }
+}
+
+function mapPlatformCoupon(row: Record<string, unknown>): PlatformCouponData {
+  return {
+    id: String(row.id),
+    code: String(row.code || "").toUpperCase(),
+    influencerName: String(row.influencerName || ""),
+    influencerEmail: String(row.influencerEmail || ""),
+    description: String(row.description || ""),
+    plan: "pro",
+    durationDays: Number(row.durationDays || 30),
+    maxUses: Number(row.maxUses || 0),
+    usedCount: Number(row.usedCount || 0),
+    isActive: Boolean(row.isActive),
+    expiresAt: row.expiresAt
+      ? new Date(row.expiresAt as string | number | Date).toISOString()
+      : null,
+    createdAt: new Date(row.createdAt as string | number | Date).toISOString(),
+    updatedAt: new Date(row.updatedAt as string | number | Date).toISOString(),
+  };
+}
+
+export async function listPlatformCoupons(): Promise<PlatformCouponData[]> {
+  await ensureDatabaseReady();
+  const handle = getDbHandle();
+
+  const rows =
+    handle.dialect === "sqlite"
+      ? await handle.db
+          .select()
+          .from(handle.schema.platformCoupon)
+          .orderBy(desc(handle.schema.platformCoupon.createdAt))
+      : await handle.db
+          .select()
+          .from(handle.schema.platformCoupon)
+          .orderBy(desc(handle.schema.platformCoupon.createdAt));
+
+  return rows.map((r) => mapPlatformCoupon(r as unknown as Record<string, unknown>));
+}
+
+export async function createPlatformCoupon(input: {
+  code: string;
+  influencerName: string;
+  influencerEmail?: string;
+  description?: string;
+  durationDays?: number;
+  maxUses?: number;
+  expiresAt?: string | null;
+}): Promise<{ ok: true; coupon: PlatformCouponData } | { ok: false; error: string }> {
+  await ensureDatabaseReady();
+  const handle = getDbHandle();
+
+  const rawCode = (input.code || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9_-]/g, "");
+
+  if (rawCode.length < 3) {
+    return { ok: false, error: "O código do cupom deve ter pelo menos 3 caracteres alfanuméricos." };
+  }
+
+  const influencerName = (input.influencerName || "").trim();
+  if (!influencerName) {
+    return { ok: false, error: "Informe o nome do influenciador/parceiro." };
+  }
+
+  const existing =
+    handle.dialect === "sqlite"
+      ? await handle.db
+          .select({ id: handle.schema.platformCoupon.id })
+          .from(handle.schema.platformCoupon)
+          .where(eq(handle.schema.platformCoupon.code, rawCode))
+          .limit(1)
+      : await handle.db
+          .select({ id: handle.schema.platformCoupon.id })
+          .from(handle.schema.platformCoupon)
+          .where(eq(handle.schema.platformCoupon.code, rawCode))
+          .limit(1);
+
+  if (existing.length > 0) {
+    return { ok: false, error: `O código de cupom "${rawCode}" já existe.` };
+  }
+
+  const now = new Date();
+  const newRow = {
+    id: crypto.randomUUID(),
+    code: rawCode,
+    influencerName,
+    influencerEmail: (input.influencerEmail || "").trim(),
+    description: (input.description || "").trim(),
+    plan: "pro",
+    durationDays: typeof input.durationDays === "number" ? Math.max(0, input.durationDays) : 30,
+    maxUses: typeof input.maxUses === "number" ? Math.max(0, input.maxUses) : 100,
+    usedCount: 0,
+    isActive: true,
+    expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  if (handle.dialect === "sqlite") {
+    await handle.db.insert(handle.schema.platformCoupon).values(newRow);
+  } else {
+    await handle.db.insert(handle.schema.platformCoupon).values(newRow);
+  }
+
+  return { ok: true, coupon: mapPlatformCoupon(newRow as unknown as Record<string, unknown>) };
+}
+
+export async function togglePlatformCouponActive(
+  couponId: string,
+  isActive: boolean
+): Promise<{ ok: boolean; error?: string }> {
+  await ensureDatabaseReady();
+  const handle = getDbHandle();
+
+  if (handle.dialect === "sqlite") {
+    await handle.db
+      .update(handle.schema.platformCoupon)
+      .set({ isActive, updatedAt: new Date() })
+      .where(eq(handle.schema.platformCoupon.id, couponId));
+  } else {
+    await handle.db
+      .update(handle.schema.platformCoupon)
+      .set({ isActive, updatedAt: new Date() })
+      .where(eq(handle.schema.platformCoupon.id, couponId));
+  }
+
+  return { ok: true };
+}
+
+export async function deletePlatformCoupon(
+  couponId: string
+): Promise<{ ok: boolean; error?: string }> {
+  await ensureDatabaseReady();
+  const handle = getDbHandle();
+
+  if (handle.dialect === "sqlite") {
+    await handle.db
+      .delete(handle.schema.platformCoupon)
+      .where(eq(handle.schema.platformCoupon.id, couponId));
+  } else {
+    await handle.db
+      .delete(handle.schema.platformCoupon)
+      .where(eq(handle.schema.platformCoupon.id, couponId));
+  }
+
+  return { ok: true };
+}
+
+export async function redeemPlatformCouponForUser(
+  userId: string,
+  rawCode: string
+): Promise<
+  | { ok: true; message: string; profile: CreatorProfileData; coupon: PlatformCouponData }
+  | { ok: false; error: string }
+> {
+  await ensureDatabaseReady();
+  const handle = getDbHandle();
+
+  const code = (rawCode || "").trim().toUpperCase();
+  if (!code) {
+    return { ok: false, error: "Informe o código do cupom." };
+  }
+
+  const couponRows =
+    handle.dialect === "sqlite"
+      ? await handle.db
+          .select()
+          .from(handle.schema.platformCoupon)
+          .where(eq(handle.schema.platformCoupon.code, code))
+          .limit(1)
+      : await handle.db
+          .select()
+          .from(handle.schema.platformCoupon)
+          .where(eq(handle.schema.platformCoupon.code, code))
+          .limit(1);
+
+  if (couponRows.length === 0) {
+    return { ok: false, error: "Cupom não encontrado. Verifique o código e tente novamente." };
+  }
+
+  const coupon = mapPlatformCoupon(couponRows[0] as unknown as Record<string, unknown>);
+
+  if (!coupon.isActive) {
+    return { ok: false, error: "Este cupom foi desativado ou expirou." };
+  }
+
+  if (coupon.expiresAt) {
+    const expDate = new Date(coupon.expiresAt).getTime();
+    if (Date.now() > expDate) {
+      return { ok: false, error: "Este cupom expirou." };
+    }
+  }
+
+  if (coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses) {
+    return { ok: false, error: "Este cupom já atingiu o limite máximo de utilizações." };
+  }
+
+  // Verificar se o usuário já resgatou este cupom específico
+  const previousRedemption =
+    handle.dialect === "sqlite"
+      ? await handle.db
+          .select({ id: handle.schema.platformCouponRedemption.id })
+          .from(handle.schema.platformCouponRedemption)
+          .where(
+            and(
+              eq(handle.schema.platformCouponRedemption.couponId, coupon.id),
+              eq(handle.schema.platformCouponRedemption.userId, userId)
+            )
+          )
+          .limit(1)
+      : await handle.db
+          .select({ id: handle.schema.platformCouponRedemption.id })
+          .from(handle.schema.platformCouponRedemption)
+          .where(
+            and(
+              eq(handle.schema.platformCouponRedemption.couponId, coupon.id),
+              eq(handle.schema.platformCouponRedemption.userId, userId)
+            )
+          )
+          .limit(1);
+
+  if (previousRedemption.length > 0) {
+    return { ok: false, error: "Você já utilizou este cupom anteriormente." };
+  }
+
+  // Buscar perfil e dados do usuário
+  const profRows =
+    handle.dialect === "sqlite"
+      ? await handle.db
+          .select()
+          .from(handle.schema.creatorProfile)
+          .where(eq(handle.schema.creatorProfile.userId, userId))
+          .limit(1)
+      : await handle.db
+          .select()
+          .from(handle.schema.creatorProfile)
+          .where(eq(handle.schema.creatorProfile.userId, userId))
+          .limit(1);
+
+  if (profRows.length === 0) {
+    return { ok: false, error: "Perfil do criador não encontrado." };
+  }
+
+  const currentProf = mapProfile(profRows[0] as unknown as Record<string, unknown>);
+
+  const userRows =
+    handle.dialect === "sqlite"
+      ? await handle.db
+          .select()
+          .from(handle.schema.user)
+          .where(eq(handle.schema.user.id, userId))
+          .limit(1)
+      : await handle.db
+          .select()
+          .from(handle.schema.user)
+          .where(eq(handle.schema.user.id, userId))
+          .limit(1);
+
+  const currentUser = userRows[0];
+  const now = new Date();
+
+  // Calcular novo período
+  let nextSubscriptionStatus: CreatorProfileData["subscriptionStatus"] = "active";
+  let nextPeriodEnd: Date | null = null;
+
+  if (coupon.durationDays === 0) {
+    // Permuta permanente
+    nextSubscriptionStatus = "permuta";
+    nextPeriodEnd = null;
+  } else {
+    // Dias de Pro adicionados
+    const currentEnd = currentProf.currentPeriodEnd ? new Date(currentProf.currentPeriodEnd) : null;
+    const baseTime = currentEnd && currentEnd.getTime() > now.getTime() ? currentEnd.getTime() : now.getTime();
+    nextPeriodEnd = new Date(baseTime + coupon.durationDays * 86_400_000);
+  }
+
+  // Atualizar perfil
+  const profileUpdates = {
+    plan: "pro",
+    subscriptionStatus: nextSubscriptionStatus,
+    currentPeriodEnd: nextPeriodEnd,
+    updatedAt: now,
+  };
+
+  if (handle.dialect === "sqlite") {
+    await handle.db
+      .update(handle.schema.creatorProfile)
+      .set(profileUpdates)
+      .where(eq(handle.schema.creatorProfile.id, currentProf.id));
+  } else {
+    await handle.db
+      .update(handle.schema.creatorProfile)
+      .set(profileUpdates)
+      .where(eq(handle.schema.creatorProfile.id, currentProf.id));
+  }
+
+  // Registrar redenção
+  const redemptionRow = {
+    id: crypto.randomUUID(),
+    couponId: coupon.id,
+    couponCode: coupon.code,
+    userId,
+    profileId: currentProf.id,
+    userEmail: currentUser?.email || "",
+    userName: currentUser?.name || currentProf.displayName || "",
+    redeemedAt: now,
+  };
+
+  if (handle.dialect === "sqlite") {
+    await handle.db.insert(handle.schema.platformCouponRedemption).values(redemptionRow);
+    await handle.db
+      .update(handle.schema.platformCoupon)
+      .set({
+        usedCount: coupon.usedCount + 1,
+        updatedAt: now,
+      })
+      .where(eq(handle.schema.platformCoupon.id, coupon.id));
+  } else {
+    await handle.db.insert(handle.schema.platformCouponRedemption).values(redemptionRow);
+    await handle.db
+      .update(handle.schema.platformCoupon)
+      .set({
+        usedCount: coupon.usedCount + 1,
+        updatedAt: now,
+      })
+      .where(eq(handle.schema.platformCoupon.id, coupon.id));
+  }
+
+  const updatedProfile: CreatorProfileData = {
+    ...currentProf,
+    plan: "pro",
+    subscriptionStatus: nextSubscriptionStatus,
+    currentPeriodEnd: nextPeriodEnd ? nextPeriodEnd.toISOString() : null,
+  };
+
+  const benefitText =
+    coupon.durationDays === 0
+      ? "Plano Pro permanente ativado!"
+      : `${coupon.durationDays} dias de Plano Pro grátis ativados!`;
+
+  return {
+    ok: true,
+    message: `Parabéns! Cupom "${coupon.code}" aplicado com sucesso: ${benefitText} (Parceria com ${coupon.influencerName})`,
+    profile: updatedProfile,
+    coupon,
+  };
 }

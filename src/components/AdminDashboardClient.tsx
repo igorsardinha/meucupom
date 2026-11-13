@@ -8,14 +8,18 @@ import {
   Ban,
   Check,
   CheckCircle2,
+  Copy,
   Crown,
   ExternalLink,
   Flag,
   Loader2,
   LogOut,
+  Plus,
   RefreshCw,
   Search,
   ShieldCheck,
+  Ticket,
+  Trash2,
   Users,
 } from "lucide-react";
 import { BrandIcon } from "@/components/BrandIcon";
@@ -26,7 +30,7 @@ import type {
   AdminUserSummary,
 } from "@/db/repository";
 import { authClient } from "@/lib/auth-client";
-import type { CreatorProfileData } from "@/types/meucupom";
+import type { CreatorProfileData, PlatformCouponData } from "@/types/meucupom";
 
 interface AdminDashboardClientProps {
   initialData: AdminOverviewData;
@@ -35,7 +39,7 @@ interface AdminDashboardClientProps {
   proPriceBrl: number;
 }
 
-type AdminTab = "users" | "subscriptions" | "reports";
+type AdminTab = "users" | "subscriptions" | "coupons" | "reports";
 type UserFilter = "all" | "pro" | "permuta" | "free" | "suspended";
 
 const STATUS_LABELS: Record<CreatorProfileData["subscriptionStatus"], string> = {
@@ -54,18 +58,113 @@ export function AdminDashboardClient({
   proPriceBrl,
 }: AdminDashboardClientProps) {
   const [data, setData] = useState<AdminOverviewData>(initialData);
+  const [coupons, setCoupons] = useState<PlatformCouponData[]>(initialData.coupons || []);
   const [activeTab, setActiveTab] = useState<AdminTab>("users");
   const [searchQuery, setSearchQuery] = useState("");
   const [userFilter, setUserFilter] = useState<UserFilter>("all");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
   const [banner, setBanner] = useState<{ type: "ok" | "error"; text: string } | null>(null);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const [isNewCouponOpen, setIsNewCouponOpen] = useState(false);
+  const [couponForm, setCouponForm] = useState({
+    code: "",
+    influencerName: "",
+    influencerEmail: "",
+    description: "",
+    durationDays: 30,
+    maxUses: 100,
+  });
+  const [savingCoupon, setSavingCoupon] = useState(false);
 
   function notify(type: "ok" | "error", text: string) {
     setBanner({ type, text });
     window.setTimeout(() => {
       setBanner((prev) => (prev?.text === text ? null : prev));
     }, 3500);
+  }
+
+  function handleCopyCoupon(code: string) {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    notify("ok", `Código "${code}" copiado!`);
+    window.setTimeout(() => setCopiedCode((prev) => (prev === code ? null : prev)), 2000);
+  }
+
+  async function handleCreateCoupon(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingCoupon(true);
+    try {
+      const res = await fetch("/api/admin/coupons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(couponForm),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        notify("error", json.error || "Não foi possível criar o cupom.");
+        return;
+      }
+      setCoupons(json.coupons || []);
+      setIsNewCouponOpen(false);
+      setCouponForm({
+        code: "",
+        influencerName: "",
+        influencerEmail: "",
+        description: "",
+        durationDays: 30,
+        maxUses: 100,
+      });
+      notify("ok", `Cupom "${json.coupon?.code}" criado com sucesso!`);
+    } catch {
+      notify("error", "Erro ao conectar para criar cupom.");
+    } finally {
+      setSavingCoupon(false);
+    }
+  }
+
+  async function handleToggleCoupon(couponId: string, currentActive: boolean) {
+    setBusyId(couponId);
+    try {
+      const res = await fetch("/api/admin/coupons", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ couponId, isActive: !currentActive }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        notify("error", json.error || "Não foi possível alterar status.");
+        return;
+      }
+      setCoupons(json.coupons || []);
+      notify("ok", !currentActive ? "Cupom ativado!" : "Cupom pausado.");
+    } catch {
+      notify("error", "Erro ao atualizar cupom.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleDeleteCoupon(couponId: string, code: string) {
+    if (!window.confirm(`Deseja realmente excluir o cupom "${code}"?`)) return;
+    setBusyId(couponId);
+    try {
+      const res = await fetch(`/api/admin/coupons?couponId=${encodeURIComponent(couponId)}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        notify("error", json.error || "Não foi possível excluir o cupom.");
+        return;
+      }
+      setCoupons(json.coupons || []);
+      notify("ok", `Cupom "${code}" excluído.`);
+    } catch {
+      notify("error", "Erro ao excluir cupom.");
+    } finally {
+      setBusyId(null);
+    }
   }
 
   async function handleSignOut() {
@@ -106,6 +205,7 @@ export function AdminDashboardClient({
       }
       const next = (await res.json()) as AdminOverviewData;
       setData(next);
+      if (next.coupons) setCoupons(next.coupons);
       notify("ok", "Lista atualizada.");
     } catch {
       notify("error", "Erro de rede ao atualizar.");
@@ -353,7 +453,7 @@ export function AdminDashboardClient({
         <div
           role="tablist"
           aria-label="Módulos do Super Admin"
-          className="mb-6 grid grid-cols-3 gap-2 rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-1.5"
+          className="mb-6 grid grid-cols-2 gap-2 rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-1.5 lg:grid-cols-4"
         >
           <button
             type="button"
@@ -388,6 +488,21 @@ export function AdminDashboardClient({
           <button
             type="button"
             role="tab"
+            aria-selected={activeTab === "coupons"}
+            onClick={() => setActiveTab("coupons")}
+            className={`flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold transition sm:text-sm ${
+              activeTab === "coupons"
+                ? "bg-[#1E60CF] text-white shadow-md"
+                : "text-[#9CB3CE] hover:text-white"
+            }`}
+          >
+            <Ticket className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>Cupons de Parceiros ({coupons.length})</span>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
             aria-selected={activeTab === "reports"}
             onClick={() => setActiveTab("reports")}
             className={`flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold transition sm:text-sm ${
@@ -402,7 +517,7 @@ export function AdminDashboardClient({
         </div>
 
         {/* Search + Filter bar for Users/Subscriptions */}
-        {activeTab !== "reports" ? (
+        {activeTab === "users" || activeTab === "subscriptions" ? (
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-4">
             <div className="relative min-w-[240px] flex-1">
               <Search
@@ -841,6 +956,334 @@ export function AdminDashboardClient({
                 </table>
               </div>
             </div>
+          </section>
+        ) : null}
+
+        {/* TAB: INFLUENCER COUPONS */}
+        {activeTab === "coupons" ? (
+          <section className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-5">
+              <div>
+                <h2 className="text-lg font-bold text-white">Cupons de Influenciadores &amp; Parceiros</h2>
+                <p className="mt-1 text-xs text-[#9CB3CE]">
+                  Crie cupons exclusivos para influenciadores divulgarem o <strong>meucupom</strong>. Criadores que utilizarem o cupom ativam o Plano Pro automaticamente.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsNewCouponOpen(true)}
+                className="inline-flex min-h-[42px] items-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 px-4 text-xs font-extrabold text-[#08101C] shadow-md hover:from-amber-300 hover:to-amber-400"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                <span>Novo Cupom de Influenciador</span>
+              </button>
+            </div>
+
+            {/* Quick stats for coupons */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/10 bg-[#0E1624] p-4">
+                <span className="text-xs font-semibold text-[#9CB3CE]">Total de Cupons Criados</span>
+                <p className="mt-1 text-2xl font-black text-white">{coupons.length}</p>
+              </div>
+              <div className="rounded-2xl border border-amber-400/25 bg-[#0E1624] p-4">
+                <span className="text-xs font-semibold text-amber-300">Criadores Beneficiados</span>
+                <p className="mt-1 text-2xl font-black text-white">
+                  {coupons.reduce((sum, c) => sum + c.usedCount, 0)}
+                </p>
+                <p className="mt-0.5 text-[10px] text-[#9CB3CE]">Ativações de Pro via parceiros</p>
+              </div>
+              <div className="rounded-2xl border border-emerald-400/25 bg-[#0E1624] p-4">
+                <span className="text-xs font-semibold text-emerald-300">Cupons Ativos</span>
+                <p className="mt-1 text-2xl font-black text-white">
+                  {coupons.filter((c) => c.isActive).length}
+                </p>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-hidden rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624]">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-white/10 bg-white/[0.02] text-[#9CB3CE]">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Código do Cupom</th>
+                      <th className="px-4 py-3 font-semibold">Influenciador / Parceiro</th>
+                      <th className="px-4 py-3 font-semibold">Benefício</th>
+                      <th className="px-4 py-3 font-semibold">Usos / Limite</th>
+                      <th className="px-4 py-3 font-semibold">Status</th>
+                      <th className="px-4 py-3 text-right font-semibold">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {coupons.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-12 text-center text-[#9CB3CE]">
+                          <Ticket className="mx-auto h-8 w-8 text-amber-400/50" aria-hidden="true" />
+                          <p className="mt-2 text-sm font-bold text-white">Nenhum cupom de influenciador cadastrado</p>
+                          <p className="mt-1 text-xs">
+                            Clique no botão acima para criar o primeiro cupom (ex: SARDINHA, VIP30).
+                          </p>
+                        </td>
+                      </tr>
+                    ) : (
+                      coupons.map((c) => {
+                        const isBusy = busyId === c.id;
+                        const benefitLabel =
+                          c.durationDays === 0
+                            ? "Permuta Permanente"
+                            : `${c.durationDays} dias de Pro`;
+                        const pct = c.maxUses > 0 ? Math.min(100, Math.round((c.usedCount / c.maxUses) * 100)) : 0;
+
+                        return (
+                          <tr key={c.id} className="hover:bg-white/[0.02]">
+                            <td className="px-4 py-3.5">
+                              <div className="flex items-center gap-2">
+                                <span className="rounded-lg border border-amber-400/35 bg-amber-400/10 px-2.5 py-1 font-mono text-xs font-extrabold text-amber-300">
+                                  {c.code}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyCoupon(c.code)}
+                                  title="Copiar código"
+                                  className="rounded p-1 text-[#9CB3CE] hover:bg-white/10 hover:text-white"
+                                >
+                                  {copiedCode === c.code ? (
+                                    <Check className="h-3.5 w-3.5 text-emerald-300" />
+                                  ) : (
+                                    <Copy className="h-3.5 w-3.5" />
+                                  )}
+                                </button>
+                              </div>
+                              {c.description ? (
+                                <p className="mt-1 truncate max-w-[200px] text-[11px] text-[#9CB3CE]">{c.description}</p>
+                              ) : null}
+                            </td>
+
+                            <td className="px-4 py-3.5">
+                              <div className="font-bold text-white">{c.influencerName}</div>
+                              {c.influencerEmail ? (
+                                <p className="text-[11px] text-[#9CB3CE]">{c.influencerEmail}</p>
+                              ) : null}
+                            </td>
+
+                            <td className="px-4 py-3.5">
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                                  c.durationDays === 0
+                                    ? "bg-purple-500/20 text-purple-300"
+                                    : "bg-[#1E60CF]/20 text-[#7DD3FC]"
+                                }`}
+                              >
+                                {benefitLabel}
+                              </span>
+                            </td>
+
+                            <td className="px-4 py-3.5">
+                              <div className="font-mono text-xs font-bold text-white">
+                                {c.usedCount} {c.maxUses > 0 ? `/ ${c.maxUses}` : "(ilimitado)"}
+                              </div>
+                              {c.maxUses > 0 ? (
+                                <div className="mt-1 h-1.5 w-24 overflow-hidden rounded-full bg-white/10">
+                                  <div
+                                    className={`h-full rounded-full transition-all ${
+                                      pct >= 90 ? "bg-red-400" : pct >= 50 ? "bg-amber-400" : "bg-emerald-400"
+                                    }`}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                              ) : null}
+                            </td>
+
+                            <td className="px-4 py-3.5">
+                              <button
+                                type="button"
+                                disabled={isBusy}
+                                onClick={() => handleToggleCoupon(c.id, c.isActive)}
+                                className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold transition disabled:opacity-50 ${
+                                  c.isActive
+                                    ? "bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+                                    : "bg-white/10 text-[#9CB3CE] hover:bg-white/20"
+                                }`}
+                              >
+                                {c.isActive ? "Ativo" : "Pausado"}
+                              </button>
+                            </td>
+
+                            <td className="px-4 py-3.5 text-right">
+                              <button
+                                type="button"
+                                disabled={isBusy}
+                                onClick={() => handleDeleteCoupon(c.id, c.code)}
+                                title="Excluir cupom"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-50"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Modal: Novo Cupom */}
+            {isNewCouponOpen ? (
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="coupon-modal-title"
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+              >
+                <div className="w-full max-w-lg rounded-2xl border border-amber-400/30 bg-[#0E1624] p-6 shadow-2xl">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                    <div className="flex items-center gap-2">
+                      <Ticket className="h-5 w-5 text-amber-400" />
+                      <h3 id="coupon-modal-title" className="text-base font-bold text-white">
+                        Novo Cupom de Influenciador
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsNewCouponOpen(false)}
+                      className="rounded-lg p-1 text-[#9CB3CE] hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleCreateCoupon} className="mt-4 space-y-4">
+                    <div>
+                      <label htmlFor="modal-coupon-code" className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#CBD5E1]">
+                        Código do Cupom *
+                      </label>
+                      <input
+                        id="modal-coupon-code"
+                        type="text"
+                        required
+                        value={couponForm.code}
+                        onChange={(e) =>
+                          setCouponForm((f) => ({
+                            ...f,
+                            code: e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ""),
+                          }))
+                        }
+                        placeholder="Ex: SARDINHA, VIP30, FITNESS"
+                        className="mc-input min-h-[44px] w-full rounded-xl border border-white/20 bg-[#09101B] px-3 font-mono text-sm font-bold uppercase text-amber-300 placeholder-white/30"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="modal-influencer-name" className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#CBD5E1]">
+                        Nome do Influenciador / Parceiro *
+                      </label>
+                      <input
+                        id="modal-influencer-name"
+                        type="text"
+                        required
+                        value={couponForm.influencerName}
+                        onChange={(e) => setCouponForm((f) => ({ ...f, influencerName: e.target.value }))}
+                        placeholder="Ex: Igor Sardinha"
+                        className="mc-input min-h-[44px] w-full rounded-xl border border-white/20 bg-[#09101B] px-3 text-sm font-semibold text-white placeholder-white/30"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="modal-influencer-email" className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#CBD5E1]">
+                        E-mail de Contato (Opcional)
+                      </label>
+                      <input
+                        id="modal-influencer-email"
+                        type="email"
+                        value={couponForm.influencerEmail}
+                        onChange={(e) => setCouponForm((f) => ({ ...f, influencerEmail: e.target.value }))}
+                        placeholder="influenciador@exemplo.com"
+                        className="mc-input min-h-[44px] w-full rounded-xl border border-white/20 bg-[#09101B] px-3 text-sm text-white placeholder-white/30"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#CBD5E1]">
+                        Benefício (Tempo de Pro Grátis)
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { days: 30, label: "30 dias (Padrão)" },
+                          { days: 60, label: "60 dias" },
+                          { days: 90, label: "90 dias" },
+                          { days: 365, label: "1 Ano" },
+                          { days: 0, label: "Permuta Permanente" },
+                        ].map((opt) => (
+                          <button
+                            key={opt.days}
+                            type="button"
+                            onClick={() => setCouponForm((f) => ({ ...f, durationDays: opt.days }))}
+                            className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
+                              couponForm.durationDays === opt.days
+                                ? "border-amber-400 bg-amber-400 text-black shadow-sm"
+                                : "border-white/10 bg-[#09101B] text-white/80 hover:border-white/20 hover:text-white"
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="modal-coupon-maxuses" className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#CBD5E1]">
+                          Limite de Usos (0 = ilimitado)
+                        </label>
+                        <input
+                          id="modal-coupon-maxuses"
+                          type="number"
+                          min={0}
+                          value={couponForm.maxUses}
+                          onChange={(e) => setCouponForm((f) => ({ ...f, maxUses: parseInt(e.target.value, 10) || 0 }))}
+                          className="mc-input min-h-[44px] w-full rounded-xl border border-white/20 bg-[#09101B] px-3 text-sm font-semibold text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="modal-coupon-desc" className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#CBD5E1]">
+                          Observação / Campanha
+                        </label>
+                        <input
+                          id="modal-coupon-desc"
+                          type="text"
+                          value={couponForm.description}
+                          onChange={(e) => setCouponForm((f) => ({ ...f, description: e.target.value }))}
+                          placeholder="Ex: Campanha Instagram Reels"
+                          className="mc-input min-h-[44px] w-full rounded-xl border border-white/20 bg-[#09101B] px-3 text-sm text-white placeholder-white/30"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex items-center justify-end gap-3 border-t border-white/10 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => setIsNewCouponOpen(false)}
+                        className="rounded-xl border border-white/15 px-4 py-2 text-xs font-bold text-[#9CB3CE] hover:text-white"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={savingCoupon || !couponForm.code.trim() || !couponForm.influencerName.trim()}
+                        className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-5 py-2 text-xs font-extrabold text-[#08101C] hover:bg-amber-300 disabled:opacity-50"
+                      >
+                        {savingCoupon ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                        <span>Criar Cupom</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            ) : null}
           </section>
         ) : null}
 

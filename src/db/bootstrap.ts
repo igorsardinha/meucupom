@@ -134,6 +134,31 @@ const SQLITE_DDL = [
     "status" text NOT NULL DEFAULT 'open',
     "created_at" integer NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS "platform_coupon" (
+    "id" text PRIMARY KEY NOT NULL,
+    "code" text NOT NULL UNIQUE,
+    "influencer_name" text NOT NULL,
+    "influencer_email" text NOT NULL DEFAULT '',
+    "description" text NOT NULL DEFAULT '',
+    "plan" text NOT NULL DEFAULT 'pro',
+    "duration_days" integer NOT NULL DEFAULT 30,
+    "max_uses" integer NOT NULL DEFAULT 100,
+    "used_count" integer NOT NULL DEFAULT 0,
+    "is_active" integer NOT NULL DEFAULT 1,
+    "expires_at" integer,
+    "created_at" integer NOT NULL,
+    "updated_at" integer NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS "platform_coupon_redemption" (
+    "id" text PRIMARY KEY NOT NULL,
+    "coupon_id" text NOT NULL REFERENCES "platform_coupon"("id") ON DELETE CASCADE,
+    "coupon_code" text NOT NULL,
+    "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "profile_id" text NOT NULL,
+    "user_email" text NOT NULL DEFAULT '',
+    "user_name" text NOT NULL DEFAULT '',
+    "redeemed_at" integer NOT NULL
+  )`,
 ];
 
 const PG_DDL = [
@@ -264,6 +289,31 @@ const PG_DDL = [
     "details" text NOT NULL DEFAULT '',
     "status" text NOT NULL DEFAULT 'open',
     "created_at" timestamp NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS "platform_coupon" (
+    "id" text PRIMARY KEY NOT NULL,
+    "code" text NOT NULL UNIQUE,
+    "influencer_name" text NOT NULL,
+    "influencer_email" text NOT NULL DEFAULT '',
+    "description" text NOT NULL DEFAULT '',
+    "plan" text NOT NULL DEFAULT 'pro',
+    "duration_days" integer NOT NULL DEFAULT 30,
+    "max_uses" integer NOT NULL DEFAULT 100,
+    "used_count" integer NOT NULL DEFAULT 0,
+    "is_active" boolean NOT NULL DEFAULT true,
+    "expires_at" timestamp,
+    "created_at" timestamp NOT NULL,
+    "updated_at" timestamp NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS "platform_coupon_redemption" (
+    "id" text PRIMARY KEY NOT NULL,
+    "coupon_id" text NOT NULL REFERENCES "platform_coupon"("id") ON DELETE CASCADE,
+    "coupon_code" text NOT NULL,
+    "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "profile_id" text NOT NULL,
+    "user_email" text NOT NULL DEFAULT '',
+    "user_name" text NOT NULL DEFAULT '',
+    "redeemed_at" timestamp NOT NULL
   )`,
 ];
 
@@ -724,6 +774,33 @@ async function runColumnMigrations() {
         `ALTER TABLE "abuse_report" ADD COLUMN "status" text NOT NULL DEFAULT 'open'`
       );
     }
+
+    await handle.client.execute(`CREATE TABLE IF NOT EXISTS "platform_coupon" (
+      "id" text PRIMARY KEY NOT NULL,
+      "code" text NOT NULL UNIQUE,
+      "influencer_name" text NOT NULL,
+      "influencer_email" text NOT NULL DEFAULT '',
+      "description" text NOT NULL DEFAULT '',
+      "plan" text NOT NULL DEFAULT 'pro',
+      "duration_days" integer NOT NULL DEFAULT 30,
+      "max_uses" integer NOT NULL DEFAULT 100,
+      "used_count" integer NOT NULL DEFAULT 0,
+      "is_active" integer NOT NULL DEFAULT 1,
+      "expires_at" integer,
+      "created_at" integer NOT NULL,
+      "updated_at" integer NOT NULL
+    )`);
+
+    await handle.client.execute(`CREATE TABLE IF NOT EXISTS "platform_coupon_redemption" (
+      "id" text PRIMARY KEY NOT NULL,
+      "coupon_id" text NOT NULL REFERENCES "platform_coupon"("id") ON DELETE CASCADE,
+      "coupon_code" text NOT NULL,
+      "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+      "profile_id" text NOT NULL,
+      "user_email" text NOT NULL DEFAULT '',
+      "user_name" text NOT NULL DEFAULT '',
+      "redeemed_at" integer NOT NULL
+    )`);
     return;
   }
 
@@ -787,6 +864,31 @@ async function runColumnMigrations() {
   await handle.pool.query(
     `ALTER TABLE "abuse_report" ADD COLUMN IF NOT EXISTS "status" text NOT NULL DEFAULT 'open'`
   );
+  await handle.pool.query(`CREATE TABLE IF NOT EXISTS "platform_coupon" (
+    "id" text PRIMARY KEY NOT NULL,
+    "code" text NOT NULL UNIQUE,
+    "influencer_name" text NOT NULL,
+    "influencer_email" text NOT NULL DEFAULT '',
+    "description" text NOT NULL DEFAULT '',
+    "plan" text NOT NULL DEFAULT 'pro',
+    "duration_days" integer NOT NULL DEFAULT 30,
+    "max_uses" integer NOT NULL DEFAULT 100,
+    "used_count" integer NOT NULL DEFAULT 0,
+    "is_active" boolean NOT NULL DEFAULT true,
+    "expires_at" timestamp,
+    "created_at" timestamp NOT NULL,
+    "updated_at" timestamp NOT NULL
+  )`);
+  await handle.pool.query(`CREATE TABLE IF NOT EXISTS "platform_coupon_redemption" (
+    "id" text PRIMARY KEY NOT NULL,
+    "coupon_id" text NOT NULL REFERENCES "platform_coupon"("id") ON DELETE CASCADE,
+    "coupon_code" text NOT NULL,
+    "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "profile_id" text NOT NULL,
+    "user_email" text NOT NULL DEFAULT '',
+    "user_name" text NOT NULL DEFAULT '',
+    "redeemed_at" timestamp NOT NULL
+  )`);
 }
 
 export async function ensureDatabaseReady(): Promise<void> {

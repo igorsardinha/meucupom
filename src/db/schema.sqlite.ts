@@ -145,3 +145,34 @@ export const abuseReport = sqliteTable("abuse_report", {
   status: text("status").notNull().default("open"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
+
+export const platformCoupon = sqliteTable("platform_coupon", {
+  id: text("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  influencerName: text("influencer_name").notNull(),
+  influencerEmail: text("influencer_email").notNull().default(""),
+  description: text("description").notNull().default(""),
+  plan: text("plan").notNull().default("pro"),
+  durationDays: integer("duration_days").notNull().default(30),
+  maxUses: integer("max_uses").notNull().default(100),
+  usedCount: integer("used_count").notNull().default(0),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+export const platformCouponRedemption = sqliteTable("platform_coupon_redemption", {
+  id: text("id").primaryKey(),
+  couponId: text("coupon_id")
+    .notNull()
+    .references(() => platformCoupon.id, { onDelete: "cascade" }),
+  couponCode: text("coupon_code").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  profileId: text("profile_id").notNull(),
+  userEmail: text("user_email").notNull().default(""),
+  userName: text("user_name").notNull().default(""),
+  redeemedAt: integer("redeemed_at", { mode: "timestamp_ms" }).notNull(),
+});

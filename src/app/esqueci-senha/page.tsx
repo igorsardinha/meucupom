@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, Mail } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 
 export default function EsqueciSenhaPage() {
   const [email, setEmail] = useState("");
@@ -16,17 +17,12 @@ export default function EsqueciSenhaPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/request-password-reset", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          redirectTo: `${window.location.origin}/redefinir-senha`,
-        }),
+      const res = await authClient.requestPasswordReset({
+        email: email.trim(),
+        redirectTo: `${window.location.origin}/redefinir-senha`,
       });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { message?: string };
-        setErrorMsg(body.message || "Não foi possível enviar o link de recuperação.");
+      if (res?.error) {
+        setErrorMsg(res.error.message || "Não foi possível enviar o link de recuperação.");
       } else {
         setSent(true);
       }

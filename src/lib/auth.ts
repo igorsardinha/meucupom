@@ -4,7 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { genericOAuth } from "better-auth/plugins/generic-oauth";
 import { ensureDatabaseReady } from "@/db/bootstrap";
 import { getDbHandle } from "@/db";
-import { sendTransactionalEmail } from "@/lib/email";
+import { sendPasswordResetEmail, sendWelcomeEmail } from "@/lib/email";
 
 export function isGoogleOAuthEnabled(): boolean {
   return Boolean(process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim());
@@ -186,15 +186,42 @@ function createAuthInstance() {
       provider: handle.dialect === "pg" ? "pg" : "sqlite",
       schema: handle.schema,
     }),
+    databaseHooks: {
+      user: {
+        create: {
+          after: async (createdUser) => {
+            if (
+              createdUser.email &&
+              !createdUser.email.endsWith("@instagram.meucupom.local")
+            ) {
+              try {
+                await sendWelcomeEmail({
+                  email: createdUser.email,
+                  name: createdUser.name,
+                });
+              } catch (err) {
+                console.error("[meucupom] Erro ao enviar e-mail de boas-vindas:", err);
+              }
+            }
+          },
+        },
+      },
+    },
     emailAndPassword: {
       enabled: true,
       sendResetPassword: async ({ user, url }) => {
-        await sendTransactionalEmail({
-          to: user.email,
-          subject: "Redefinir sua senha no meucupom",
-          text: `Olá, ${user.name || ""}! Use este link para redefinir sua senha no meucupom: ${url}`,
-          html: `<p>Olá, <strong>${user.name || "criador"}</strong>!</p><p>Clique no botão abaixo para redefinir sua senha no <strong>meucupom</strong>:</p><p><a href="${url}" style="display:inline-block;padding:12px 20px;background:#1E60CF;color:#fff;text-decoration:none;border-radius:10px;font-weight:bold;">Redefinir senha</a></p><p>Se não foi você, ignore este e-mail.</p>`,
-        });
+        try {
+          await sendPasswordResetEmail({
+            email: user.email,
+            name: user.name,
+            resetUrl: url,
+          });
+        } catch (err) {
+          console.error(
+            "[meucupom] Erro ao enviar e-mail de redefinição de senha:",
+            err
+          );
+        }
       },
     },
     socialProviders: Object.keys(socialProviders).length > 0 ? socialProviders : undefined,
