@@ -1,5 +1,6 @@
 import {
   MercadoPagoConfig,
+  Payment,
   PreApproval,
   WebhookSignatureValidator,
 } from "mercadopago";
@@ -40,6 +41,10 @@ export function getMercadoPagoConfig(): MercadoPagoConfig {
 
 export function getPreApprovalClient(): PreApproval {
   return new PreApproval(getMercadoPagoConfig());
+}
+
+export function getPaymentClient(): Payment {
+  return new Payment(getMercadoPagoConfig());
 }
 
 export function mapMercadoPagoStatus(

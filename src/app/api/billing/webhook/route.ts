@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { InvalidWebhookSignatureError } from "mercadopago";
-import { syncMercadoPagoSubscription } from "@/db/repository";
 import {
+  grantProDaysToUser,
+  redeemPlatformCouponForUser,
+  syncMercadoPagoSubscription,
+} from "@/db/repository";
+import {
+  getPaymentClient,
   getPreApprovalClient,
   isMercadoPagoEnabled,
   mapMercadoPagoStatus,
@@ -73,7 +78,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true });
   }
 
-  const eventType = body.type || body.topic || url.searchParams.get("topic") || "";
+  const eventType =
+    body.type ||
+    body.topic ||
+    url.searchParams.get("topic") ||
+    (body.action?.startsWith("payment") ? "payment" : "");
 
   try {
     if (eventType === "subscription_preapproval" || eventType === "preapproval") {
@@ -90,6 +99,21 @@ export async function POST(request: Request) {
         const payment = (await res.json()) as { preapproval_id?: string };
         if (payment.preapproval_id) {
           await syncPreapprovalById(payment.preapproval_id);
+        }
+      }
+    } else if (eventType === "payment") {
+      const payment = await getPaymentClient().get({ id: dataId });
+      if (payment.status === "approved") {
+        const targetUserId =
+          payment.external_reference ||
+          (typeof payment.metadata?.user_id === "string" ? payment.metadata.user_id : null);
+        if (targetUserId) {
+          await grantProDaysToUser(targetUserId, 30, String(dataId));
+          const couponCode =
+            typeof payment.metadata?.coupon_code === "string" ? payment.metadata.coupon_code : null;
+          if (couponCode) {
+            await redeemPlatformCouponForUser(targetUserId, couponCode).catch(() => null);
+          }
         }
       }
     }

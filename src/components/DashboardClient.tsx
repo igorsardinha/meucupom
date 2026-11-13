@@ -34,6 +34,7 @@ import {
   Pencil,
   Percent,
   Plus,
+  QrCode,
   Save,
   ShieldCheck,
   Smartphone,
@@ -602,6 +603,20 @@ export function DashboardClient({
   } | null>(null);
   const [validatingCheckoutCoupon, setValidatingCheckoutCoupon] = useState(false);
 
+  // Pix Payment State
+  const [pixModalOpen, setPixModalOpen] = useState(false);
+  const [pixLoading, setPixLoading] = useState(false);
+  const [pixData, setPixData] = useState<{
+    paymentId: string | number;
+    amount: number;
+    qrCode?: string;
+    qrCodeBase64?: string;
+    expiresAt?: string;
+  } | null>(null);
+  const [pixStatus, setPixStatus] = useState<"pending" | "approved" | "error" | null>(null);
+  const [pixError, setPixError] = useState<string | null>(null);
+  const [pixCopied, setPixCopied] = useState(false);
+
   const [analyticsDays, setAnalyticsDays] = useState<7 | 14 | 30>(7);
   const [analyticsPoints, setAnalyticsPoints] = useState<DailyAnalyticsPoint[]>([]);
   const [analyticsLocked, setAnalyticsLocked] = useState(false);
@@ -1005,6 +1020,90 @@ export function DashboardClient({
       setBillingLoading(false);
     }
   }
+
+  async function handleGeneratePix() {
+    setPixLoading(true);
+    setPixError(null);
+    setPixStatus("pending");
+    try {
+      const res = await fetch("/api/billing/pix", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          couponCode: appliedCheckoutCoupon?.code || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setPixError(data.error || "Não foi possível gerar a cobrança Pix.");
+        setPixStatus("error");
+        return;
+      }
+      if (data.alreadyActivated) {
+        notify("ok", data.message || "Plano Pro ativado com sucesso!");
+        setPixModalOpen(false);
+        router.refresh();
+        return;
+      }
+      setPixData({
+        paymentId: data.paymentId,
+        amount: data.amount,
+        qrCode: data.qrCode,
+        qrCodeBase64: data.qrCodeBase64,
+        expiresAt: data.expiresAt,
+      });
+    } catch {
+      setPixError("Erro de conexão ao gerar o Pix.");
+      setPixStatus("error");
+    } finally {
+      setPixLoading(false);
+    }
+  }
+
+  function handleOpenPixModal() {
+    setPixModalOpen(true);
+    setPixData(null);
+    setPixError(null);
+    setPixStatus(null);
+    setPixCopied(false);
+    handleGeneratePix();
+  }
+
+  function handleCopyPixCode() {
+    if (!pixData?.qrCode) return;
+    navigator.clipboard.writeText(pixData.qrCode);
+    setPixCopied(true);
+    notify("ok", "Código Pix Copia e Cola copiado!");
+    setTimeout(() => setPixCopied(false), 2500);
+  }
+
+  useEffect(() => {
+    if (!pixModalOpen || !pixData?.paymentId || pixStatus === "approved") return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `/api/billing/pix?paymentId=${encodeURIComponent(String(pixData.paymentId))}`
+        );
+        const data = await res.json();
+        if (res.ok && data.isApproved) {
+          setPixStatus("approved");
+          if (data.profile) {
+            setProfile(data.profile);
+          }
+          notify("ok", "Pagamento Pix aprovado! Seu Plano Pro foi ativado.");
+          setTimeout(() => {
+            setPixModalOpen(false);
+            router.refresh();
+          }, 2500);
+        }
+      } catch {
+        // Ignorar falhas esporádicas de conexão no polling
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [pixModalOpen, pixData, pixStatus, router]);
 
   async function handleAdminSelfActivatePro() {
     setBillingLoading(true);
@@ -3908,23 +4007,35 @@ export function DashboardClient({
 
                   <div className="flex flex-wrap gap-2.5">
                     {!userIsPro ? (
-                      <button
-                        type="button"
-                        disabled={billingLoading}
-                        onClick={handleStartCheckout}
-                        className="inline-flex min-h-[46px] items-center gap-2 rounded-xl bg-amber-400 px-5 text-sm font-extrabold text-[#08101C] shadow-lg hover:bg-amber-300 disabled:opacity-60"
-                      >
-                        {billingLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                        ) : (
-                          <Crown className="h-4 w-4" aria-hidden="true" />
-                        )}
-                        <span>
-                          {appliedCheckoutCoupon
-                            ? `Assinar Pro com ${appliedCheckoutCoupon.discountPercent}% OFF`
-                            : "Assinar Plano Pro"}
-                        </span>
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          disabled={billingLoading || pixLoading}
+                          onClick={handleStartCheckout}
+                          className="inline-flex min-h-[46px] items-center gap-2 rounded-xl bg-amber-400 px-5 text-sm font-extrabold text-[#08101C] shadow-lg hover:bg-amber-300 disabled:opacity-60"
+                        >
+                          {billingLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                          ) : (
+                            <Crown className="h-4 w-4" aria-hidden="true" />
+                          )}
+                          <span>
+                            {appliedCheckoutCoupon
+                              ? `Assinar Pro (-${appliedCheckoutCoupon.discountPercent}%)`
+                              : "Assinar no Cartão"}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={billingLoading || pixLoading}
+                          onClick={handleOpenPixModal}
+                          className="inline-flex min-h-[46px] items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-4 text-sm font-bold text-emerald-200 shadow-md hover:bg-emerald-500/25 disabled:opacity-60"
+                        >
+                          <QrCode className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+                          <span>Pagar com Pix</span>
+                        </button>
+                      </>
                     ) : null}
 
                     {!userIsPro && isAdmin ? (
@@ -4094,15 +4205,29 @@ export function DashboardClient({
 
                           <button
                             type="button"
-                            disabled={billingLoading}
+                            disabled={billingLoading || pixLoading}
                             onClick={handleStartCheckout}
                             className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-[#1E60CF] px-4 text-sm font-bold text-white hover:bg-[#256EE8] disabled:opacity-60"
                           >
                             <Crown className="h-4 w-4" aria-hidden="true" />
                             <span>
                               {appliedCheckoutCoupon
-                                ? `Assinar Pro por R$ ${appliedCheckoutCoupon.discountedPrice.toFixed(2).replace(".", ",")}/mês`
-                                : "Assinar Plano Pro"}
+                                ? `Assinar no Cartão (R$ ${appliedCheckoutCoupon.discountedPrice.toFixed(2).replace(".", ",")}/mês)`
+                                : "Assinar no Cartão de Crédito"}
+                            </span>
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={billingLoading || pixLoading}
+                            onClick={handleOpenPixModal}
+                            className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-4 text-sm font-bold text-emerald-200 transition hover:bg-emerald-500/25 disabled:opacity-60"
+                          >
+                            <QrCode className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+                            <span>
+                              {appliedCheckoutCoupon
+                                ? `Pagar com Pix (R$ ${appliedCheckoutCoupon.discountedPrice.toFixed(2).replace(".", ",")})`
+                                : "Pagar com Pix (Instantâneo)"}
                             </span>
                           </button>
                           {isAdmin ? (
@@ -4854,6 +4979,148 @@ export function DashboardClient({
           </div>
         </div>
       </dialog>
+
+      {/* Pix Payment Modal */}
+      {pixModalOpen ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="pix-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-emerald-400/30 bg-[#0E1624] p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-500/20 text-emerald-400">
+                  <QrCode className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 id="pix-modal-title" className="text-base font-extrabold text-white">
+                    Pagar com Pix
+                  </h3>
+                  <span className="text-[11px] font-semibold text-emerald-300">
+                    Ativação Instantânea • Plano Pro (30 dias)
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPixModalOpen(false)}
+                className="rounded-lg p-1 text-[#9CB3CE] hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4">
+              {pixLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Loader2 className="h-10 w-10 animate-spin text-emerald-400" />
+                  <p className="mt-3 text-sm font-bold text-white">Gerando cobrança Pix...</p>
+                  <p className="mt-1 text-xs text-[#9CB3CE]">Aguarde alguns instantes</p>
+                </div>
+              ) : pixError ? (
+                <div className="py-6 text-center">
+                  <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-red-500/20 text-red-300">
+                    <AlertTriangle className="h-6 w-6" />
+                  </div>
+                  <p className="mt-3 text-sm font-bold text-white">Não foi possível gerar o Pix</p>
+                  <p className="mt-1 text-xs text-red-300">{pixError}</p>
+                  <div className="mt-5 flex justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPixModalOpen(false)}
+                      className="rounded-xl border border-white/15 px-4 py-2 text-xs font-bold text-[#9CB3CE] hover:text-white"
+                    >
+                      Fechar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleGeneratePix}
+                      className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-bold text-black hover:bg-emerald-400"
+                    >
+                      Tentar Novamente
+                    </button>
+                  </div>
+                </div>
+              ) : pixStatus === "approved" ? (
+                <div className="py-8 text-center">
+                  <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-500/20 text-emerald-400">
+                    <CheckCircle2 className="h-10 w-10 animate-bounce" />
+                  </div>
+                  <p className="mt-3 text-lg font-black text-white">Pagamento Confirmado!</p>
+                  <p className="mt-1 text-xs text-emerald-300">
+                    Seu Plano Pro foi ativado com sucesso por 30 dias. Redirecionando...
+                  </p>
+                </div>
+              ) : pixData ? (
+                <div className="space-y-4">
+                  {/* Amount and Discount */}
+                  <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 p-3 text-center">
+                    <span className="text-xs font-semibold text-[#9CB3CE]">Valor a pagar</span>
+                    <p className="mt-0.5 text-2xl font-black text-emerald-400">
+                      R$ {pixData.amount.toFixed(2).replace(".", ",")}
+                    </p>
+                    {appliedCheckoutCoupon ? (
+                      <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+                        Cupom &quot;{appliedCheckoutCoupon.code}&quot; (-{appliedCheckoutCoupon.discountPercent}%)
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {/* QR Code image */}
+                  {pixData.qrCodeBase64 ? (
+                    <div className="flex flex-col items-center">
+                      <div className="rounded-2xl bg-white p-3 shadow-lg">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`data:image/png;base64,${pixData.qrCodeBase64}`}
+                          alt="QR Code Pix"
+                          className="h-48 w-48 object-contain"
+                        />
+                      </div>
+                      <p className="mt-2 text-center text-[11px] text-[#9CB3CE]">
+                        Abra o app do seu banco e aponte a câmera para o QR Code
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {/* Copia e Cola */}
+                  {pixData.qrCode ? (
+                    <div>
+                      <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#CBD5E1]">
+                        Ou copie o código Pix Copia e Cola:
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={pixData.qrCode}
+                          className="min-h-[40px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 font-mono text-xs text-[#9CB3CE] select-all focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleCopyPixCode}
+                          className="inline-flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-xl bg-emerald-400 px-3.5 text-xs font-extrabold text-black hover:bg-emerald-300"
+                        >
+                          {pixCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          <span>{pixCopied ? "Copiado!" : "Copiar"}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Status indicator */}
+                  <div className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#09101B] py-2.5 text-xs font-semibold text-amber-300">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-400" />
+                    <span>Aguardando pagamento... A ativação é automática</span>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

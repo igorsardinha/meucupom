@@ -1203,6 +1203,62 @@ export async function syncMercadoPagoSubscription(input: {
   }
 }
 
+export async function grantProDaysToUser(
+  userId: string,
+  days: number = 30,
+  _paymentReference?: string
+): Promise<CreatorProfileData | null> {
+  await ensureDatabaseReady();
+  const handle = getDbHandle();
+
+  const profileRows =
+    handle.dialect === "sqlite"
+      ? await handle.db
+          .select()
+          .from(handle.schema.creatorProfile)
+          .where(eq(handle.schema.creatorProfile.userId, userId))
+          .limit(1)
+      : await handle.db
+          .select()
+          .from(handle.schema.creatorProfile)
+          .where(eq(handle.schema.creatorProfile.userId, userId))
+          .limit(1);
+
+  if (profileRows.length === 0) return null;
+
+  const currentProf = mapProfile(profileRows[0] as unknown as Record<string, unknown>);
+  const now = new Date();
+  const currentEnd = currentProf.currentPeriodEnd ? new Date(currentProf.currentPeriodEnd) : null;
+  const baseTime = currentEnd && currentEnd.getTime() > now.getTime() ? currentEnd.getTime() : now.getTime();
+  const nextPeriodEnd = new Date(baseTime + Math.max(1, days) * 86_400_000);
+
+  const updates = {
+    plan: "pro" as const,
+    subscriptionStatus: "active" as const,
+    currentPeriodEnd: nextPeriodEnd,
+    updatedAt: now,
+  };
+
+  if (handle.dialect === "sqlite") {
+    await handle.db
+      .update(handle.schema.creatorProfile)
+      .set(updates)
+      .where(eq(handle.schema.creatorProfile.id, currentProf.id));
+  } else {
+    await handle.db
+      .update(handle.schema.creatorProfile)
+      .set(updates)
+      .where(eq(handle.schema.creatorProfile.id, currentProf.id));
+  }
+
+  return {
+    ...currentProf,
+    plan: "pro",
+    subscriptionStatus: "active",
+    currentPeriodEnd: nextPeriodEnd.toISOString(),
+  };
+}
+
 export interface AdminUserSummary {
   userId: string;
   userName: string;
