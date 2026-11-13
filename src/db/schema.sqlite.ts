@@ -95,6 +95,7 @@ export const creatorProfile = sqliteTable("creator_profile", {
   currentPeriodEnd: integer("current_period_end", { mode: "timestamp_ms" }),
   onboardingCompleted: integer("onboarding_completed", { mode: "boolean" }).notNull().default(false),
   isSuspended: integer("is_suspended", { mode: "boolean" }).notNull().default(false),
+  isVerified: integer("is_verified", { mode: "boolean" }).notNull().default(false),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
 });
@@ -154,6 +155,7 @@ export const platformCoupon = sqliteTable("platform_coupon", {
   description: text("description").notNull().default(""),
   plan: text("plan").notNull().default("pro"),
   durationDays: integer("duration_days").notNull().default(30),
+  discountPercent: integer("discount_percent").notNull().default(0),
   maxUses: integer("max_uses").notNull().default(100),
   usedCount: integer("used_count").notNull().default(0),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),

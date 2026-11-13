@@ -74,6 +74,7 @@ import {
   LinkItemData,
   LinkItemKind,
   PageLayout,
+  PlatformCouponData,
   QUICK_PALETTES,
   RADIUS_OPTIONS,
   RadiusStyle,
@@ -591,6 +592,15 @@ export function DashboardClient({
   const [couponInput, setCouponInput] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponMessage, setCouponMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
+  const [checkoutCouponCode, setCheckoutCouponCode] = useState("");
+  const [appliedCheckoutCoupon, setAppliedCheckoutCoupon] = useState<{
+    code: string;
+    influencerName: string;
+    discountPercent: number;
+    originalPrice: number;
+    discountedPrice: number;
+  } | null>(null);
+  const [validatingCheckoutCoupon, setValidatingCheckoutCoupon] = useState(false);
 
   const [analyticsDays, setAnalyticsDays] = useState<7 | 14 | 30>(7);
   const [analyticsPoints, setAnalyticsPoints] = useState<DailyAnalyticsPoint[]>([]);
@@ -915,19 +925,80 @@ export function DashboardClient({
     }
   }
 
+  async function handleApplyCheckoutCoupon(customCode?: string) {
+    const raw = (customCode || checkoutCouponCode).trim().toUpperCase();
+    if (!raw) {
+      notify("error", "Digite o código do cupom.");
+      return;
+    }
+    setValidatingCheckoutCoupon(true);
+    try {
+      const res = await fetch(`/api/billing/coupon?code=${encodeURIComponent(raw)}`);
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        notify("error", data.error || "Cupom inválido ou expirado.");
+        return;
+      }
+      if (data.discountPercent > 0) {
+        setAppliedCheckoutCoupon({
+          code: data.coupon.code,
+          influencerName: data.coupon.influencerName,
+          discountPercent: data.discountPercent,
+          originalPrice: data.originalPriceBrl,
+          discountedPrice: data.discountedPriceBrl,
+        });
+        notify(
+          "ok",
+          `Cupom "${data.coupon.code}" aplicado! ${data.discountPercent}% de desconto no checkout.`
+        );
+      } else if (data.durationDays >= 0) {
+        // Cupom de dias de Pro ou permuta direta
+        notify("ok", `Cupom "${data.coupon.code}" validado! Ativando benefício...`);
+        const redeemRes = await fetch("/api/billing/coupon", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: raw }),
+        });
+        const redeemData = await redeemRes.json();
+        if (redeemRes.ok && redeemData.ok) {
+          if (redeemData.profile) setProfile(redeemData.profile);
+          notify("ok", redeemData.message || "Plano Pro ativado com sucesso!");
+          router.refresh();
+        } else {
+          notify("error", redeemData.error || "Não foi possível resgatar o cupom.");
+        }
+      }
+    } catch {
+      notify("error", "Erro ao validar cupom.");
+    } finally {
+      setValidatingCheckoutCoupon(false);
+    }
+  }
+
   async function handleStartCheckout() {
     setBillingLoading(true);
     try {
-      const res = await fetch("/api/billing/checkout", { method: "POST" });
-      const data = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok || !data.url) {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          couponCode: appliedCheckoutCoupon?.code || undefined,
+        }),
+      });
+      const data = (await res.json()) as { url?: string; error?: string; message?: string };
+      if (!res.ok || (!data.url && !data.message)) {
         notify(
           "error",
           data.error || "Não foi possível iniciar o checkout do Mercado Pago."
         );
         return;
       }
-      window.location.href = data.url;
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (data.message) {
+        notify("ok", data.message);
+        router.refresh();
+      }
     } catch {
       notify("error", "Erro de conexão ao iniciar checkout.");
     } finally {
@@ -1029,6 +1100,7 @@ export function DashboardClient({
         message?: string;
         error?: string;
         profile?: CreatorProfileData;
+        coupon?: PlatformCouponData;
       };
       if (!res.ok || !data.ok) {
         const errMsg = data.error || "Não foi possível validar este cupom.";
@@ -1038,6 +1110,18 @@ export function DashboardClient({
       }
       if (data.profile) {
         setProfile(data.profile);
+      }
+      if (data.coupon && data.coupon.discountPercent > 0) {
+        const disc = data.coupon.discountPercent;
+        const orig = 19.9;
+        const discounted = Math.max(1, Math.round(orig * (1 - disc / 100) * 100) / 100);
+        setAppliedCheckoutCoupon({
+          code: data.coupon.code,
+          influencerName: data.coupon.influencerName,
+          discountPercent: disc,
+          originalPrice: orig,
+          discountedPrice: discounted,
+        });
       }
       setCouponInput("");
       const successMsg = data.message || "Cupom aplicado com sucesso!";
@@ -3835,7 +3919,11 @@ export function DashboardClient({
                         ) : (
                           <Crown className="h-4 w-4" aria-hidden="true" />
                         )}
-                        <span>Assinar Plano Pro</span>
+                        <span>
+                          {appliedCheckoutCoupon
+                            ? `Assinar Pro com ${appliedCheckoutCoupon.discountPercent}% OFF`
+                            : "Assinar Plano Pro"}
+                        </span>
                       </button>
                     ) : null}
 
@@ -3909,13 +3997,44 @@ export function DashboardClient({
                             </span>
                           ) : null}
                         </div>
-                        <p className="mt-1 text-2xl font-black text-white">
-                          {card.priceLabel}
-                          <span className="text-xs font-semibold text-[#9CB3CE]">
-                            {" "}
-                            {card.periodLabel}
-                          </span>
-                        </p>
+                        {card.id === "pro" && appliedCheckoutCoupon ? (
+                          <div className="mt-1">
+                            <div className="flex flex-wrap items-baseline gap-2">
+                              <span className="text-sm line-through text-[#9CB3CE]">
+                                {card.priceLabel}
+                              </span>
+                              <span className="text-2xl font-black text-emerald-400">
+                                R$ {appliedCheckoutCoupon.discountedPrice.toFixed(2).replace(".", ",")}
+                              </span>
+                              <span className="text-xs font-semibold text-[#9CB3CE]">
+                                {card.periodLabel}
+                              </span>
+                              <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-extrabold text-emerald-300">
+                                -{appliedCheckoutCoupon.discountPercent}% OFF
+                              </span>
+                            </div>
+                            <div className="mt-1 flex items-center justify-between text-xs text-emerald-300">
+                              <span>
+                                Cupom <strong>{appliedCheckoutCoupon.code}</strong> ({appliedCheckoutCoupon.influencerName})
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setAppliedCheckoutCoupon(null)}
+                                className="text-[11px] font-bold text-red-300 underline hover:text-red-200"
+                              >
+                                Remover
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="mt-1 text-2xl font-black text-white">
+                            {card.priceLabel}
+                            <span className="text-xs font-semibold text-[#9CB3CE]">
+                              {" "}
+                              {card.periodLabel}
+                            </span>
+                          </p>
+                        )}
                         <p className="mt-1 text-xs text-[#9CB3CE]">{card.description}</p>
 
                         <ul className="mt-4 space-y-2 text-xs text-[#E2ECF7]">
@@ -3932,7 +4051,47 @@ export function DashboardClient({
                       </div>
 
                       {card.id === "pro" && !userIsPro ? (
-                        <div className="mt-5 flex flex-col gap-2">
+                        <div className="mt-5 flex flex-col gap-2.5">
+                          {!appliedCheckoutCoupon ? (
+                            <div className="rounded-xl border border-white/10 bg-[#09101B]/90 p-2.5">
+                              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#9CB3CE]">
+                                <Tag className="h-3 w-3 text-amber-400" />
+                                <span>Tem cupom de influenciador / desconto?</span>
+                              </div>
+                              <div className="mt-1.5 flex gap-1.5">
+                                <input
+                                  type="text"
+                                  value={checkoutCouponCode}
+                                  onChange={(e) =>
+                                    setCheckoutCouponCode(
+                                      e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, "")
+                                    )
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      handleApplyCheckoutCoupon();
+                                    }
+                                  }}
+                                  placeholder="Ex: SARDINHA10"
+                                  className="min-h-[34px] w-full rounded-lg border border-white/15 bg-white/5 px-2.5 text-xs font-bold uppercase text-white placeholder:normal-case placeholder:font-normal placeholder:text-[#6A829F] focus:border-amber-400 focus:outline-none"
+                                />
+                                <button
+                                  type="button"
+                                  disabled={validatingCheckoutCoupon || !checkoutCouponCode.trim()}
+                                  onClick={() => handleApplyCheckoutCoupon()}
+                                  className="inline-flex min-h-[34px] shrink-0 items-center justify-center rounded-lg bg-amber-400 px-3 text-xs font-extrabold text-[#08101C] transition hover:bg-amber-300 disabled:opacity-50"
+                                >
+                                  {validatingCheckoutCoupon ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    "Aplicar"
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+
                           <button
                             type="button"
                             disabled={billingLoading}
@@ -3940,7 +4099,11 @@ export function DashboardClient({
                             className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-[#1E60CF] px-4 text-sm font-bold text-white hover:bg-[#256EE8] disabled:opacity-60"
                           >
                             <Crown className="h-4 w-4" aria-hidden="true" />
-                            <span>Assinar Plano Pro</span>
+                            <span>
+                              {appliedCheckoutCoupon
+                                ? `Assinar Pro por R$ ${appliedCheckoutCoupon.discountedPrice.toFixed(2).replace(".", ",")}/mês`
+                                : "Assinar Plano Pro"}
+                            </span>
                           </button>
                           {isAdmin ? (
                             <button

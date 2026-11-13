@@ -2,7 +2,9 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import {
   getOrCreateProfileForUser,
+  redeemPlatformCouponForUser,
   setMercadoPagoPreapprovalForUser,
+  validatePlatformCouponForUser,
 } from "@/db/repository";
 import { isSuperAdminEmail } from "@/lib/admin";
 import { getAuth } from "@/lib/auth";
@@ -30,12 +32,19 @@ export async function POST(request: Request) {
     );
   }
 
-  // Parse optional payerEmail override from request body (e.g. for testing with buyer account)
+  // Parse optional payerEmail and couponCode from request body
   let customPayerEmail: string | null = null;
+  let rawCouponCode: string | null = null;
   try {
-    const json = (await request.json().catch(() => null)) as { payerEmail?: string } | null;
+    const json = (await request.json().catch(() => null)) as {
+      payerEmail?: string;
+      couponCode?: string;
+    } | null;
     if (json && typeof json.payerEmail === "string" && json.payerEmail.includes("@")) {
       customPayerEmail = json.payerEmail.trim().toLowerCase();
+    }
+    if (json && typeof json.couponCode === "string" && json.couponCode.trim()) {
+      rawCouponCode = json.couponCode.trim().toUpperCase();
     }
   } catch {
     // Body is optional
@@ -52,13 +61,43 @@ export async function POST(request: Request) {
     request.headers.get("origin") ||
     "http://localhost:3000";
 
+  let checkoutAmount = getProPriceBrl();
+  let checkoutReason = "meucupom Pro (Mensal)";
+  let validCouponToRedeem: string | null = null;
+  let useCustomPlanPricing = false;
+
+  if (rawCouponCode) {
+    const validation = await validatePlatformCouponForUser(session.user.id, rawCouponCode);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    if (validation.discountPercent > 0) {
+      const discountRate = Math.min(100, Math.max(1, validation.discountPercent)) / 100;
+      checkoutAmount = Math.max(1, Math.round(getProPriceBrl() * (1 - discountRate) * 100) / 100);
+      checkoutReason = `meucupom Pro (Mensal) - ${validation.discountPercent}% OFF (${validation.coupon.code})`;
+      validCouponToRedeem = validation.coupon.code;
+      useCustomPlanPricing = true;
+    } else if (validation.durationDays >= 0) {
+      // 100% free / permuta coupon: redeem directly without needing payment
+      const redeemRes = await redeemPlatformCouponForUser(session.user.id, validation.coupon.code);
+      if (!redeemRes.ok) {
+        return NextResponse.json({ error: redeemRes.error }, { status: 400 });
+      }
+      return NextResponse.json({
+        url: `${origin.replace(/\/+$/, "")}/painel?coupon_success=1`,
+        message: redeemRes.message,
+      });
+    }
+  }
+
   const rawPlanId = process.env.MP_PRO_PLAN_ID?.trim();
-  const planId = rawPlanId && rawPlanId.length > 5 ? rawPlanId : null;
+  const planId = !useCustomPlanPricing && rawPlanId && rawPlanId.length > 5 ? rawPlanId : null;
 
   try {
     const preapproval = await preApprovalClient.create({
       body: {
-        reason: "meucupom Pro (Mensal)",
+        reason: checkoutReason,
         external_reference: session.user.id,
         payer_email: payerEmail,
         back_url: `${origin.replace(/\/+$/, "")}/painel?checkout=return`,
@@ -68,7 +107,7 @@ export async function POST(request: Request) {
               auto_recurring: {
                 frequency: 1,
                 frequency_type: "months",
-                transaction_amount: getProPriceBrl(),
+                transaction_amount: checkoutAmount,
                 currency_id: "BRL",
               },
             }),
@@ -84,6 +123,10 @@ export async function POST(request: Request) {
 
     if (preapproval.id) {
       await setMercadoPagoPreapprovalForUser(session.user.id, preapproval.id);
+    }
+
+    if (validCouponToRedeem) {
+      await redeemPlatformCouponForUser(session.user.id, validCouponToRedeem).catch(() => null);
     }
 
     return NextResponse.json({ url: preapproval.init_point });

@@ -127,6 +127,7 @@ export interface CreatorProfileData {
   currentPeriodEnd: string | null;
   onboardingCompleted: boolean;
   isSuspended: boolean;
+  isVerified: boolean;
 }
 
 export interface DailyAnalyticsPoint {
@@ -149,6 +150,7 @@ export interface PlatformCouponData {
   description: string;
   plan: "pro";
   durationDays: number;
+  discountPercent: number;
   maxUses: number;
   usedCount: number;
   isActive: boolean;

@@ -121,6 +121,7 @@ export const PLAN_CARDS = [
     description: "Para criadores e atletas que monetizam com vários parceiros.",
     features: [
       "Cupons e links ilimitados",
+      "Selo de perfil verificado (ícone de tick azul na foto)",
       "Remover logo meucupom.bio (página 100% white-label)",
       "Todos os 19 fundos (incluindo todos com desenhos: Ondas, Zig-zag, Colmeia, Grid, etc.)",
       "Todas as opções de borda (Pílula e Super Arredondada)",

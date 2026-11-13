@@ -90,6 +90,7 @@ const SQLITE_DDL = [
     "current_period_end" integer,
     "onboarding_completed" integer NOT NULL DEFAULT 0,
     "is_suspended" integer NOT NULL DEFAULT 0,
+    "is_verified" integer NOT NULL DEFAULT 0,
     "created_at" integer NOT NULL,
     "updated_at" integer NOT NULL
   )`,
@@ -142,6 +143,7 @@ const SQLITE_DDL = [
     "description" text NOT NULL DEFAULT '',
     "plan" text NOT NULL DEFAULT 'pro',
     "duration_days" integer NOT NULL DEFAULT 30,
+    "discount_percent" integer NOT NULL DEFAULT 0,
     "max_uses" integer NOT NULL DEFAULT 100,
     "used_count" integer NOT NULL DEFAULT 0,
     "is_active" integer NOT NULL DEFAULT 1,
@@ -246,6 +248,7 @@ const PG_DDL = [
     "current_period_end" timestamp,
     "onboarding_completed" boolean NOT NULL DEFAULT false,
     "is_suspended" boolean NOT NULL DEFAULT false,
+    "is_verified" boolean NOT NULL DEFAULT false,
     "created_at" timestamp NOT NULL,
     "updated_at" timestamp NOT NULL
   )`,
@@ -298,6 +301,7 @@ const PG_DDL = [
     "description" text NOT NULL DEFAULT '',
     "plan" text NOT NULL DEFAULT 'pro',
     "duration_days" integer NOT NULL DEFAULT 30,
+    "discount_percent" integer NOT NULL DEFAULT 0,
     "max_uses" integer NOT NULL DEFAULT 100,
     "used_count" integer NOT NULL DEFAULT 0,
     "is_active" boolean NOT NULL DEFAULT true,
@@ -743,6 +747,11 @@ async function runColumnMigrations() {
         `ALTER TABLE "creator_profile" ADD COLUMN "is_suspended" integer NOT NULL DEFAULT 0`
       );
     }
+    if (!profNames.has("is_verified")) {
+      await handle.client.execute(
+        `ALTER TABLE "creator_profile" ADD COLUMN "is_verified" integer NOT NULL DEFAULT 0`
+      );
+    }
 
     const itemCols = await handle.client.execute(`PRAGMA table_info("link_item")`);
     const itemNames = new Set(itemCols.rows.map((r) => String(r.name)));
@@ -783,6 +792,7 @@ async function runColumnMigrations() {
       "description" text NOT NULL DEFAULT '',
       "plan" text NOT NULL DEFAULT 'pro',
       "duration_days" integer NOT NULL DEFAULT 30,
+      "discount_percent" integer NOT NULL DEFAULT 0,
       "max_uses" integer NOT NULL DEFAULT 100,
       "used_count" integer NOT NULL DEFAULT 0,
       "is_active" integer NOT NULL DEFAULT 1,
@@ -801,6 +811,14 @@ async function runColumnMigrations() {
       "user_name" text NOT NULL DEFAULT '',
       "redeemed_at" integer NOT NULL
     )`);
+
+    const coupCols = await handle.client.execute(`PRAGMA table_info("platform_coupon")`);
+    const coupNames = new Set(coupCols.rows.map((r) => String(r.name)));
+    if (!coupNames.has("discount_percent")) {
+      await handle.client.execute(
+        `ALTER TABLE "platform_coupon" ADD COLUMN "discount_percent" integer NOT NULL DEFAULT 0`
+      );
+    }
     return;
   }
 
@@ -850,6 +868,9 @@ async function runColumnMigrations() {
     `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "is_suspended" boolean NOT NULL DEFAULT false`
   );
   await handle.pool.query(
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "is_verified" boolean NOT NULL DEFAULT false`
+  );
+  await handle.pool.query(
     `ALTER TABLE "link_item" ADD COLUMN IF NOT EXISTS "is_featured" boolean NOT NULL DEFAULT false`
   );
   await handle.pool.query(
@@ -872,6 +893,7 @@ async function runColumnMigrations() {
     "description" text NOT NULL DEFAULT '',
     "plan" text NOT NULL DEFAULT 'pro',
     "duration_days" integer NOT NULL DEFAULT 30,
+    "discount_percent" integer NOT NULL DEFAULT 0,
     "max_uses" integer NOT NULL DEFAULT 100,
     "used_count" integer NOT NULL DEFAULT 0,
     "is_active" boolean NOT NULL DEFAULT true,
@@ -889,6 +911,9 @@ async function runColumnMigrations() {
     "user_name" text NOT NULL DEFAULT '',
     "redeemed_at" timestamp NOT NULL
   )`);
+  await handle.pool.query(
+    `ALTER TABLE "platform_coupon" ADD COLUMN IF NOT EXISTS "discount_percent" integer NOT NULL DEFAULT 0`
+  );
 }
 
 export async function ensureDatabaseReady(): Promise<void> {

@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       influencerEmail?: string;
       description?: string;
       durationDays?: number;
+      discountPercent?: number;
       maxUses?: number;
       expiresAt?: string | null;
     };
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
       influencerEmail: body.influencerEmail,
       description: body.description,
       durationDays: typeof body.durationDays === "number" ? body.durationDays : 30,
+      discountPercent: typeof body.discountPercent === "number" ? body.discountPercent : 0,
       maxUses: typeof body.maxUses === "number" ? body.maxUses : 100,
       expiresAt: body.expiresAt,
     });

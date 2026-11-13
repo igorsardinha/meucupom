@@ -701,6 +701,13 @@ export function PublicBioView({ profile, items, previewMode = false }: PublicBio
           : `https://www.youtube.com/@${profile.youtubeHandle}`
       : "";
 
+  const isVerifiedCreator = Boolean(
+    profile.isVerified ||
+    profile.plan === "pro" ||
+    profile.subscriptionStatus === "active" ||
+    profile.subscriptionStatus === "permuta"
+  );
+
   const listGridClass =
     profile.layout === "compact" ? "flex flex-col gap-2.5" : "flex flex-col gap-3.5";
 
@@ -796,13 +803,15 @@ export function PublicBioView({ profile, items, previewMode = false }: PublicBio
                 </span>
               )}
             </div>
-            {/* Verified Tick Badge on Avatar */}
-            <div
-              className="absolute -bottom-1 -right-1 flex items-center justify-center drop-shadow-md"
-              title="Perfil verificado meucupom"
-            >
-              <VerifiedBadge className="h-7 w-7" badgeColor="#1E60CF" tickColor="#FFFFFF" ringColor="#070C14" />
-            </div>
+            {/* Verified Tick Badge on Avatar (Pro, Permuta or Manually Verified by Admin) */}
+            {isVerifiedCreator ? (
+              <div
+                className="absolute -bottom-1 -right-1 flex items-center justify-center drop-shadow-md"
+                title="Perfil verificado meucupom"
+              >
+                <VerifiedBadge className="h-7 w-7" badgeColor="#1E60CF" tickColor="#FFFFFF" ringColor="#070C14" />
+              </div>
+            ) : null}
           </div>
 
           <div className="flex flex-col gap-1.5">

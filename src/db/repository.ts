@@ -82,6 +82,7 @@ function mapProfile(row: Record<string, unknown>): CreatorProfileData {
       : null,
     onboardingCompleted: Boolean(row.onboardingCompleted),
     isSuspended: Boolean(row.isSuspended),
+    isVerified: Boolean(row.isVerified || row.is_verified),
   };
 }
 
@@ -1219,6 +1220,7 @@ export interface AdminUserSummary {
   itemsCount: number;
   isSuspended: boolean;
   onboardingCompleted: boolean;
+  isVerified: boolean;
 }
 
 export interface AdminReportSummary {
@@ -1323,6 +1325,7 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
       itemsCount: prof ? (itemCountByProfile.get(prof.id) ?? 0) : 0,
       isSuspended: prof?.isSuspended ?? false,
       onboardingCompleted: prof?.onboardingCompleted ?? false,
+      isVerified: prof?.isVerified ?? false,
     };
   });
 
@@ -1347,6 +1350,7 @@ export async function adminUpdateUserProfile(input: {
   plan?: "free" | "pro";
   subscriptionStatus?: CreatorProfileData["subscriptionStatus"];
   isSuspended?: boolean;
+  isVerified?: boolean;
   mpPayerId?: string;
   mpPreapprovalId?: string;
   currentPeriodEnd?: Date | null;
@@ -1362,6 +1366,7 @@ export async function adminUpdateUserProfile(input: {
     updates.subscriptionStatus = input.subscriptionStatus;
   }
   if (input.isSuspended !== undefined) updates.isSuspended = input.isSuspended;
+  if (input.isVerified !== undefined) updates.isVerified = input.isVerified;
   if (input.mpPayerId !== undefined) updates.mpPayerId = input.mpPayerId;
   if (input.mpPreapprovalId !== undefined) {
     updates.mpPreapprovalId = input.mpPreapprovalId;
@@ -1458,6 +1463,7 @@ function mapPlatformCoupon(row: Record<string, unknown>): PlatformCouponData {
     description: String(row.description || ""),
     plan: "pro",
     durationDays: Number(row.durationDays || 30),
+    discountPercent: Number(row.discountPercent ?? row.discount_percent ?? 0),
     maxUses: Number(row.maxUses || 0),
     usedCount: Number(row.usedCount || 0),
     isActive: Boolean(row.isActive),
@@ -1493,6 +1499,7 @@ export async function createPlatformCoupon(input: {
   influencerEmail?: string;
   description?: string;
   durationDays?: number;
+  discountPercent?: number;
   maxUses?: number;
   expiresAt?: string | null;
 }): Promise<{ ok: true; coupon: PlatformCouponData } | { ok: false; error: string }> {
@@ -1539,6 +1546,10 @@ export async function createPlatformCoupon(input: {
     description: (input.description || "").trim(),
     plan: "pro",
     durationDays: typeof input.durationDays === "number" ? Math.max(0, input.durationDays) : 30,
+    discountPercent:
+      typeof input.discountPercent === "number"
+        ? Math.min(100, Math.max(0, input.discountPercent))
+        : 0,
     maxUses: typeof input.maxUses === "number" ? Math.max(0, input.maxUses) : 100,
     usedCount: 0,
     isActive: true,
@@ -1595,6 +1606,109 @@ export async function deletePlatformCoupon(
   }
 
   return { ok: true };
+}
+
+export async function validatePlatformCouponForUser(
+  userId: string,
+  rawCode: string
+): Promise<
+  | {
+      ok: true;
+      coupon: PlatformCouponData;
+      discountPercent: number;
+      originalPriceBrl: number;
+      discountedPriceBrl: number;
+      durationDays: number;
+    }
+  | { ok: false; error: string }
+> {
+  await ensureDatabaseReady();
+  const handle = getDbHandle();
+
+  const code = (rawCode || "").trim().toUpperCase();
+  if (!code) {
+    return { ok: false, error: "Informe o código do cupom." };
+  }
+
+  const couponRows =
+    handle.dialect === "sqlite"
+      ? await handle.db
+          .select()
+          .from(handle.schema.platformCoupon)
+          .where(eq(handle.schema.platformCoupon.code, code))
+          .limit(1)
+      : await handle.db
+          .select()
+          .from(handle.schema.platformCoupon)
+          .where(eq(handle.schema.platformCoupon.code, code))
+          .limit(1);
+
+  if (couponRows.length === 0) {
+    return { ok: false, error: "Cupom não encontrado. Verifique o código e tente novamente." };
+  }
+
+  const coupon = mapPlatformCoupon(couponRows[0] as unknown as Record<string, unknown>);
+
+  if (!coupon.isActive) {
+    return { ok: false, error: "Este cupom foi desativado ou expirou." };
+  }
+
+  if (coupon.expiresAt) {
+    const expDate = new Date(coupon.expiresAt).getTime();
+    if (Date.now() > expDate) {
+      return { ok: false, error: "Este cupom expirou." };
+    }
+  }
+
+  if (coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses) {
+    return { ok: false, error: "Este cupom já atingiu o limite máximo de utilizações." };
+  }
+
+  if (userId) {
+    const previousRedemption =
+      handle.dialect === "sqlite"
+        ? await handle.db
+            .select({ id: handle.schema.platformCouponRedemption.id })
+            .from(handle.schema.platformCouponRedemption)
+            .where(
+              and(
+                eq(handle.schema.platformCouponRedemption.couponId, coupon.id),
+                eq(handle.schema.platformCouponRedemption.userId, userId)
+              )
+            )
+            .limit(1)
+        : await handle.db
+            .select({ id: handle.schema.platformCouponRedemption.id })
+            .from(handle.schema.platformCouponRedemption)
+            .where(
+              and(
+                eq(handle.schema.platformCouponRedemption.couponId, coupon.id),
+                eq(handle.schema.platformCouponRedemption.userId, userId)
+              )
+            )
+            .limit(1);
+
+    if (previousRedemption.length > 0) {
+      return { ok: false, error: "Você já utilizou este cupom anteriormente." };
+    }
+  }
+
+  const originalPriceBrl = 19.9;
+  const discountPercent = coupon.discountPercent || 0;
+  let discountedPriceBrl = originalPriceBrl;
+  if (discountPercent > 0) {
+    const factor = Math.min(100, Math.max(1, discountPercent)) / 100;
+    discountedPriceBrl = Math.max(1, Math.round(originalPriceBrl * (1 - factor) * 100) / 100);
+  }
+
+  return {
+    ok: true,
+    coupon,
+    discountPercent,
+    originalPriceBrl,
+    discountedPriceBrl,
+    durationDays: coupon.durationDays,
+  };
 }
 
 export async function redeemPlatformCouponForUser(

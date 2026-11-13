@@ -20,6 +20,7 @@ const patchUserSchema = z.object({
     .enum(["inactive", "active", "trialing", "past_due", "canceled", "permuta"])
     .optional(),
   isSuspended: z.boolean().optional(),
+  isVerified: z.boolean().optional(),
   mpPayerId: z.string().optional(),
   mpPreapprovalId: z.string().optional(),
   currentPeriodEndDays: z.number().int().min(0).max(3650).optional().nullable(),
@@ -75,6 +76,7 @@ export async function PATCH(request: Request) {
     plan,
     subscriptionStatus,
     isSuspended,
+    isVerified,
     mpPayerId,
     mpPreapprovalId,
     currentPeriodEndDays,
@@ -142,6 +144,7 @@ export async function PATCH(request: Request) {
     plan,
     subscriptionStatus,
     isSuspended,
+    isVerified,
     mpPayerId,
     mpPreapprovalId,
     currentPeriodEnd,

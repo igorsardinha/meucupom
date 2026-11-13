@@ -95,6 +95,7 @@ export const creatorProfile = pgTable("creator_profile", {
   currentPeriodEnd: timestamp("current_period_end", { mode: "date" }),
   onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
   isSuspended: boolean("is_suspended").notNull().default(false),
+  isVerified: boolean("is_verified").notNull().default(false),
   createdAt: timestamp("created_at", { mode: "date" }).notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).notNull(),
 });
@@ -154,6 +155,7 @@ export const platformCoupon = pgTable("platform_coupon", {
   description: text("description").notNull().default(""),
   plan: text("plan").notNull().default("pro"),
   durationDays: integer("duration_days").notNull().default(30),
+  discountPercent: integer("discount_percent").notNull().default(0),
   maxUses: integer("max_uses").notNull().default(100),
   usedCount: integer("used_count").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),

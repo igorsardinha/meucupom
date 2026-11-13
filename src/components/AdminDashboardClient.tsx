@@ -74,6 +74,7 @@ export function AdminDashboardClient({
     influencerEmail: "",
     description: "",
     durationDays: 30,
+    discountPercent: 10,
     maxUses: 100,
   });
   const [savingCoupon, setSavingCoupon] = useState(false);
@@ -114,6 +115,7 @@ export function AdminDashboardClient({
         influencerEmail: "",
         description: "",
         durationDays: 30,
+        discountPercent: 10,
         maxUses: 100,
       });
       notify("ok", `Cupom "${json.coupon?.code}" criado com sucesso!`);
@@ -220,6 +222,7 @@ export function AdminDashboardClient({
       plan?: "free" | "pro";
       subscriptionStatus?: CreatorProfileData["subscriptionStatus"];
       isSuspended?: boolean;
+      isVerified?: boolean;
       currentPeriodEndDays?: number | null;
       syncMercadoPago?: boolean;
       cancelMercadoPago?: boolean;
@@ -583,7 +586,22 @@ export function AdminDashboardClient({
                         className="border-b border-white/6 last:border-0 hover:bg-white/[0.02]"
                       >
                         <td className="px-4 py-3.5 align-top">
-                          <p className="font-bold text-white">{u.displayName || u.userName}</p>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <p className="font-bold text-white">{u.displayName || u.userName}</p>
+                            {u.isVerified || u.plan === "pro" ? (
+                              <span
+                                title={
+                                  u.isVerified
+                                    ? "Verificado manualmente pelo Super Admin"
+                                    : "Verificado automaticamente pelo Plano Pro"
+                                }
+                                className="inline-flex items-center gap-1 rounded-full bg-[#1E60CF]/20 px-2 py-0.5 text-[10px] font-extrabold text-[#7DD3FC]"
+                              >
+                                <CheckCircle2 className="h-3 w-3 text-[#38BDF8]" />
+                                <span>Verificado</span>
+                              </span>
+                            ) : null}
+                          </div>
                           <p className="text-xs text-[#9CB3CE]">{u.email}</p>
                           <p className="mt-0.5 text-[11px] text-[#7DD3FC]">
                             Cadastro: {new Date(u.userCreatedAt).toLocaleDateString("pt-BR")}
@@ -755,6 +773,29 @@ export function AdminDashboardClient({
                                     </button>
                                   </>
                                 )}
+
+                                <button
+                                  type="button"
+                                  disabled={isBusy}
+                                  onClick={() =>
+                                    updateUser(
+                                      u,
+                                      { isVerified: !u.isVerified },
+                                      u.isVerified
+                                        ? `Selo verificado removido de ${u.email}.`
+                                        : `Selo verificado concedido a ${u.email}!`
+                                    )
+                                  }
+                                  className={`inline-flex min-h-8 items-center gap-1 rounded-lg border px-2.5 text-xs font-bold transition disabled:opacity-60 ${
+                                    u.isVerified
+                                      ? "border-blue-400/40 bg-blue-500/20 text-blue-200 hover:bg-blue-500/30"
+                                      : "border-white/15 bg-white/5 text-[#9CB3CE] hover:border-white/30 hover:text-white"
+                                  }`}
+                                  title="Conceder ou revogar selo de perfil verificado"
+                                >
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  <span>{u.isVerified ? "Desverificar" : "Verificar"}</span>
+                                </button>
 
                                 <button
                                   type="button"
@@ -1068,15 +1109,22 @@ export function AdminDashboardClient({
                             </td>
 
                             <td className="px-4 py-3.5">
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                                  c.durationDays === 0
-                                    ? "bg-purple-500/20 text-purple-300"
-                                    : "bg-[#1E60CF]/20 text-[#7DD3FC]"
-                                }`}
-                              >
-                                {benefitLabel}
-                              </span>
+                              <div className="flex flex-col items-start gap-1">
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                                    c.durationDays === 0
+                                      ? "bg-purple-500/20 text-purple-300"
+                                      : "bg-[#1E60CF]/20 text-[#7DD3FC]"
+                                  }`}
+                                >
+                                  {benefitLabel}
+                                </span>
+                                {c.discountPercent > 0 ? (
+                                  <span className="rounded-full border border-emerald-400/35 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-extrabold text-emerald-300">
+                                    {c.discountPercent}% OFF no Checkout
+                                  </span>
+                                ) : null}
+                              </div>
                             </td>
 
                             <td className="px-4 py-3.5">
@@ -1231,6 +1279,40 @@ export function AdminDashboardClient({
                           </button>
                         ))}
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#CBD5E1]">
+                        Desconto na Assinatura (Checkout Mercado Pago)
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { pct: 0, label: "0% (Apenas dias grátis)" },
+                          { pct: 10, label: "10% OFF" },
+                          { pct: 15, label: "15% OFF" },
+                          { pct: 20, label: "20% OFF" },
+                          { pct: 30, label: "30% OFF" },
+                          { pct: 50, label: "50% OFF" },
+                        ].map((opt) => (
+                          <button
+                            key={opt.pct}
+                            type="button"
+                            onClick={() => setCouponForm((f) => ({ ...f, discountPercent: opt.pct }))}
+                            className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
+                              couponForm.discountPercent === opt.pct
+                                ? "border-emerald-400 bg-emerald-400 text-black shadow-sm"
+                                : "border-white/10 bg-[#09101B] text-white/80 hover:border-white/20 hover:text-white"
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="mt-1 text-[11px] text-[#9CB3CE]">
+                        {couponForm.discountPercent > 0
+                          ? `Aplica ${couponForm.discountPercent}% de desconto recorrente no checkout do Mercado Pago (R$ ${(19.9 * (1 - couponForm.discountPercent / 100)).toFixed(2).replace(".", ",")}/mês).`
+                          : "Sem desconto percentual no checkout."}
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">

@@ -29,6 +29,7 @@ export const NEUTRAL_SHOWCASE_PROFILE: CreatorProfileData = {
   currentPeriodEnd: null,
   onboardingCompleted: true,
   isSuspended: false,
+  isVerified: true,
 };
 
 export const NEUTRAL_SHOWCASE_ITEMS: LinkItemData[] = [
