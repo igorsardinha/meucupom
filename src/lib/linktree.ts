@@ -69,6 +69,7 @@ export function extractLinktreeUsername(input: string): string {
 
 /**
  * Detecta se o título contém indicação de código de cupom de desconto
+ * (palavras-chave como "cupom", "código" ou emojis como 🏷️ e 🎟️)
  * e separa o nome limpo da loja / marca e o código do cupom.
  */
 export function extractCouponFromTitle(rawTitle: string): {
@@ -76,50 +77,107 @@ export function extractCouponFromTitle(rawTitle: string): {
   title: string;
   couponCode: string;
 } {
-  const title = (rawTitle || "").trim();
-  if (!title) {
+  const original = (rawTitle || "").trim();
+  if (!original) {
     return { kind: "link", title: "", couponCode: "" };
   }
 
-  // Padrão 1: Separador |, -, –, —, •, /, : seguido de palavra-chave de cupom
-  // Ex: "WÉCO RUN | Cupom: IGORSARDINHA", "Loja X - cupom: MEU10", "Loja Y / Cupom MEU10"
-  const delimiterPattern =
-    /^(.*?)\s*[\-|–—|•·/]\s*(?:cupom|código|codigo|cód|cod|use(?:\s+o\s+cupom)?|desconto)\s*[:=]?\s*([A-Za-z0-9_\-\.\%]+)\s*$/i;
-  const delMatch = title.match(delimiterPattern);
-  if (delMatch) {
-    const cleanTitle = delMatch[1].trim();
-    const couponCode = delMatch[2].trim().toUpperCase();
-    if (cleanTitle && couponCode) {
-      return { kind: "coupon", title: cleanTitle, couponCode };
-    }
-  }
+  const emojiGroup = "(?:🏷\uFE0F?|🎟\uFE0F?|🎫)";
+  const textKeywords = "(?:cupom|código|codigo|cód|cod|use(?:\\s+o\\s+cupom)?|desconto)";
 
-  // Padrão 2: Parênteses ou colchetes com cupom
-  // Ex: "Marca (Cupom: CODIGO)", "Marca [Cupom CODIGO]"
-  const bracketPattern =
-    /^(.*?)\s*[\(\[\{]\s*(?:cupom|código|codigo|cód|cod|use(?:\s+o\s+cupom)?)\s*[:=]?\s*([A-Za-z0-9_\-\.\%]+)\s*[\)\]\}]\s*$/i;
-  const brkMatch = title.match(bracketPattern);
+  // Verifica se inicia com emoji de cupom/etiqueta
+  const leadingEmojiMatch = original.match(new RegExp(`^${emojiGroup}\\s*`, "iu"));
+  const hadLeadingEmoji = Boolean(leadingEmojiMatch);
+  const cleanStart = leadingEmojiMatch
+    ? original.slice(leadingEmojiMatch[0].length).trim()
+    : original;
+
+  // 1. Parênteses ou colchetes: "Marca (🏷️ CODIGO)", "Marca [Cupom: CODIGO]", "Marca (🎟️ CODIGO)"
+  const bracketRegex = new RegExp(
+    `^(.*?)\\s*[([{]\\s*(?:${emojiGroup}\\s*|${textKeywords}\\s*[:=]?\\s*|${emojiGroup}\\s*${textKeywords}\\s*[:=]?\\s*)([A-Za-z0-9_.\\-%]+)\\s*[)}\\]]\\s*$`,
+    "iu"
+  );
+  const brkMatch = cleanStart.match(bracketRegex);
   if (brkMatch) {
-    const cleanTitle = brkMatch[1].trim();
+    const cleanTitle = brkMatch[1]
+      .trim()
+      .replace(/^[-|–—•·/:]+/, "")
+      .replace(/[-|–—•·/:]+$/, "")
+      .trim();
     const couponCode = brkMatch[2].trim().toUpperCase();
     if (cleanTitle && couponCode) {
       return { kind: "coupon", title: cleanTitle, couponCode };
     }
   }
 
-  // Padrão 3: "Cupom: CODIGO" ou "Cód: CODIGO" no final do texto
-  const endPattern =
-    /^(.*?)\s+(?:cupom|código|codigo|cód)\s*[:=]\s*([A-Za-z0-9_\-\.\%]+)\s*$/i;
-  const endMatch = title.match(endPattern);
+  // 2. Delimitador ou espaço seguido de emoji: "Marca | 🏷️ CODIGO", "Marca 🎟️ CODIGO", "Marca 🏷️ Cupom: CODIGO"
+  const emojiRegex = new RegExp(
+    `^(.*?)(?:\\s*[-|–—•·/:]\\s*|\\s+)${emojiGroup}\\s*(?:${textKeywords}\\s*[:=]?\\s*|[:=]\\s*)?([A-Za-z0-9_.\\-%]+)\\s*$`,
+    "iu"
+  );
+  const emojiMatch = cleanStart.match(emojiRegex);
+  if (emojiMatch) {
+    const cleanTitle = emojiMatch[1]
+      .trim()
+      .replace(/^[-|–—•·/:]+/, "")
+      .replace(/[-|–—•·/:]+$/, "")
+      .trim();
+    const couponCode = emojiMatch[2].trim().toUpperCase();
+    if (cleanTitle && couponCode) {
+      return { kind: "coupon", title: cleanTitle, couponCode };
+    }
+  }
+
+  // 3. Delimitador seguido de palavra-chave: "Marca | Cupom: CODIGO", "Marca - Código CODIGO"
+  const delRegex = new RegExp(
+    `^(.*?)\\s*[-|–—•·/]\\s*${textKeywords}\\s*[:=]?\\s*([A-Za-z0-9_.\\-%]+)\\s*$`,
+    "iu"
+  );
+  const delMatch = cleanStart.match(delRegex);
+  if (delMatch) {
+    const cleanTitle = delMatch[1].trim().replace(/^[-|–—•·/:]+/, "").trim();
+    const couponCode = delMatch[2].trim().toUpperCase();
+    if (cleanTitle && couponCode) {
+      return { kind: "coupon", title: cleanTitle, couponCode };
+    }
+  }
+
+  // 4. Palavra-chave + dois pontos no final: "Marca Cupom: CODIGO"
+  const endRegex = new RegExp(
+    `^(.*?)\\s+${textKeywords}\\s*[:=]\\s*([A-Za-z0-9_.\\-%]+)\\s*$`,
+    "iu"
+  );
+  const endMatch = cleanStart.match(endRegex);
   if (endMatch) {
-    const cleanTitle = endMatch[1].trim();
+    const cleanTitle = endMatch[1].trim().replace(/^[-|–—•·/:]+/, "").trim();
     const couponCode = endMatch[2].trim().toUpperCase();
     if (cleanTitle && couponCode) {
       return { kind: "coupon", title: cleanTitle, couponCode };
     }
   }
 
-  return { kind: "link", title, couponCode: "" };
+  // 5. Caso com emoji inicial e separador: "🏷️ Nome da Loja: CODIGO" ou "🎟️ Nome da Loja - CODIGO"
+  if (hadLeadingEmoji) {
+    const splitMatch = cleanStart.match(/^(.*?)\s*[:\-|–—•·/]\s*([A-Za-z0-9_.\-%]+)\s*$/iu);
+    if (splitMatch) {
+      const cleanTitle = splitMatch[1].trim();
+      const couponCode = splitMatch[2].trim().toUpperCase();
+      if (cleanTitle && couponCode) {
+        return { kind: "coupon", title: cleanTitle, couponCode };
+      }
+    }
+
+    // Apenas emoji e código: "🏷️ CODIGO" ou "🎟️ CUPOM10"
+    const standaloneMatch = cleanStart.match(
+      new RegExp(`^(?:${textKeywords}\\s*[:=]?\\s*)?([A-Za-z0-9_.\-%]+)$`, "iu")
+    );
+    if (standaloneMatch) {
+      const couponCode = standaloneMatch[1].trim().toUpperCase();
+      return { kind: "coupon", title: `Cupom ${couponCode}`, couponCode };
+    }
+  }
+
+  return { kind: "link", title: original, couponCode: "" };
 }
 
 /**
@@ -158,7 +216,7 @@ export async function fetchAndParseLinktree(
   const username = extractLinktreeUsername(usernameOrUrl);
   if (!username) {
     throw new Error(
-      "Nome de usuário ou URL do Linktree inválida. Exemplo: https://linktr.ee/igor.sardinha"
+      "Nome de usuário ou URL do Linktree inválida. Exemplo: https://linktr.ee/seunome"
     );
   }
 
