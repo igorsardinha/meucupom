@@ -11,6 +11,7 @@ export interface LinktreeParsedProfile {
   tiktokHandle: string;
   youtubeUrl: string;
   youtubeHandle: string;
+  publicEmail: string;
 }
 
 export interface LinktreeParsedItem {
@@ -306,10 +307,22 @@ export async function fetchAndParseLinktree(
   let instagramUrl = "";
   let tiktokUrl = "";
   let youtubeUrl = "";
+  let publicEmail = "";
 
   for (const s of rawSocials) {
     const type = String(s.type || "").toUpperCase();
     const url = String(s.url || "").trim();
+
+    if (type.includes("EMAIL") || type.includes("MAIL") || url.toLowerCase().startsWith("mailto:")) {
+      if (!publicEmail) {
+        const cleaned = url.replace(/^mailto:/i, "").split("?")[0].trim();
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleaned)) {
+          publicEmail = cleaned;
+        }
+      }
+      continue;
+    }
+
     if (!isSafeHttpUrl(url)) continue;
 
     if (type.includes("INSTAGRAM") && !instagramUrl) {
@@ -332,6 +345,7 @@ export async function fetchAndParseLinktree(
     tiktokHandle: extractHandleFromUrl(tiktokUrl),
     youtubeUrl,
     youtubeHandle: extractHandleFromUrl(youtubeUrl),
+    publicEmail,
   };
 
   // Links e Grupos

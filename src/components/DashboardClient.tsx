@@ -905,6 +905,9 @@ export function DashboardClient({
           instagramUrl: payload.instagramUrl,
           tiktokHandle: payload.tiktokHandle,
           tiktokUrl: payload.tiktokUrl,
+          youtubeHandle: payload.youtubeHandle,
+          youtubeUrl: payload.youtubeUrl,
+          publicEmail: payload.publicEmail,
           bio: payload.bio,
           footerText: payload.footerText,
           sectionTitle: payload.sectionTitle,
@@ -1310,7 +1313,7 @@ export function DashboardClient({
           featuredIcon:
             itemForm.kind === "divider" ? "sparkles" : itemForm.featuredIcon.trim() || "sparkles",
           expiresAt:
-            itemForm.kind === "divider" || !itemForm.expiresAt.trim()
+            profile.layout === "ultra-compact" || itemForm.kind === "divider" || !itemForm.expiresAt.trim()
               ? null
               : new Date(itemForm.expiresAt).toISOString(),
         }),
@@ -2289,7 +2292,16 @@ export function DashboardClient({
                                   ) : null}
 
                                   {item.kind !== "divider" && item.expiresAt ? (
-                                    <DashboardCountdownBadge expiresAt={item.expiresAt} />
+                                    profile.layout === "ultra-compact" ? (
+                                      <span
+                                        className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white/40"
+                                        title="Contagem regressiva desativada no layout ultra compacto"
+                                      >
+                                        Expiração oculta (ultra compacto)
+                                      </span>
+                                    ) : (
+                                      <DashboardCountdownBadge expiresAt={item.expiresAt} />
+                                    )
                                   ) : null}
 
                                   {item.tag ? (
@@ -3727,6 +3739,27 @@ export function DashboardClient({
                   </div>
 
                   <div>
+                    <label htmlFor="prof-email" className="mb-1 block text-sm font-semibold">
+                      E-mail de contato / parcerias
+                    </label>
+                    <input
+                      id="prof-email"
+                      type="email"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      value={profile.publicEmail || ""}
+                      onChange={(e) =>
+                        setProfile((p) => ({ ...p, publicEmail: e.target.value }))
+                      }
+                      placeholder="contato@seudominio.com"
+                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
+                    />
+                    <p className="mt-1 text-xs text-white/50">
+                      Exibido na barra de redes sociais da sua página com link direto para envio de mensagem.
+                    </p>
+                  </div>
+
+                  <div>
                     <label htmlFor="prof-sec" className="mb-1 block text-sm font-semibold">
                       Título da lista
                     </label>
@@ -4844,78 +4877,92 @@ export function DashboardClient({
                 ) : null}
 
                 {itemForm.kind === "coupon" ? (
-                  <div className="space-y-3 rounded-2xl border border-white/15 bg-white/[0.04] p-4 sm:col-span-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm font-bold text-white">
-                        <Clock className="h-4 w-4 text-amber-400" aria-hidden="true" />
-                        <span>Expiração com Contagem Regressiva</span>
+                  profile.layout === "ultra-compact" ? (
+                    <div className="space-y-2 rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:col-span-2">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-white/70">
+                        <Clock className="h-4 w-4 text-white/40" aria-hidden="true" />
+                        <span>Contagem regressiva desativada</span>
                       </div>
-                      {itemForm.expiresAt ? (
+                      <p className="text-xs leading-relaxed text-white/50">
+                        O layout <strong className="text-white/80">Ultra Compacto</strong> prioriza linhas enxutas e minimalistas, sem cronômetros de expiração. Para usar contagem regressiva, selecione o layout Clássico ou Compacto em Personalização.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 rounded-2xl border border-white/15 bg-white/[0.04] p-4 sm:col-span-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-sm font-bold text-white">
+                          <Clock className="h-4 w-4 text-amber-400" aria-hidden="true" />
+                          <span>Expiração com Contagem Regressiva</span>
+                        </div>
+                        {itemForm.expiresAt ? (
+                          <button
+                            type="button"
+                            onClick={() => setItemForm((f) => ({ ...f, expiresAt: "" }))}
+                            className="text-xs font-semibold text-rose-400 hover:text-rose-300 hover:underline"
+                          >
+                            Remover expiração
+                          </button>
+                        ) : null}
+                      </div>
+                      <p className="text-xs text-[#9CB3CE]">
+                        Exibe um cronômetro ao vivo na sua página (&quot;Expira em 04:32:15&quot;) aumentando a urgência e conversão do cupom.
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap">
                         <button
                           type="button"
-                          onClick={() => setItemForm((f) => ({ ...f, expiresAt: "" }))}
-                          className="text-xs font-semibold text-rose-400 hover:text-rose-300 hover:underline"
+                          onClick={() => {
+                            const d = new Date(Date.now() + 24 * 3600 * 1000);
+                            setItemForm((f) => ({ ...f, expiresAt: toDateTimeLocalInput(d.toISOString()) }));
+                          }}
+                          className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-center text-xs font-medium text-white hover:bg-white/10 sm:w-auto"
                         >
-                          Remover expiração
+                          +24 horas
                         </button>
-                      ) : null}
-                    </div>
-                    <p className="text-xs text-[#9CB3CE]">
-                      Exibe um cronômetro ao vivo na sua página (&quot;Expira em 04:32:15&quot;) aumentando a urgência e conversão do cupom.
-                    </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const d = new Date(Date.now() + 3 * 24 * 3600 * 1000);
+                            setItemForm((f) => ({ ...f, expiresAt: toDateTimeLocalInput(d.toISOString()) }));
+                          }}
+                          className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-center text-xs font-medium text-white hover:bg-white/10 sm:w-auto"
+                        >
+                          +3 dias
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const d = new Date(Date.now() + 7 * 24 * 3600 * 1000);
+                            setItemForm((f) => ({ ...f, expiresAt: toDateTimeLocalInput(d.toISOString()) }));
+                          }}
+                          className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-center text-xs font-medium text-white hover:bg-white/10 sm:w-auto"
+                        >
+                          +7 dias
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const now = new Date();
+                            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 0);
+                            setItemForm((f) => ({ ...f, expiresAt: toDateTimeLocalInput(endOfMonth.toISOString()) }));
+                          }}
+                          className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-center text-xs font-medium text-white hover:bg-white/10 sm:w-auto"
+                        >
+                          Fim do mês
+                        </button>
+                      </div>
 
-                    <div className="flex flex-wrap gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const d = new Date(Date.now() + 24 * 3600 * 1000);
-                          setItemForm((f) => ({ ...f, expiresAt: toDateTimeLocalInput(d.toISOString()) }));
-                        }}
-                        className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-xs font-medium text-white hover:bg-white/10"
-                      >
-                        +24 horas
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const d = new Date(Date.now() + 3 * 24 * 3600 * 1000);
-                          setItemForm((f) => ({ ...f, expiresAt: toDateTimeLocalInput(d.toISOString()) }));
-                        }}
-                        className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-xs font-medium text-white hover:bg-white/10"
-                      >
-                        +3 dias
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const d = new Date(Date.now() + 7 * 24 * 3600 * 1000);
-                          setItemForm((f) => ({ ...f, expiresAt: toDateTimeLocalInput(d.toISOString()) }));
-                        }}
-                        className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-xs font-medium text-white hover:bg-white/10"
-                      >
-                        +7 dias
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const now = new Date();
-                          const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 0);
-                          setItemForm((f) => ({ ...f, expiresAt: toDateTimeLocalInput(endOfMonth.toISOString()) }));
-                        }}
-                        className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-xs font-medium text-white hover:bg-white/10"
-                      >
-                        Fim do mês
-                      </button>
+                      <div className="w-full min-w-0 max-w-full overflow-hidden">
+                        <input
+                          id="item-expires-at"
+                          type="datetime-local"
+                          value={itemForm.expiresAt}
+                          onChange={(e) => setItemForm((f) => ({ ...f, expiresAt: e.target.value }))}
+                          className="mc-input min-h-[46px] w-full min-w-0 max-w-full box-border rounded-xl border border-white/15 bg-[#09101B] px-3 text-white [color-scheme:dark]"
+                        />
+                      </div>
                     </div>
-
-                    <input
-                      id="item-expires-at"
-                      type="datetime-local"
-                      value={itemForm.expiresAt}
-                      onChange={(e) => setItemForm((f) => ({ ...f, expiresAt: e.target.value }))}
-                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
-                    />
-                  </div>
+                  )
                 ) : null}
 
                 <div className="space-y-2 sm:col-span-2">

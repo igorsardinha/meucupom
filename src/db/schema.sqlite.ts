@@ -66,6 +66,7 @@ export const creatorProfile = sqliteTable("creator_profile", {
   tiktokUrl: text("tiktok_url").notNull().default(""),
   youtubeHandle: text("youtube_handle").notNull().default(""),
   youtubeUrl: text("youtube_url").notNull().default(""),
+  publicEmail: text("public_email").notNull().default(""),
   bio: text("bio").notNull().default(""),
   footerText: text("footer_text").notNull().default(""),
   sectionTitle: text("section_title").notNull().default("Parceiros & Cupons"),

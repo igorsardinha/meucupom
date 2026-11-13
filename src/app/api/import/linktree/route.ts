@@ -35,6 +35,7 @@ const importSchema = z.object({
       tiktokHandle: z.string().max(50).optional(),
       youtubeUrl: z.string().max(300).optional(),
       youtubeHandle: z.string().max(60).optional(),
+      publicEmail: z.string().max(120).optional(),
     })
     .optional(),
   replaceExisting: z.boolean().optional().default(false),

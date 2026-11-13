@@ -13,6 +13,7 @@ import {
   Flag,
   Gift,
   Link2,
+  Mail,
   Moon,
   Percent,
   Share2,
@@ -870,7 +871,9 @@ export function PublicBioView({
             const hasIg = Boolean(profile.instagramHandle || igHref);
             const hasTt = Boolean(profile.tiktokHandle || ttHref);
             const hasYt = Boolean(profile.youtubeHandle || ytHref);
-            if (!hasIg && !hasTt && !hasYt) return null;
+            const emailClean = (profile.publicEmail || "").trim();
+            const hasEmail = Boolean(emailClean);
+            if (!hasIg && !hasTt && !hasYt && !hasEmail) return null;
 
             const socialMode = profile.socialDisplayStyle || "both";
             const showIcon = socialMode !== "text";
@@ -878,6 +881,7 @@ export function PublicBioView({
             const igText = profile.instagramHandle || "Instagram";
             const ttText = profile.tiktokHandle || "TikTok";
             const ytText = profile.youtubeHandle || "YouTube";
+            const emailText = emailClean || "E-mail";
             const iconOnlyClass =
               "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-transform hover:scale-105 active:scale-95 shadow-sm";
             const pillClass =
@@ -960,9 +964,28 @@ export function PublicBioView({
                     className={showText ? pillClass : iconOnlyClass}
                   >
                     {showIcon ? (
-                      <YouTubeIcon className="h-4 w-4 shrink-0 text-red-500" />
+                      <YouTubeIcon className="h-4 w-4 shrink-0 text-white" />
                     ) : null}
                     {showText ? <span className="max-w-[150px] truncate">{ytText}</span> : null}
+                  </a>
+                ) : null}
+
+                {hasEmail ? (
+                  <a
+                    href={`mailto:${emailClean}`}
+                    aria-label={!showText ? `E-mail ${emailText}` : undefined}
+                    title={!showText ? `E-mail ${emailText}` : undefined}
+                    style={{
+                      background: pillBg,
+                      borderColor: borderSubtle,
+                      color: resolvedText,
+                    }}
+                    className={showText ? pillClass : iconOnlyClass}
+                  >
+                    {showIcon ? (
+                      <Mail className="h-4 w-4 shrink-0 text-white" />
+                    ) : null}
+                    {showText ? <span className="max-w-[170px] truncate">{emailText}</span> : null}
                   </a>
                 ) : null}
               </div>
@@ -1116,11 +1139,6 @@ export function PublicBioView({
                                 </span>
                               ) : null}
                             </div>
-                            {item.expiresAt ? (
-                              <div className="mt-0.5">
-                                <CountdownBadge expiresAt={item.expiresAt} />
-                              </div>
-                            ) : null}
                           </div>
                         </div>
 

@@ -124,8 +124,17 @@ export function LinktreeImportModal({
       const allIds = new Set(parsed.items.map((it) => it.id));
       setSelectedItemIds(allIds);
 
-      // Se usuário tem foto/bio encontrada, sugere importar
-      setImportProfileData(Boolean(parsed.profile.avatarUrl || parsed.profile.bio));
+      // Se usuário tem foto/bio/redes encontradas, sugere importar
+      setImportProfileData(
+        Boolean(
+          parsed.profile.avatarUrl ||
+            parsed.profile.bio ||
+            parsed.profile.publicEmail ||
+            parsed.profile.instagramUrl ||
+            parsed.profile.tiktokUrl ||
+            parsed.profile.youtubeUrl
+        )
+      );
 
       setStep("preview");
     } catch (err: unknown) {
@@ -229,6 +238,7 @@ export function LinktreeImportModal({
               tiktokHandle: previewData.profile.tiktokHandle,
               youtubeUrl: previewData.profile.youtubeUrl,
               youtubeHandle: previewData.profile.youtubeHandle,
+              publicEmail: previewData.profile.publicEmail,
             }
           : undefined,
         replaceExisting,
@@ -413,6 +423,7 @@ export function LinktreeImportModal({
                         previewData.profile.instagramUrl ? "Instagram" : null,
                         previewData.profile.tiktokUrl ? "TikTok" : null,
                         previewData.profile.youtubeUrl ? "YouTube" : null,
+                        previewData.profile.publicEmail ? "E-mail" : null,
                       ]
                         .filter(Boolean)
                         .join(", ") || "nenhuma rede adicional"}

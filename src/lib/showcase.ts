@@ -19,6 +19,7 @@ export const NEUTRAL_SHOWCASE_PROFILE: CreatorProfileData = {
   tiktokUrl: "https://tiktok.com",
   youtubeHandle: "",
   youtubeUrl: "https://youtube.com",
+  publicEmail: "",
   bio: "Links oficiais, parceiros e cupons selecionados para você economizar.",
   ...DEFAULT_PROFILE_CUSTOMIZATION,
   socialDisplayStyle: "icon",

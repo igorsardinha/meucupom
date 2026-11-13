@@ -46,6 +46,7 @@ function mapProfile(row: Record<string, unknown>): CreatorProfileData {
     tiktokUrl: String(row.tiktokUrl || ""),
     youtubeHandle: String(row.youtubeHandle || ""),
     youtubeUrl: String(row.youtubeUrl || ""),
+    publicEmail: String(row.publicEmail || row.public_email || ""),
     bio: String(row.bio || ""),
     footerText: String(row.footerText || ""),
     sectionTitle: String(row.sectionTitle || "Parceiros & Cupons"),
@@ -324,6 +325,7 @@ export async function getOrCreateProfileForUser(user: {
     tiktokUrl: "",
     youtubeHandle: "",
     youtubeUrl: "",
+    publicEmail: "",
     bio: "Meus links oficiais e cupons de desconto",
     ...DEFAULT_PROFILE_CUSTOMIZATION,
     viewsCount: 0,
@@ -487,6 +489,10 @@ export async function updateProfileForUser(
           ? patch.youtubeUrl.trim()
           : ""
         : current.youtubeUrl,
+    publicEmail:
+      typeof patch.publicEmail === "string"
+        ? patch.publicEmail.trim().slice(0, 120)
+        : current.publicEmail,
     bio: typeof patch.bio === "string" ? patch.bio.trim().slice(0, 220) : current.bio,
     footerText:
       typeof patch.footerText === "string"
@@ -941,6 +947,7 @@ export interface ImportLinktreeOptions {
     tiktokHandle?: string;
     youtubeUrl?: string;
     youtubeHandle?: string;
+    publicEmail?: string;
   };
   replaceExisting?: boolean;
 }
@@ -1111,6 +1118,9 @@ export async function importLinktreeItemsForUser(
       if (pd.youtubeHandle) {
         profilePatch.youtubeHandle = pd.youtubeHandle.trim().slice(0, 60);
       }
+    }
+    if (pd.publicEmail && typeof pd.publicEmail === "string") {
+      profilePatch.publicEmail = pd.publicEmail.trim().slice(0, 120);
     }
 
     if (Object.keys(profilePatch).length > 1) {

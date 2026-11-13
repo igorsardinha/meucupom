@@ -14,6 +14,7 @@ const profilePatchSchema = z.object({
   tiktokUrl: z.string().max(500).optional(),
   youtubeHandle: z.string().max(60).optional(),
   youtubeUrl: z.string().max(500).optional(),
+  publicEmail: z.string().max(120).optional(),
   bio: z.string().max(220).optional(),
   footerText: z.string().max(200).optional(),
   sectionTitle: z.string().max(60).optional(),

@@ -61,6 +61,7 @@ const SQLITE_DDL = [
     "tiktok_url" text NOT NULL DEFAULT '',
     "youtube_handle" text NOT NULL DEFAULT '',
     "youtube_url" text NOT NULL DEFAULT '',
+    "public_email" text NOT NULL DEFAULT '',
     "bio" text NOT NULL DEFAULT '',
     "footer_text" text NOT NULL DEFAULT '',
     "section_title" text NOT NULL DEFAULT 'Parceiros & Cupons',
@@ -219,6 +220,7 @@ const PG_DDL = [
     "tiktok_url" text NOT NULL DEFAULT '',
     "youtube_handle" text NOT NULL DEFAULT '',
     "youtube_url" text NOT NULL DEFAULT '',
+    "public_email" text NOT NULL DEFAULT '',
     "bio" text NOT NULL DEFAULT '',
     "footer_text" text NOT NULL DEFAULT '',
     "section_title" text NOT NULL DEFAULT 'Parceiros & Cupons',
@@ -406,6 +408,7 @@ async function seedShowcaseProfile() {
       tiktokUrl: "https://tiktok.com",
       youtubeHandle: "",
       youtubeUrl: "https://youtube.com",
+      publicEmail: "",
       bio: "Links oficiais, parceiros e cupons selecionados para você economizar.",
       ...DEFAULT_PROFILE_CUSTOMIZATION,
       socialDisplayStyle: "icon",
@@ -506,6 +509,7 @@ async function seedShowcaseProfile() {
     tiktokUrl: "https://tiktok.com",
     youtubeHandle: "",
     youtubeUrl: "https://youtube.com",
+    publicEmail: "",
     bio: "Links oficiais, parceiros e cupons selecionados para você economizar.",
     ...DEFAULT_PROFILE_CUSTOMIZATION,
     socialDisplayStyle: "icon",
@@ -726,6 +730,11 @@ async function runColumnMigrations() {
         `ALTER TABLE "creator_profile" ADD COLUMN "youtube_url" text NOT NULL DEFAULT ''`
       );
     }
+    if (!profNames.has("public_email")) {
+      await handle.client.execute(
+        `ALTER TABLE "creator_profile" ADD COLUMN "public_email" text NOT NULL DEFAULT ''`
+      );
+    }
     if (!profNames.has("title_font_style")) {
       await handle.client.execute(
         `ALTER TABLE "creator_profile" ADD COLUMN "title_font_style" text NOT NULL DEFAULT 'jakarta'`
@@ -867,6 +876,9 @@ async function runColumnMigrations() {
   );
   await handle.pool.query(
     `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "youtube_url" text NOT NULL DEFAULT ''`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "public_email" text NOT NULL DEFAULT ''`
   );
   await handle.pool.query(
     `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "title_font_style" text NOT NULL DEFAULT 'jakarta'`
