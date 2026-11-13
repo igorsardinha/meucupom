@@ -1055,7 +1055,7 @@ export async function importLinktreeItemsForUser(
       title: rawTitle,
       badge: isDivider ? "" : (it.badge || computeInitials(rawTitle)),
       logoUrl: "",
-      accentColor: "#38BDF8",
+      accentColor: profile.accentColor || "#FFFFFF",
       tag: isDivider
         ? ""
         : (it.tag || (it.kind === "coupon" ? "Cupom" : "Link")).trim().slice(0, 30),

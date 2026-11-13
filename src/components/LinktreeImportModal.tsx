@@ -275,15 +275,15 @@ export function LinktreeImportModal({
         handleClose();
       }}
     >
-      <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[#94C5FF]/20 bg-[#0E1624] text-white shadow-2xl">
-        {/* Header Modal */}
-        <div className="flex items-center justify-between border-b border-[#94C5FF]/14 px-5 py-4">
+      <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#0E1624] text-white shadow-2xl">
+        {/* Header Modal Neutro */}
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#39E09B]/15 text-[#39E09B]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white">
               <TreePine className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
-              <h2 id={titleId} className="text-base font-bold sm:text-lg">
+              <h2 id={titleId} className="text-base font-bold sm:text-lg text-white">
                 Importar do Linktree
               </h2>
               <p className="text-xs text-[#9CB3CE]">
@@ -315,9 +315,9 @@ export function LinktreeImportModal({
           {/* ETAPA 1: INPUT DO LINKTREE */}
           {step === "input" && (
             <div className="flex flex-col gap-4">
-              <div className="rounded-xl border border-[#39E09B]/20 bg-[#39E09B]/5 p-4 text-xs text-[#E2ECF7] sm:text-sm">
-                <p className="font-semibold text-[#39E09B] flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4" /> Detecção Inteligente de Cupons
+              <div className="rounded-xl border border-white/15 bg-white/5 p-4 text-xs text-[#E2ECF7] sm:text-sm">
+                <p className="font-semibold text-white flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4 text-white" /> Detecção Inteligente de Cupons
                 </p>
                 <p className="mt-1 text-[#9CB3CE]">
                   O MeuCupom detecta automaticamente os códigos de desconto escritos nos
@@ -347,25 +347,25 @@ export function LinktreeImportModal({
                     }}
                     placeholder="ex: linktr.ee/igor.sardinha ou @igor.sardinha"
                     disabled={isLoading}
-                    className="w-full rounded-xl border border-[#94C5FF]/25 bg-[#070C14] px-4 py-3 text-sm text-white placeholder-[#9CB3CE]/50 focus:border-[#39E09B] focus:outline-none focus:ring-1 focus:ring-[#39E09B]"
+                    className="w-full rounded-xl border border-white/20 bg-[#070C14] px-4 py-3 text-sm text-white placeholder-[#9CB3CE]/50 focus:border-white focus:outline-none focus:ring-1 focus:ring-white"
                   />
                   {isLoading && (
                     <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
-                      <Loader2 className="h-4 w-4 animate-spin text-[#39E09B]" />
+                      <Loader2 className="h-4 w-4 animate-spin text-white" />
                     </div>
                   )}
                 </div>
 
                 {/* Sugestão de teste rápido */}
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#9CB3CE]">
-                  <span>Exemplos rápidos:</span>
+                <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs text-[#9CB3CE]">
+                  <span>Exemplo rápido:</span>
                   <button
                     type="button"
                     onClick={() => {
                       setUrlInput("https://linktr.ee/igor.sardinha");
                       handleFetchLinktree("https://linktr.ee/igor.sardinha");
                     }}
-                    className="rounded-md border border-[#39E09B]/30 bg-[#39E09B]/10 px-2 py-0.5 text-[11px] font-semibold text-[#39E09B] hover:bg-[#39E09B]/20"
+                    className="rounded-lg border border-white/20 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-white/10 hover:border-white/40 transition-colors"
                   >
                     linktr.ee/igor.sardinha
                   </button>
@@ -378,7 +378,7 @@ export function LinktreeImportModal({
           {step === "preview" && previewData && (
             <div className="flex flex-col gap-4">
               {/* Card do Perfil Detectado */}
-              <div className="rounded-xl border border-[#94C5FF]/18 bg-[#070C14]/80 p-3.5">
+              <div className="rounded-xl border border-white/15 bg-[#070C14]/80 p-3.5">
                 <div className="flex items-center gap-3">
                   {previewData.profile.avatarUrl ? (
                     <Image
@@ -386,11 +386,11 @@ export function LinktreeImportModal({
                       alt={previewData.profile.displayName}
                       width={48}
                       height={48}
-                      className="h-12 w-12 rounded-full border border-white/10 object-cover"
+                      className="h-12 w-12 rounded-full border border-white/20 object-cover"
                       unoptimized
                     />
                   ) : (
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#1E60CF] text-base font-bold text-white">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-base font-bold text-white">
                       {previewData.profile.displayName.slice(0, 2).toUpperCase()}
                     </div>
                   )}
@@ -411,13 +411,13 @@ export function LinktreeImportModal({
                 </div>
 
                 {/* Opção de importar dados do perfil */}
-                <div className="mt-3 border-t border-white/5 pt-3">
+                <div className="mt-3 border-t border-white/10 pt-3">
                   <label className="flex items-center gap-2 cursor-pointer text-xs text-[#E2ECF7]">
                     <input
                       type="checkbox"
                       checked={importProfileData}
                       onChange={(e) => setImportProfileData(e.target.checked)}
-                      className="h-4 w-4 rounded border-[#94C5FF]/30 bg-[#070C14] text-[#39E09B] focus:ring-[#39E09B]"
+                      className="h-4 w-4 rounded border-white/30 bg-[#070C14] text-white accent-white focus:ring-white"
                     />
                     <span>
                       Importar foto de perfil e redes sociais encontradas (
@@ -435,7 +435,7 @@ export function LinktreeImportModal({
               </div>
 
               {/* Modo de Importação: Adicionar ou Substituir */}
-              <div className="rounded-xl border border-[#94C5FF]/14 bg-[#070C14]/40 p-3">
+              <div className="rounded-xl border border-white/15 bg-[#070C14]/40 p-3">
                 <span className="text-xs font-semibold text-[#9CB3CE] block mb-2">
                   Destino dos links importados:
                 </span>
@@ -443,7 +443,7 @@ export function LinktreeImportModal({
                   <label
                     className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${
                       !replaceExisting
-                        ? "border-[#39E09B] bg-[#39E09B]/10 text-white"
+                        ? "border-white bg-white/10 text-white"
                         : "border-white/10 bg-white/5 text-[#9CB3CE]"
                     }`}
                   >
@@ -452,7 +452,7 @@ export function LinktreeImportModal({
                       name="import-mode"
                       checked={!replaceExisting}
                       onChange={() => setReplaceExisting(false)}
-                      className="h-3.5 w-3.5 text-[#39E09B]"
+                      className="h-3.5 w-3.5 accent-white text-white"
                     />
                     <div>
                       <p className="font-semibold text-white">Adicionar aos atuais</p>
@@ -465,7 +465,7 @@ export function LinktreeImportModal({
                   <label
                     className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${
                       replaceExisting
-                        ? "border-amber-400 bg-amber-400/10 text-white"
+                        ? "border-white bg-white/10 text-white"
                         : "border-white/10 bg-white/5 text-[#9CB3CE]"
                     }`}
                   >
@@ -474,7 +474,7 @@ export function LinktreeImportModal({
                       name="import-mode"
                       checked={replaceExisting}
                       onChange={() => setReplaceExisting(true)}
-                      className="h-3.5 w-3.5 text-amber-400"
+                      className="h-3.5 w-3.5 accent-white text-white"
                     />
                     <div>
                       <p className="font-semibold text-white">Substituir todos</p>
@@ -505,13 +505,13 @@ export function LinktreeImportModal({
               {/* Lista de Itens Encontrados */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs font-semibold text-[#E2ECF7]">
+                  <div className="text-xs font-semibold text-white">
                     Itens detectados ({selectedItemIds.size}/{editableItems.length} selecionados)
                   </div>
                   <button
                     type="button"
                     onClick={toggleSelectAll}
-                    className="text-xs text-[#39E09B] hover:underline"
+                    className="text-xs text-[#9CB3CE] hover:text-white underline-offset-2 hover:underline transition-colors"
                   >
                     {selectedItemIds.size === editableItems.length
                       ? "Desmarcar todos"
@@ -530,12 +530,8 @@ export function LinktreeImportModal({
                         key={item.id}
                         className={`rounded-xl border p-3 transition-colors ${
                           isSelected
-                            ? isDivider
-                              ? "border-purple-400/30 bg-purple-950/20"
-                              : isCoupon
-                                ? "border-[#39E09B]/40 bg-[#39E09B]/8"
-                                : "border-[#38BDF8]/30 bg-[#38BDF8]/6"
-                            : "border-white/10 bg-white/[0.02] opacity-60"
+                            ? "border-white/25 bg-white/[0.06]"
+                            : "border-white/10 bg-white/[0.01] opacity-50"
                         }`}
                       >
                         <div className="flex items-start gap-3">
@@ -543,22 +539,22 @@ export function LinktreeImportModal({
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => toggleItemSelection(item.id)}
-                            className="mt-1 h-4 w-4 rounded border-[#94C5FF]/30 bg-[#070C14] text-[#39E09B] focus:ring-[#39E09B]"
+                            className="mt-1 h-4 w-4 rounded border-white/30 bg-[#070C14] text-white accent-white focus:ring-white"
                           />
 
                           <div className="flex-1 min-w-0">
-                            {/* Badges de Tipo */}
+                            {/* Badges de Tipo Neutros */}
                             <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
                               {isDivider ? (
-                                <span className="inline-flex items-center gap-1 rounded-md bg-purple-500/20 px-2 py-0.5 text-[10px] font-bold text-purple-300">
+                                <span className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-300">
                                   <Minus className="h-3 w-3" /> DIVISÓRIA
                                 </span>
                               ) : isCoupon ? (
-                                <span className="inline-flex items-center gap-1 rounded-md bg-[#39E09B]/20 px-2 py-0.5 text-[10px] font-bold text-[#39E09B]">
+                                <span className="inline-flex items-center gap-1 rounded-md border border-white bg-white px-2 py-0.5 text-[10px] font-extrabold text-black">
                                   <Tag className="h-3 w-3" /> CUPOM
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 rounded-md bg-[#38BDF8]/20 px-2 py-0.5 text-[10px] font-bold text-[#7DD3FC]">
+                                <span className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-200">
                                   <Link2 className="h-3 w-3" /> LINK
                                 </span>
                               )}
@@ -576,7 +572,7 @@ export function LinktreeImportModal({
                               value={item.title}
                               onChange={(e) => updateItemTitle(item.id, e.target.value)}
                               placeholder="Título"
-                              className="w-full rounded-lg border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-semibold text-white focus:border-[#39E09B] focus:outline-none"
+                              className="w-full rounded-lg border border-white/15 bg-black/40 px-2.5 py-1 text-xs font-semibold text-white focus:border-white focus:outline-none"
                             />
 
                             {/* Campo de Código do Cupom se for cupom ou link */}
@@ -593,7 +589,7 @@ export function LinktreeImportModal({
                                       updateItemCouponCode(item.id, e.target.value)
                                     }
                                     placeholder="Sem cupom"
-                                    className="flex-1 rounded-md border border-white/10 bg-black/40 px-2 py-0.5 font-mono text-[11px] text-[#39E09B] placeholder-zinc-500 focus:border-[#39E09B] focus:outline-none"
+                                    className="flex-1 rounded-md border border-white/15 bg-black/50 px-2 py-0.5 font-mono text-[11px] text-white placeholder-zinc-500 focus:border-white focus:outline-none"
                                   />
                                 </div>
 
@@ -602,7 +598,7 @@ export function LinktreeImportModal({
                                     href={item.url}
                                     target="_blank"
                                     rel="noreferrer noopener"
-                                    className="inline-flex items-center gap-1 text-[11px] text-[#9CB3CE] hover:text-white truncate max-w-[200px]"
+                                    className="inline-flex items-center gap-1 text-[11px] text-[#9CB3CE] hover:text-white truncate max-w-[200px] transition-colors"
                                     title={item.url}
                                   >
                                     <span className="truncate">{item.url}</span>
@@ -621,10 +617,10 @@ export function LinktreeImportModal({
             </div>
           )}
 
-          {/* ETAPA 3: SUCESSO */}
+          {/* ETAPA 3: SUCESSO NEUTRO */}
           {step === "success" && (
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#39E09B]/20 text-[#39E09B] mb-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10 text-white mb-4">
                 <Check className="h-8 w-8" />
               </div>
               <h3 className="text-lg font-bold text-white">
@@ -639,8 +635,8 @@ export function LinktreeImportModal({
           )}
         </div>
 
-        {/* Footer com Ações */}
-        <div className="flex items-center justify-between border-t border-[#94C5FF]/14 bg-[#070C14]/60 px-5 py-3.5">
+        {/* Footer com Ações Neutras */}
+        <div className="flex items-center justify-between border-t border-white/10 bg-[#070C14]/60 px-5 py-3.5">
           {step === "input" && (
             <>
               <button
@@ -654,11 +650,11 @@ export function LinktreeImportModal({
                 type="button"
                 onClick={() => handleFetchLinktree()}
                 disabled={isLoading || !urlInput.trim()}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#39E09B] px-5 py-2.5 text-xs font-bold text-[#070C14] hover:bg-[#43E660] disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-white px-5 py-2.5 text-xs font-bold text-black hover:bg-zinc-200 disabled:opacity-50 transition-colors shadow-md"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin text-black" />
                     <span>Buscando no Linktree...</span>
                   </>
                 ) : (
@@ -687,11 +683,11 @@ export function LinktreeImportModal({
                 type="button"
                 onClick={handleConfirmImport}
                 disabled={isImporting || selectedItems.length === 0 || isLimitExceeded}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#39E09B] px-5 py-2.5 text-xs font-bold text-[#070C14] hover:bg-[#43E660] disabled:opacity-50 transition-colors shadow-lg shadow-[#39E09B]/20"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-white px-5 py-2.5 text-xs font-bold text-black hover:bg-zinc-200 disabled:opacity-50 transition-colors shadow-md"
               >
                 {isImporting ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin text-black" />
                     <span>Importando...</span>
                   </>
                 ) : (
@@ -709,7 +705,7 @@ export function LinktreeImportModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#1E60CF] px-6 py-2.5 text-xs font-bold text-white hover:bg-[#256EE8] transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-white px-6 py-2.5 text-xs font-bold text-black hover:bg-zinc-200 transition-colors shadow-md"
               >
                 <span>Ver itens no painel</span>
                 <ArrowRight className="h-4 w-4" />

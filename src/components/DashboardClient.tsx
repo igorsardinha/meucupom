@@ -2154,9 +2154,9 @@ export function DashboardClient({
                   <button
                     type="button"
                     onClick={() => setIsLinktreeImportOpen(true)}
-                    className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[#39E09B]/40 bg-[#39E09B]/12 px-3 py-2 text-xs font-bold text-[#39E09B] hover:bg-[#39E09B]/20 transition-colors sm:px-4 sm:text-sm"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-xs font-bold text-white hover:bg-white/10 hover:border-white/30 transition-colors sm:px-4 sm:text-sm"
                   >
-                    <TreePine className="h-4 w-4 shrink-0 text-[#39E09B]" aria-hidden="true" />
+                    <TreePine className="h-4 w-4 shrink-0 text-white" aria-hidden="true" />
                     <span className="truncate">Importar Linktree</span>
                   </button>
                 </div>
@@ -2179,9 +2179,9 @@ export function DashboardClient({
                     <button
                       type="button"
                       onClick={() => setIsLinktreeImportOpen(true)}
-                      className="inline-flex min-h-[42px] items-center gap-1.5 rounded-xl border border-[#39E09B]/40 bg-[#39E09B]/15 px-4 py-2 text-xs font-bold text-[#39E09B] hover:bg-[#39E09B]/25 transition-colors"
+                      className="inline-flex min-h-[42px] items-center gap-1.5 rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-xs font-bold text-white hover:bg-white/10 hover:border-white/30 transition-colors"
                     >
-                      <TreePine className="h-4 w-4" /> Importar do Linktree
+                      <TreePine className="h-4 w-4 text-white" /> Importar do Linktree
                     </button>
                   </div>
                 </div>
