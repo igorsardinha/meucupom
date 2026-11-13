@@ -798,20 +798,19 @@ export function PublicBioView({ profile, items, previewMode = false }: PublicBio
             </div>
             {/* Verified Tick Badge on Avatar */}
             <div
-              className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full bg-[#070C14] shadow-md ring-2 ring-[#070C14]"
+              className="absolute -bottom-1 -right-1 flex items-center justify-center drop-shadow-md"
               title="Perfil verificado meucupom"
             >
-              <VerifiedBadge className="h-6 w-6" badgeColor="#1E60CF" tickColor="#FFFFFF" />
+              <VerifiedBadge className="h-7 w-7" badgeColor="#1E60CF" tickColor="#FFFFFF" ringColor="#070C14" />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
             <h1
               style={{ fontFamily: nameFontFamily }}
-              className="inline-flex items-center justify-center gap-2 text-[clamp(1.45rem,4.5vw,1.8rem)] font-extrabold leading-tight tracking-tight"
+              className="text-[clamp(1.45rem,4.5vw,1.8rem)] font-extrabold leading-tight tracking-tight"
             >
-              <span>{profile.displayName}</span>
-              <VerifiedBadge className="h-5 w-5 shrink-0" badgeColor="#1E60CF" tickColor="#FFFFFF" />
+              {profile.displayName}
             </h1>
             {profile.bio ? (
               <p

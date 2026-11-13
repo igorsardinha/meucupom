@@ -4,12 +4,14 @@ interface VerifiedBadgeProps extends React.SVGProps<SVGSVGElement> {
   className?: string;
   badgeColor?: string;
   tickColor?: string;
+  ringColor?: string;
 }
 
 export function VerifiedBadge({
   className = "h-5 w-5",
   badgeColor = "#1E60CF",
   tickColor = "#FFFFFF",
+  ringColor = "#070C14",
   ...props
 }: VerifiedBadgeProps) {
   return (
@@ -21,16 +23,12 @@ export function VerifiedBadge({
       fill="none"
       {...props}
     >
-      {/* 12-point scalloped verified badge */}
+      {ringColor && <circle cx="12" cy="12" r="11.8" fill={ringColor} />}
+      <circle cx="12" cy="12" r={ringColor ? "9.8" : "11"} fill={badgeColor} />
       <path
-        d="M22.5 12c0-.98-.44-1.87-1.15-2.48.24-.71.27-1.5.07-2.27-.3-1.15-1.19-2.04-2.34-2.34-.77-.2-1.56-.17-2.27.07-.61-.71-1.5-1.15-2.48-1.15s-1.87.44-2.48 1.15c-.71-.24-1.5-.27-2.27-.07-1.15.3-2.04 1.19-2.34 2.34-.2.77-.17 1.56.07 2.27-.71.61-1.15 1.5-1.15 2.48s.44 1.87 1.15 2.48c-.24.71-.27 1.5-.07 2.27.3 1.15 1.19 2.04 2.34 2.34.77.2 1.56.17 2.27-.07.61.71 1.5 1.15 2.48 1.15s1.87-.44 2.48-1.15c.71.24 1.5.27 2.27.07 1.15-.3 2.04-1.19 2.34-2.34.2-.77.17-1.56-.07-2.27.71-.61 1.15-1.5 1.15-2.48z"
-        fill={badgeColor}
-      />
-      {/* Clean, bold checkmark / tick */}
-      <path
-        d="M8.8 12.3l2.4 2.4 4.8-4.8"
+        d="M7.8 12.2l2.8 2.8 5.6-5.6"
         stroke={tickColor}
-        strokeWidth="2.2"
+        strokeWidth="2.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />

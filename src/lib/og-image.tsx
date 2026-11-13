@@ -19,10 +19,6 @@ const HEAD_PATH =
 const BODY_PATH =
   "M352.034 241.731 C337.776 241.731 324.564 248.896 314.996 259.329 C311.599 263.033 308.877 267.168 306.684 271.685 C306.345 272.382 305.772 273.159 305.659 273.936 C305.467 275.247 311.159 280.86 312.318 282.019 C320.251 289.953 329.327 296.128 339.543 300.73 C345.622 303.468 352.062 305.202 358.585 306.475 C364.088 307.55 369.637 308.074 375.154 308.074 L375.154 308.074 C401.782 308.074 427.673 295.859 444.105 274.318 C442.045 270.244 439.927 266.217 437.129 262.584 C428.399 251.246 414.625 242.478 400.073 241.809 C399.632 241.789 399.193 241.78 398.757 241.78 L398.757 241.78 C393.916 241.78 389.374 242.957 384.585 243.684 C381.413 244.166 378.298 244.396 375.183 244.396 L375.183 244.396 C372.095 244.396 369.006 244.17 365.86 243.738 C362.013 243.209 358.286 242.012 354.389 241.796 C353.601 241.752 352.816 241.731 352.034 241.731 Z";
 
-// 12-point scalloped verified badge path
-const VERIFIED_ROSETTE_PATH =
-  "M22.5 12c0-.98-.44-1.87-1.15-2.48.24-.71.27-1.5.07-2.27-.3-1.15-1.19-2.04-2.34-2.34-.77-.2-1.56-.17-2.27.07-.61-.71-1.5-1.15-2.48-1.15s-1.87.44-2.48 1.15c-.71-.24-1.5-.27-2.27-.07-1.15.3-2.04 1.19-2.34 2.34-.2.77-.17 1.56.07 2.27-.71.61-1.15 1.5-1.15 2.48s.44 1.87 1.15 2.48c-.24.71-.27 1.5-.07 2.27.3 1.15 1.19 2.04 2.34 2.34.77.2 1.56.17 2.27-.07.61.71 1.5 1.15 2.48 1.15s1.87-.44 2.48-1.15c.71.24 1.5.27 2.27.07 1.15-.3 2.04-1.19 2.34-2.34.2-.77.17-1.56-.07-2.27.71-.61 1.15-1.5 1.15-2.48z";
-
 async function resolveAvatarSrc(avatarUrl?: string | null): Promise<string | null> {
   if (!avatarUrl) return null;
   const trimmed = avatarUrl.trim();
@@ -144,13 +140,14 @@ export async function createCreatorOgImageResponse(
             }}
           >
             <svg viewBox="0 0 24 24" width="20" height="20" style={{ display: "flex" }}>
-              <path d={VERIFIED_ROSETTE_PATH} fill="#38BDF8" />
+              <circle cx="12" cy="12" r="10" fill="#38BDF8" />
               <path
-                d="M8.8 12.3l2.4 2.4 4.8-4.8"
+                d="M7.8 12.2l2.8 2.8 5.6-5.6"
                 stroke="#070C14"
-                strokeWidth="2.4"
+                strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                fill="none"
               />
             </svg>
             <span>Perfil Verificado</span>
@@ -231,62 +228,39 @@ export async function createCreatorOgImageResponse(
             <div
               style={{
                 position: "absolute",
-                bottom: -4,
-                right: -4,
-                width: 58,
-                height: 58,
-                borderRadius: 999,
-                backgroundColor: "#070C14",
-                border: "3px solid #070C14",
+                bottom: 2,
+                right: 2,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 6px 18px rgba(0, 0, 0, 0.75)",
               }}
             >
-              <svg viewBox="0 0 24 24" width="50" height="50" style={{ display: "flex" }}>
-                <path d={VERIFIED_ROSETTE_PATH} fill="#1E60CF" />
+              <svg viewBox="0 0 24 24" width="56" height="56" style={{ display: "flex" }}>
+                <circle cx="12" cy="12" r="11.5" fill="#070C14" />
+                <circle cx="12" cy="12" r="9.5" fill="#1E60CF" />
                 <path
-                  d="M8.8 12.3l2.4 2.4 4.8-4.8"
+                  d="M7.8 12.2l2.8 2.8 5.6-5.6"
                   stroke="#FFFFFF"
-                  strokeWidth="2.2"
+                  strokeWidth="2.4"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  fill="none"
                 />
               </svg>
             </div>
           </div>
 
-          {/* Display Name with inline Verified Tick Icon */}
+          {/* Display Name */}
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 12,
+              fontSize: 44,
+              fontWeight: 800,
+              color: "#FFFFFF",
+              letterSpacing: "-0.03em",
               marginBottom: 4,
             }}
           >
-            <span
-              style={{
-                fontSize: 44,
-                fontWeight: 800,
-                color: "#FFFFFF",
-                letterSpacing: "-0.03em",
-              }}
-            >
-              {profile.displayName}
-            </span>
-            <svg viewBox="0 0 24 24" width="34" height="34" style={{ display: "flex" }}>
-              <path d={VERIFIED_ROSETTE_PATH} fill="#1E60CF" />
-              <path
-                d="M8.8 12.3l2.4 2.4 4.8-4.8"
-                stroke="#FFFFFF"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            {profile.displayName}
           </div>
 
           {/* Handle */}
