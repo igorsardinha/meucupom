@@ -27,7 +27,11 @@ import { getDbHandle } from "./index";
 function mapProfile(row: Record<string, unknown>): CreatorProfileData {
   const rawLayout = String(row.layout || "classic");
   const layout: CreatorProfileData["layout"] =
-    rawLayout === "compact" ? "compact" : "classic";
+    rawLayout === "ultra-compact" || rawLayout === "ultracompact"
+      ? "ultra-compact"
+      : rawLayout === "compact"
+        ? "compact"
+        : "classic";
 
   return {
     id: String(row.id),

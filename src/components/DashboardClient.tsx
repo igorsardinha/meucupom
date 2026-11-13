@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Activity,
+  AlignJustify,
   AlertTriangle,
   ArrowLeft,
   Award,
@@ -2564,11 +2565,12 @@ export function DashboardClient({
                   <legend className="mb-2 text-xs font-bold uppercase tracking-wider text-[#9CB3CE]">
                     Disposição dos links
                   </legend>
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                     {(
                       [
                         { id: "classic", label: "Lista Clássica", desc: "Cards completos em 1 coluna" },
                         { id: "compact", label: "Compacto", desc: "Visual mais enxuto e rápido" },
+                        { id: "ultra-compact", label: "Ultra Compacto", desc: "Densidade máxima em linha única" },
                       ] as { id: PageLayout; label: string; desc: string }[]
                     ).map((opt) => (
                       <label
@@ -2587,7 +2589,11 @@ export function DashboardClient({
                           onChange={() => setProfile((p) => ({ ...p, layout: opt.id }))}
                           className="sr-only"
                         />
-                        <LayoutGrid className="mx-auto mb-1 h-4 w-4 text-[#38BDF8]" aria-hidden="true" />
+                        {opt.id === "ultra-compact" ? (
+                          <AlignJustify className="mx-auto mb-1 h-4 w-4 text-[#38BDF8]" aria-hidden="true" />
+                        ) : (
+                          <LayoutGrid className="mx-auto mb-1 h-4 w-4 text-[#38BDF8]" aria-hidden="true" />
+                        )}
                         <span className="text-xs font-bold text-white">{opt.label}</span>
                         <span className="text-[11px] text-[#9CB3CE]">{opt.desc}</span>
                       </label>

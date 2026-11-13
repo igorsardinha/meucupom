@@ -103,7 +103,7 @@ export const PLAN_CARDS = [
       "Login social com Google ou e-mail",
       "5 estilos de fundo clássicos (Glow, Sólido, Gradiente, Mesh, Pontilhado)",
       "3 formatos de borda (Arredondado, Suave e Reto)",
-      "Layouts Clássico e Compacto + temas básicos",
+      "Layouts Clássico, Compacto e Ultra Compacto + temas básicos",
       "Métricas totais de visitas, cópias e cliques",
     ],
     limitations: [

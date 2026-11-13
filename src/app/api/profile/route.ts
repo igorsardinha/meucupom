@@ -18,7 +18,7 @@ const profilePatchSchema = z.object({
   footerText: z.string().max(200).optional(),
   sectionTitle: z.string().max(60).optional(),
   helperTip: z.string().max(140).optional(),
-  layout: z.enum(["classic", "compact"]).optional(),
+  layout: z.enum(["classic", "compact", "ultra-compact"]).optional(),
   themeMode: z.enum(["dark", "light", "auto"]).optional(),
   allowThemeToggle: z.boolean().optional(),
   bgStyle: z

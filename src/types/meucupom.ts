@@ -1,4 +1,4 @@
-export type PageLayout = "classic" | "compact";
+export type PageLayout = "classic" | "compact" | "ultra-compact";
 export type ThemeMode = "dark" | "light" | "auto";
 export type BgStyle =
   | "glow"
@@ -201,6 +201,22 @@ export const THEME_PRESETS: ThemePreset[] = [
     bgColor: "#070C14",
     cardColor: "#0E1624",
     textColor: "#F4F8FD",
+  },
+  {
+    id: "neutral-mono",
+    name: "Neutro Preto & Branco",
+    description: "Totalmente neutro, só branco e preto com máxima legibilidade",
+    themeMode: "dark",
+    bgStyle: "solid",
+    cardStyle: "solid",
+    radiusStyle: "rounded",
+    titleFontStyle: "jakarta",
+    fontStyle: "inter",
+    accentColor: "#FFFFFF",
+    ctaColor: "#FFFFFF",
+    bgColor: "#000000",
+    cardColor: "#0D0D0D",
+    textColor: "#FFFFFF",
   },
   {
     id: "minimal-light",
@@ -495,6 +511,7 @@ export const QUICK_PALETTES = [
   { name: "Índigo", accent: "#818CF8", cta: "#4F46E5" },
   { name: "Pêssego", accent: "#FDBA74", cta: "#C2410C" },
   { name: "Grafite", accent: "#CBD5E1", cta: "#334155" },
+  { name: "Preto & Branco", accent: "#FFFFFF", cta: "#FFFFFF" },
 ];
 
 export const FONT_OPTIONS: { id: FontStyle; label: string; category: string }[] = [

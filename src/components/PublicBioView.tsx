@@ -166,10 +166,12 @@ function BrandBadge({
   item,
   cardColor,
   textColor,
+  size = "md",
 }: {
   item: LinkItemData;
   cardColor: string;
   textColor: string;
+  size?: "sm" | "md";
 }) {
   const candidates = useMemo(() => {
     return getBrandIconCandidates(item.title, item.url, item.logoUrl);
@@ -189,11 +191,14 @@ function BrandBadge({
   const currentSrc = candidates[candidateIndex];
   const initials = computeInitials(item.title);
   const showFallback = !currentSrc || !loaded;
+  const isSm = size === "sm";
 
   return (
     <span
       aria-hidden="true"
-      className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-[13px] border text-sm font-extrabold tracking-tight"
+      className={`relative grid ${
+        isSm ? "h-9 w-9 rounded-[10px] text-xs" : "h-11 w-11 rounded-[13px] text-sm"
+      } shrink-0 place-items-center overflow-hidden border font-extrabold tracking-tight`}
       style={{
         background: !showFallback
           ? "#FFFFFF"
@@ -206,7 +211,7 @@ function BrandBadge({
       }}
     >
       {showFallback ? (
-        <span>{item.kind === "link" ? <Link2 className="h-4 w-4" /> : initials}</span>
+        <span>{item.kind === "link" ? <Link2 className={isSm ? "h-3.5 w-3.5" : "h-4 w-4"} /> : initials}</span>
       ) : null}
       {currentSrc ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -333,21 +338,36 @@ export function PublicBioView({
     (effectiveScheme === "light" && creatorBaseIsLight) ||
     (effectiveScheme === "dark" && !creatorBaseIsLight);
 
+  const isPureMono =
+    (profile.bgColor === "#000000" || profile.bgColor?.toLowerCase() === "#000000") &&
+    (profile.accentColor === "#FFFFFF" || profile.accentColor?.toLowerCase() === "#ffffff");
+
   const resolvedBg = schemeMatchesCreator
     ? profile.bgColor
     : effectiveScheme === "light"
-      ? "#EEF4FB"
+      ? isPureMono
+        ? "#FFFFFF"
+        : "#EEF4FB"
       : "#070C14";
   const resolvedCard = schemeMatchesCreator
     ? profile.cardColor
     : effectiveScheme === "light"
-      ? "#FFFFFF"
+      ? isPureMono
+        ? "#F4F4F5"
+        : "#FFFFFF"
       : "#0E1624";
   const resolvedText = schemeMatchesCreator
     ? profile.textColor
     : effectiveScheme === "light"
-      ? "#0B172A"
+      ? isPureMono
+        ? "#000000"
+        : "#0B172A"
       : "#F4F8FD";
+
+  const resolvedCta =
+    isPureMono && effectiveScheme === "light"
+      ? "#000000"
+      : profile.ctaColor;
 
   const mutedText =
     effectiveScheme === "light"
@@ -359,7 +379,7 @@ export function PublicBioView({
   const borderStrong = `color-mix(in oklab, ${profile.accentColor} 45%, transparent)`;
   const pillBg = `color-mix(in oklab, ${profile.accentColor} 12%, transparent)`;
   const couponBg = `color-mix(in oklab, ${resolvedBg} 55%, ${resolvedCard})`;
-  const ctaInk = pickReadableInk(profile.ctaColor);
+  const ctaInk = pickReadableInk(resolvedCta);
   const titleFontFamily = FONT_VARS[profile.titleFontStyle || profile.fontStyle];
   const nameFontFamily =
     FONT_VARS[profile.nameFontStyle || profile.titleFontStyle || profile.fontStyle];
@@ -717,7 +737,11 @@ export function PublicBioView({
   );
 
   const listGridClass =
-    profile.layout === "compact" ? "flex flex-col gap-2.5" : "flex flex-col gap-3.5";
+    profile.layout === "ultra-compact"
+      ? "flex flex-col gap-2"
+      : profile.layout === "compact"
+        ? "flex flex-col gap-2.5"
+        : "flex flex-col gap-3.5";
 
   return (
     <div
@@ -1036,6 +1060,106 @@ export function PublicBioView({
                 const featuredBadgeBg = `linear-gradient(135deg, ${profile.ctaColor}, ${profile.accentColor})`;
                 const featuredBadgeInk = pickReadableInk(profile.ctaColor);
 
+                if (profile.layout === "ultra-compact") {
+                  const hasCoupon = item.kind === "coupon" && Boolean(item.couponCode);
+                  return (
+                    <li
+                      key={item.id}
+                      style={cardSurfaceStyle(itemAccent, item.isFeatured)}
+                      className={`flex items-center justify-between gap-2.5 p-2.5 sm:px-3 sm:py-2.5 ${
+                        item.isFeatured
+                          ? featuredAnimationClass
+                          : "transition-transform duration-150 hover:-translate-y-0.5"
+                      }`}
+                    >
+                      <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                        <BrandBadge
+                          key={`${item.logoUrl}|${item.url}`}
+                          item={item}
+                          cardColor={resolvedCard}
+                          textColor={resolvedText}
+                          size="sm"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <h3
+                              style={{ fontFamily: titleFontFamily }}
+                              className="truncate text-[0.875rem] font-bold tracking-tight"
+                            >
+                              {item.title}
+                            </h3>
+                            {item.isFeatured ? (
+                              <span
+                                style={{ background: featuredBadgeBg, color: featuredBadgeInk }}
+                                className="inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[0.625rem] font-extrabold uppercase tracking-wider shadow-sm"
+                              >
+                                <FeaturedBadgeIcon iconKey={item.featuredIcon} className="h-2.5 w-2.5" />
+                                <span>{item.featuredLabel || "Destaque"}</span>
+                              </span>
+                            ) : null}
+                          </div>
+                          {item.expiresAt ? (
+                            <div className="mt-0.5">
+                              <CountdownBadge expiresAt={item.expiresAt} />
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {hasCoupon ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCopyCoupon(item)}
+                            aria-label={`Copiar cupom ${item.couponCode} da ${item.title}`}
+                            style={{
+                              background: isCopied ? "rgba(52, 211, 153, 0.16)" : couponBg,
+                              borderColor: isCopied ? "#34D399" : borderStrong,
+                              borderStyle: isCopied ? "solid" : "dashed",
+                              borderRadius: controlRadius,
+                              color: resolvedText,
+                            }}
+                            className="inline-flex min-h-[34px] items-center gap-1.5 border px-2.5 py-1 text-xs font-bold transition-colors"
+                          >
+                            <code className="font-mono text-[0.75rem] font-bold">
+                              {item.couponCode}
+                            </code>
+                            {isCopied ? (
+                              <Check className="h-3 w-3 text-[#34D399]" aria-hidden="true" />
+                            ) : (
+                              <Copy className="h-3 w-3 opacity-70" aria-hidden="true" />
+                            )}
+                          </button>
+                        ) : null}
+
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => handleLinkClick(item)}
+                          aria-label={item.ctaLabel || `Acessar ${item.title}`}
+                          style={{
+                            background: resolvedCta,
+                            color: ctaInk,
+                            borderRadius: controlRadius,
+                          }}
+                          className={`inline-flex min-h-[34px] shrink-0 items-center justify-center gap-1 font-bold shadow-sm transition-opacity hover:opacity-95 ${
+                            hasCoupon
+                              ? "h-[34px] w-[34px] px-0"
+                              : "px-3 text-xs"
+                          }`}
+                          title={item.ctaLabel || "Acessar"}
+                        >
+                          {!hasCoupon ? (
+                            <span className="max-w-[120px] truncate">{item.ctaLabel || "Acessar"}</span>
+                          ) : null}
+                          <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                        </a>
+                      </div>
+                    </li>
+                  );
+                }
+
                 if (profile.layout === "compact") {
                   return (
                     <li
@@ -1089,7 +1213,7 @@ export function PublicBioView({
                           onClick={() => handleLinkClick(item)}
                           aria-label={item.ctaLabel || `Acessar ${item.title}`}
                           style={{
-                            background: profile.ctaColor,
+                            background: resolvedCta,
                             color: ctaInk,
                             borderRadius: controlRadius,
                           }}
@@ -1265,10 +1389,10 @@ export function PublicBioView({
                       rel="noopener noreferrer"
                       onClick={() => handleLinkClick(item)}
                       style={{
-                        background: profile.ctaColor,
+                        background: resolvedCta,
                         color: ctaInk,
                         borderRadius: controlRadius,
-                        boxShadow: `0 6px 18px color-mix(in oklab, ${profile.ctaColor} 32%, transparent)`,
+                        boxShadow: `0 6px 18px color-mix(in oklab, ${resolvedCta} 32%, transparent)`,
                       }}
                       className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 px-4 py-2.5 text-[0.9375rem] font-bold tracking-tight transition-opacity hover:opacity-95 active:scale-[0.985]"
                     >
