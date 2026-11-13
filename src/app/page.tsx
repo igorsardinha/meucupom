@@ -21,8 +21,8 @@ import {
 
 function ShowcasePhone() {
   return (
-    <div className="mx-auto w-full max-w-[380px] rounded-[36px] border-[6px] border-[#1A263A] bg-[#04070D] p-1.5 shadow-[0_28px_72px_rgba(2,6,14,0.75)]">
-      <div className="h-[640px] overflow-y-auto rounded-[28px]">
+    <div className="mx-auto w-full max-w-[320px] rounded-[32px] border-[5px] border-[#1A263A] bg-[#04070D] p-1 shadow-[0_28px_72px_rgba(2,6,14,0.75)] sm:max-w-[380px] sm:rounded-[36px] sm:border-[6px] sm:p-1.5">
+      <div className="h-[560px] overflow-y-auto rounded-[26px] sm:h-[640px] sm:rounded-[28px]">
         <PublicBioView
           profile={NEUTRAL_SHOWCASE_PROFILE}
           items={NEUTRAL_SHOWCASE_ITEMS}
@@ -74,45 +74,48 @@ const FEATURES = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-dvh bg-[#070C14] text-[#F4F8FD] bg-[radial-gradient(circle_at_50%_-8%,rgba(47,108,181,0.34),transparent_48%),radial-gradient(circle_at_82%_20%,rgba(56,189,248,0.14),transparent_40%)]">
+    <div className="min-h-dvh overflow-x-hidden bg-[#070C14] text-[#F4F8FD] bg-[radial-gradient(circle_at_50%_-8%,rgba(47,108,181,0.34),transparent_48%),radial-gradient(circle_at_82%_20%,rgba(56,189,248,0.14),transparent_40%)]">
       {/* Header */}
-      <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
-        <Link href="/" className="flex items-center gap-3 transition hover:opacity-90">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[#1E60CF] to-[#145ca1] p-1.5 text-white shadow-lg shadow-[#1E60CF]/25">
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
+        <Link
+          href="/"
+          className="flex min-w-0 shrink items-center gap-2 sm:gap-3 transition hover:opacity-90"
+        >
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[#1E60CF] to-[#145ca1] p-1.5 text-white shadow-lg shadow-[#1E60CF]/25 sm:h-10 sm:w-10">
             <BrandIcon className="h-full w-full" />
           </span>
-          <BrandLogo className="h-7 w-auto" />
+          <BrandLogo className="h-5 sm:h-7 w-auto max-w-[150px] shrink-0 sm:max-w-none" />
         </Link>
 
-        <nav className="flex items-center gap-2.5">
+        <nav className="flex shrink-0 items-center gap-2 sm:gap-2.5">
           <Link
             href={`/${NEUTRAL_SHOWCASE_SLUG}`}
-            className="hidden min-h-10 items-center rounded-full border border-[#94C5FF]/20 bg-white/5 px-4 text-sm font-semibold text-[#E2ECF7] transition hover:border-[#38BDF8]/50 sm:inline-flex"
+            className="hidden min-h-10 items-center rounded-full border border-[#94C5FF]/20 bg-white/5 px-4 text-sm font-semibold text-[#E2ECF7] transition hover:border-[#38BDF8]/50 md:inline-flex"
           >
             Ver exemplo
           </Link>
           <Link
             href="/entrar"
-            className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[#1E60CF] px-4 text-sm font-bold text-white shadow-[0_6px_18px_rgba(30,96,207,0.35)] transition hover:bg-[#256EE8]"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-[#1E60CF] px-3.5 text-xs font-bold text-white shadow-[0_6px_18px_rgba(30,96,207,0.35)] transition hover:bg-[#256EE8] sm:min-h-10 sm:gap-2 sm:px-4 sm:text-sm"
           >
             <span>Entrar</span>
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
           </Link>
         </nav>
       </header>
 
       {/* Hero */}
-      <main className="mx-auto max-w-6xl px-4 pt-6 pb-20 sm:px-6 lg:pt-12">
-        <section className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.08fr_0.92fr]">
+      <main className="mx-auto max-w-6xl px-4 pt-4 pb-20 sm:px-6 sm:pt-8 lg:pt-12">
+        <section className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:gap-12">
           <div>
-            <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-[#38BDF8]/30 bg-[#38BDF8]/10 py-1 pl-1.5 pr-3.5 text-xs font-bold text-[#7DD3FC]">
-              <span className="grid h-6 w-6 place-items-center rounded-full bg-[#1E60CF] p-1 text-white shadow">
+            <div className="mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-[#38BDF8]/30 bg-[#38BDF8]/10 py-1 pl-1.5 pr-3 text-[11px] font-bold text-[#7DD3FC] sm:text-xs">
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#1E60CF] p-1 text-white shadow sm:h-6 sm:w-6">
                 <BrandIcon className="h-full w-full" />
               </span>
-              <span>meucupom.bio · Feito para o link da bio &amp; Stories</span>
+              <span className="truncate">meucupom.bio · Para o link da bio &amp; Stories</span>
             </div>
 
-            <h1 className="mt-5 text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl">
+            <h1 className="mt-3 text-3xl font-extrabold leading-[1.12] tracking-tight sm:text-5xl sm:leading-[1.08]">
               Seus links e cupons de parceiros em uma página que{" "}
               <span className="bg-gradient-to-r from-[#38BDF8] to-[#60A5FA] bg-clip-text text-transparent">
                 converte mais
@@ -120,16 +123,16 @@ export default function HomePage() {
               .
             </h1>
 
-            <p className="mt-5 max-w-[54ch] text-base leading-relaxed text-[#9CB3CE] sm:text-lg">
+            <p className="mt-4 max-w-[54ch] text-sm leading-relaxed text-[#9CB3CE] sm:mt-5 sm:text-lg sm:leading-relaxed">
               Inspirado em páginas de alta conversão para criadores e atletas: seu público copia o
               cupom com um toque, vê as logos oficiais das marcas e acessa seu link com visual
               personalizado por você.
             </p>
 
-            <div className="mt-8 flex flex-wrap items-center gap-3.5">
+            <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center sm:gap-3.5">
               <Link
                 href="/entrar"
-                className="inline-flex min-h-[50px] items-center gap-2 rounded-2xl bg-[#1E60CF] px-6 text-base font-bold text-white shadow-[0_12px_28px_rgba(30,96,207,0.4)] transition hover:bg-[#256EE8]"
+                className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[#1E60CF] px-6 text-sm font-bold text-white shadow-[0_12px_28px_rgba(30,96,207,0.4)] transition hover:bg-[#256EE8] sm:min-h-[50px] sm:w-auto sm:text-base"
               >
                 <span>Criar minha página grátis</span>
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -137,26 +140,26 @@ export default function HomePage() {
 
               <Link
                 href={`/${NEUTRAL_SHOWCASE_SLUG}`}
-                className="inline-flex min-h-[50px] items-center gap-2 rounded-2xl border border-[#94C5FF]/20 bg-[#0E1624] px-5 text-base font-bold text-white transition hover:border-[#38BDF8]/50"
+                className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl border border-[#94C5FF]/20 bg-[#0E1624] px-5 text-sm font-bold text-white transition hover:border-[#38BDF8]/50 sm:min-h-[50px] sm:w-auto sm:text-base"
               >
                 <span>Ver modelo de página</span>
               </Link>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-4 text-xs font-semibold text-[#9CB3CE]">
+            <div className="mt-5 flex flex-wrap items-center gap-3 text-xs font-semibold text-[#9CB3CE] sm:mt-6 sm:gap-4">
               <span>✓ Login com Google ou e-mail</span>
               <span>✓ Preview em tempo real</span>
               <span>✓ Sem código</span>
             </div>
           </div>
 
-          <div>
+          <div className="mt-4 lg:mt-0">
             <ShowcasePhone />
           </div>
         </section>
 
         {/* Features */}
-        <section aria-labelledby="features-title" className="mt-20">
+        <section aria-labelledby="features-title" className="mt-16 sm:mt-20">
           <div className="mb-8 text-center">
             <h2 id="features-title" className="text-2xl font-extrabold tracking-tight sm:text-3xl">
               Tudo o que um criador precisa para divulgar parceiros
@@ -188,7 +191,7 @@ export default function HomePage() {
         </section>
 
         {/* Pricing */}
-        <section id="planos" aria-labelledby="pricing-title" className="mt-20">
+        <section id="planos" aria-labelledby="pricing-title" className="mt-16 sm:mt-20">
           <div className="mb-8 text-center">
             <h2 id="pricing-title" className="text-2xl font-extrabold tracking-tight sm:text-3xl">
               Comece grátis e evolua quando precisar
@@ -262,7 +265,7 @@ export default function HomePage() {
       </main>
 
       <footer className="border-t border-white/10 py-8 text-xs text-[#9CB3CE]">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 text-center sm:flex-row sm:px-6 sm:text-left">
           <Link href="/" className="flex items-center gap-2.5 transition hover:opacity-90">
             <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[#1E60CF] to-[#145ca1] p-1.5 text-white shadow-md">
               <BrandIcon className="h-full w-full" />
@@ -270,7 +273,7 @@ export default function HomePage() {
             <BrandLogo className="h-5 w-auto" />
           </Link>
           <p>© 2026 meucupom.bio · Plataforma de links e cupons para criadores e atletas</p>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <Link href="/termos" className="hover:text-white hover:underline">
               Termos de Uso
             </Link>
