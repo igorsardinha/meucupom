@@ -103,6 +103,11 @@ function mapItem(row: Record<string, unknown>): LinkItemData {
     sortOrder: Number(row.sortOrder || 0),
     isActive: Boolean(row.isActive),
     isFeatured: Boolean(row.isFeatured),
+    featuredLabel: String(row.featuredLabel || "Destaque"),
+    featuredIcon: String(row.featuredIcon || "sparkles"),
+    expiresAt: row.expiresAt
+      ? new Date(row.expiresAt as string | number | Date).toISOString()
+      : null,
     clicksCount: Number(row.clicksCount || 0),
     copiesCount: Number(row.copiesCount || 0),
   };
@@ -601,6 +606,9 @@ export async function createLinkItemForUser(
     url?: string;
     ctaLabel?: string;
     isFeatured?: boolean;
+    featuredLabel?: string;
+    featuredIcon?: string;
+    expiresAt?: string | null;
   }
 ): Promise<{ ok: true; item: LinkItemData } | { ok: false; error: string }> {
   await ensureDatabaseReady();
@@ -679,6 +687,9 @@ export async function createLinkItemForUser(
     sortOrder: maxSort + 1,
     isActive: true,
     isFeatured: isDivider ? false : Boolean(input.isFeatured),
+    featuredLabel: isDivider ? "" : (input.featuredLabel || "Destaque").trim().slice(0, 30) || "Destaque",
+    featuredIcon: isDivider ? "sparkles" : (input.featuredIcon || "sparkles").trim().slice(0, 30) || "sparkles",
+    expiresAt: isDivider || !input.expiresAt ? null : new Date(input.expiresAt),
     clicksCount: 0,
     copiesCount: 0,
     createdAt: now,
@@ -710,6 +721,9 @@ export async function updateLinkItemForUser(
     ctaLabel: string;
     isActive: boolean;
     isFeatured: boolean;
+    featuredLabel: string;
+    featuredIcon: string;
+    expiresAt: string | null;
   }>
 ): Promise<{ ok: true; item: LinkItemData } | { ok: false; error: string }> {
   await ensureDatabaseReady();
@@ -797,6 +811,25 @@ export async function updateLinkItemForUser(
       : typeof patch.isFeatured === "boolean"
         ? patch.isFeatured
         : current.isFeatured,
+    featuredLabel: isDivider
+      ? ""
+      : typeof patch.featuredLabel === "string"
+        ? patch.featuredLabel.trim().slice(0, 30) || "Destaque"
+        : current.featuredLabel,
+    featuredIcon: isDivider
+      ? "sparkles"
+      : typeof patch.featuredIcon === "string"
+        ? patch.featuredIcon.trim().slice(0, 30) || "sparkles"
+        : current.featuredIcon,
+    expiresAt: isDivider
+      ? null
+      : patch.expiresAt !== undefined
+        ? patch.expiresAt
+          ? new Date(patch.expiresAt)
+          : null
+        : current.expiresAt
+          ? new Date(current.expiresAt)
+          : null,
     updatedAt: new Date(),
   };
 

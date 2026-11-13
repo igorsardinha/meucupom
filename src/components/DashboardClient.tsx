@@ -11,12 +11,15 @@ import {
   BarChart3,
   Check,
   CheckCircle2,
+  Clock,
   Copy,
   CreditCard,
   Crown,
   ExternalLink,
   Eye,
   EyeOff,
+  Flame,
+  Gift,
   GripVertical,
   KeyRound,
   LayoutGrid,
@@ -29,6 +32,7 @@ import {
   MousePointerClick,
   Palette,
   Pencil,
+  Percent,
   Plus,
   Save,
   ShieldCheck,
@@ -38,9 +42,11 @@ import {
   Tag,
   Trash2,
   TrendingUp,
+  Trophy,
   Upload,
   User,
   X,
+  Zap,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import {
@@ -79,6 +85,7 @@ import {
 } from "@/types/meucupom";
 import { BrandIcon } from "@/components/BrandIcon";
 import { BrandLogo } from "@/components/BrandLogo";
+import { getBrandIconCandidates } from "@/lib/brand-icons";
 import { PublicBioView } from "./PublicBioView";
 
 interface DashboardClientProps {
@@ -103,6 +110,9 @@ interface ItemFormState {
   logoUrl: string;
   accentColor: string;
   isFeatured: boolean;
+  featuredLabel: string;
+  featuredIcon: string;
+  expiresAt: string;
 }
 
 const EMPTY_ITEM_FORM: ItemFormState = {
@@ -117,7 +127,173 @@ const EMPTY_ITEM_FORM: ItemFormState = {
   logoUrl: "",
   accentColor: "#38BDF8",
   isFeatured: false,
+  featuredLabel: "Destaque",
+  featuredIcon: "sparkles",
+  expiresAt: "",
 };
+
+const FEATURED_ICON_OPTIONS: Array<{
+  key: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}> = [
+  { key: "sparkles", label: "Brilho", icon: Sparkles },
+  { key: "flame", label: "Fogo", icon: Flame },
+  { key: "zap", label: "Raio", icon: Zap },
+  { key: "star", label: "Estrela", icon: Star },
+  { key: "trophy", label: "Troféu", icon: Trophy },
+  { key: "tag", label: "Etiqueta", icon: Tag },
+  { key: "gift", label: "Presente", icon: Gift },
+  { key: "percent", label: "% Off", icon: Percent },
+  { key: "clock", label: "Tempo", icon: Clock },
+];
+
+const FEATURED_LABEL_SUGGESTIONS = [
+  "Destaque",
+  "Oferta Relâmpago",
+  "Exclusivo",
+  "Top 1",
+  "Mais Vendido",
+  "Cupom VIP",
+  "Imperdível",
+  "Black Friday",
+];
+
+function toDateTimeLocalInput(isoString: string | null | undefined): string {
+  if (!isoString) return "";
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const year = d.getFullYear();
+    const month = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const hours = pad(d.getHours());
+    const minutes = pad(d.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  } catch {
+    return "";
+  }
+}
+
+function FeaturedIconViewer({
+  iconKey,
+  className = "h-3 w-3",
+}: {
+  iconKey?: string;
+  className?: string;
+}) {
+  switch (iconKey) {
+    case "flame":
+      return <Flame className={className} aria-hidden="true" />;
+    case "zap":
+      return <Zap className={className} aria-hidden="true" />;
+    case "star":
+      return <Star className={className} aria-hidden="true" />;
+    case "trophy":
+      return <Trophy className={className} aria-hidden="true" />;
+    case "tag":
+      return <Tag className={className} aria-hidden="true" />;
+    case "gift":
+      return <Gift className={className} aria-hidden="true" />;
+    case "percent":
+      return <Percent className={className} aria-hidden="true" />;
+    case "clock":
+      return <Clock className={className} aria-hidden="true" />;
+    case "sparkles":
+    default:
+      return <Sparkles className={className} aria-hidden="true" />;
+  }
+}
+
+function DashboardCountdownBadge({ expiresAt }: { expiresAt: string }) {
+  const [now] = useState(() => Date.now());
+  const target = new Date(expiresAt).getTime();
+  if (isNaN(target)) return null;
+  const diff = target - now;
+  if (diff <= 0) {
+    return (
+      <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[10px] font-bold text-red-300">
+        Expirado
+      </span>
+    );
+  }
+  const totalSecs = Math.floor(diff / 1000);
+  const days = Math.floor(totalSecs / 86400);
+  const hours = Math.floor((totalSecs % 86400) / 3600);
+  const label = days >= 1 ? `${days}d ${hours}h` : `${hours}h rest.`;
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+      <Clock className="h-2.5 w-2.5" aria-hidden="true" />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function BrandPreviewIcon({
+  title,
+  url,
+  logoUrl,
+  accentColor,
+}: {
+  title: string;
+  url: string;
+  logoUrl: string;
+  accentColor: string;
+}) {
+  const candidates = useMemo(() => {
+    return getBrandIconCandidates(title, url, logoUrl);
+  }, [title, url, logoUrl]);
+
+  const [currentKey, setCurrentKey] = useState("");
+  const [idx, setIdx] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+
+  const candidateKey = candidates.join("|");
+  if (candidateKey !== currentKey) {
+    setCurrentKey(candidateKey);
+    setIdx(0);
+    setLoaded(false);
+  }
+
+  const src = candidates[idx];
+  const initials = computeInitials(title || "MC");
+  const fallback = !src || !loaded;
+
+  return (
+    <div
+      className="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-white/15 text-xs font-bold"
+      style={{
+        background: !fallback ? "#FFFFFF" : `${accentColor}33`,
+        color: "#FFFFFF",
+      }}
+    >
+      {fallback ? <span>{initials}</span> : null}
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt=""
+          onLoad={(e) => {
+            if (e.currentTarget.naturalWidth <= 1) {
+              setLoaded(false);
+              setIdx((i) => i + 1);
+            } else {
+              setLoaded(true);
+            }
+          }}
+          onError={() => {
+            setLoaded(false);
+            setIdx((i) => i + 1);
+          }}
+          className={`absolute inset-1 h-[calc(100%-8px)] w-[calc(100%-8px)] rounded-lg object-contain ${
+            loaded ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      ) : null}
+    </div>
+  );
+}
 
 async function resizeAvatarToAsset(
   file: File
@@ -866,6 +1042,9 @@ export function DashboardClient({
       logoUrl: item.logoUrl,
       accentColor: item.accentColor || profile.accentColor,
       isFeatured: item.isFeatured,
+      featuredLabel: item.featuredLabel || "Destaque",
+      featuredIcon: item.featuredIcon || "sparkles",
+      expiresAt: toDateTimeLocalInput(item.expiresAt),
     });
     itemDialogRef.current?.showModal();
   }
@@ -892,6 +1071,14 @@ export function DashboardClient({
           logoUrl: itemForm.kind === "divider" ? "" : itemForm.logoUrl.trim(),
           accentColor: itemForm.accentColor,
           isFeatured: itemForm.kind === "divider" ? false : itemForm.isFeatured,
+          featuredLabel:
+            itemForm.kind === "divider" ? "" : itemForm.featuredLabel.trim() || "Destaque",
+          featuredIcon:
+            itemForm.kind === "divider" ? "sparkles" : itemForm.featuredIcon.trim() || "sparkles",
+          expiresAt:
+            itemForm.kind === "divider" || !itemForm.expiresAt.trim()
+              ? null
+              : new Date(itemForm.expiresAt).toISOString(),
         }),
       });
       const data = (await res.json()) as { item?: LinkItemData; error?: string };
@@ -1803,25 +1990,24 @@ export function DashboardClient({
                                 <GripVertical className="h-4 w-4" aria-hidden="true" />
                               </button>
 
-                              <span
-                                className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl border text-xs font-black shadow-inner"
-                                style={{
-                                  borderColor:
-                                    item.kind === "divider"
-                                      ? "rgba(148, 197, 255, 0.25)"
-                                      : `${item.accentColor}66`,
-                                  backgroundColor:
-                                    item.kind === "divider"
-                                      ? "rgba(255, 255, 255, 0.05)"
-                                      : `${item.accentColor}22`,
-                                }}
-                              >
-                                {item.kind === "divider" ? (
+                              {item.kind === "divider" ? (
+                                <span
+                                  className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl border text-xs font-black shadow-inner"
+                                  style={{
+                                    borderColor: "rgba(148, 197, 255, 0.25)",
+                                    backgroundColor: "rgba(255, 255, 255, 0.05)",
+                                  }}
+                                >
                                   <Minus className="h-4 w-4 text-[#9CB3CE]" aria-hidden="true" />
-                                ) : (
-                                  computeInitials(item.title)
-                                )}
-                              </span>
+                                </span>
+                              ) : (
+                                <BrandPreviewIcon
+                                  title={item.title}
+                                  url={item.url}
+                                  logoUrl={item.logoUrl}
+                                  accentColor={item.accentColor}
+                                />
+                              )}
 
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
@@ -1839,9 +2025,13 @@ export function DashboardClient({
 
                                   {item.kind !== "divider" && item.isFeatured ? (
                                     <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[10px] font-bold text-amber-300">
-                                      <Sparkles className="h-2.5 w-2.5" aria-hidden="true" />
-                                      <span>Destaque</span>
+                                      <FeaturedIconViewer iconKey={item.featuredIcon} className="h-2.5 w-2.5" />
+                                      <span>{item.featuredLabel || "Destaque"}</span>
                                     </span>
+                                  ) : null}
+
+                                  {item.kind !== "divider" && item.expiresAt ? (
+                                    <DashboardCountdownBadge expiresAt={item.expiresAt} />
                                   ) : null}
 
                                   {item.tag ? (
@@ -4146,9 +4336,153 @@ export function DashboardClient({
                   </label>
                 </div>
 
-                <div className="sm:col-span-2">
+                {itemForm.isFeatured ? (
+                  <div className="space-y-3 rounded-2xl border border-amber-400/30 bg-amber-400/[0.07] p-4 sm:col-span-2">
+                    <div className="flex items-center gap-2 text-sm font-bold text-amber-300">
+                      <Sparkles className="h-4 w-4 shrink-0 text-amber-400" aria-hidden="true" />
+                      <span>Personalizar Destaque</span>
+                    </div>
+
+                    <div>
+                      <label htmlFor="item-featured-label" className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#CBD5E1]">
+                        Texto da Etiqueta de Destaque
+                      </label>
+                      <input
+                        id="item-featured-label"
+                        type="text"
+                        maxLength={30}
+                        value={itemForm.featuredLabel}
+                        onChange={(e) =>
+                          setItemForm((f) => ({ ...f, featuredLabel: e.target.value }))
+                        }
+                        placeholder="Ex: OFERTA RELÂMPAGO, TOP 1, EXCLUSIVO"
+                        className="mc-input min-h-[44px] w-full rounded-xl border border-white/20 bg-[#09101B] px-3 text-sm font-semibold text-white placeholder-white/30"
+                      />
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {FEATURED_LABEL_SUGGESTIONS.map((sug) => (
+                          <button
+                            key={sug}
+                            type="button"
+                            onClick={() => setItemForm((f) => ({ ...f, featuredLabel: sug }))}
+                            className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                              (itemForm.featuredLabel || "").toLowerCase() === sug.toLowerCase()
+                                ? "bg-amber-400 text-black shadow-sm"
+                                : "border border-amber-400/30 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20"
+                            }`}
+                          >
+                            {sug}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#CBD5E1]">
+                        Ícone do Destaque
+                      </label>
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                        {FEATURED_ICON_OPTIONS.map((opt) => {
+                          const IconComp = opt.icon;
+                          const isSelected = (itemForm.featuredIcon || "sparkles") === opt.key;
+                          return (
+                            <button
+                              key={opt.key}
+                              type="button"
+                              onClick={() => setItemForm((f) => ({ ...f, featuredIcon: opt.key }))}
+                              className={`flex items-center justify-center gap-1.5 rounded-xl border p-2 text-xs font-bold transition ${
+                                isSelected
+                                  ? "border-amber-400 bg-amber-400 text-black shadow-md shadow-amber-400/20"
+                                  : "border-white/10 bg-[#09101B] text-white/80 hover:border-white/25 hover:text-white"
+                              }`}
+                            >
+                              <IconComp className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">{opt.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {itemForm.kind === "coupon" ? (
+                  <div className="space-y-3 rounded-2xl border border-white/15 bg-white/[0.04] p-4 sm:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm font-bold text-white">
+                        <Clock className="h-4 w-4 text-amber-400" aria-hidden="true" />
+                        <span>Expiração com Contagem Regressiva</span>
+                      </div>
+                      {itemForm.expiresAt ? (
+                        <button
+                          type="button"
+                          onClick={() => setItemForm((f) => ({ ...f, expiresAt: "" }))}
+                          className="text-xs font-semibold text-rose-400 hover:text-rose-300 hover:underline"
+                        >
+                          Remover expiração
+                        </button>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-[#9CB3CE]">
+                      Exibe um cronômetro ao vivo na sua página (&quot;Expira em 04:32:15&quot;) aumentando a urgência e conversão do cupom.
+                    </p>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const d = new Date(Date.now() + 24 * 3600 * 1000);
+                          setItemForm((f) => ({ ...f, expiresAt: toDateTimeLocalInput(d.toISOString()) }));
+                        }}
+                        className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-xs font-medium text-white hover:bg-white/10"
+                      >
+                        +24 horas
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const d = new Date(Date.now() + 3 * 24 * 3600 * 1000);
+                          setItemForm((f) => ({ ...f, expiresAt: toDateTimeLocalInput(d.toISOString()) }));
+                        }}
+                        className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-xs font-medium text-white hover:bg-white/10"
+                      >
+                        +3 dias
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const d = new Date(Date.now() + 7 * 24 * 3600 * 1000);
+                          setItemForm((f) => ({ ...f, expiresAt: toDateTimeLocalInput(d.toISOString()) }));
+                        }}
+                        className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-xs font-medium text-white hover:bg-white/10"
+                      >
+                        +7 dias
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const now = new Date();
+                          const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 0);
+                          setItemForm((f) => ({ ...f, expiresAt: toDateTimeLocalInput(endOfMonth.toISOString()) }));
+                        }}
+                        className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-xs font-medium text-white hover:bg-white/10"
+                      >
+                        Fim do mês
+                      </button>
+                    </div>
+
+                    <input
+                      id="item-expires-at"
+                      type="datetime-local"
+                      value={itemForm.expiresAt}
+                      onChange={(e) => setItemForm((f) => ({ ...f, expiresAt: e.target.value }))}
+                      className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
+                    />
+                  </div>
+                ) : null}
+
+                <div className="space-y-2 sm:col-span-2">
                   <label htmlFor="item-logo" className="mb-1 block text-sm font-semibold">
-                    URL da logo (opcional — busca automática pelo site)
+                    URL da logo (opcional — busca automática ativa)
                   </label>
                   <input
                     id="item-logo"
@@ -4160,6 +4494,26 @@ export function DashboardClient({
                     placeholder="Deixe em branco para usar a logo automática do domínio"
                     className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white"
                   />
+
+                  {/* Pré-visualização ao vivo da Logo */}
+                  <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <BrandPreviewIcon
+                      title={itemForm.title}
+                      url={itemForm.url}
+                      logoUrl={itemForm.logoUrl}
+                      accentColor={itemForm.accentColor}
+                    />
+                    <div className="min-w-0 flex-1 text-xs">
+                      <p className="font-semibold text-white">Pré-visualização da logo</p>
+                      <p className="truncate text-[#9CB3CE]">
+                        {itemForm.logoUrl
+                          ? "Usando URL direta da logo"
+                          : itemForm.url || itemForm.title
+                            ? "Detectada automaticamente pela marca ou domínio do link"
+                            : "Preencha a URL ou nome acima para visualizar"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </>
             ) : null}

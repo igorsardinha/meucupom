@@ -5,24 +5,31 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   Check,
+  Clock,
   Copy,
+  Flame,
   Flag,
+  Gift,
   Link2,
   Moon,
+  Percent,
   Share2,
   Sparkles,
+  Star,
   Sun,
   Tag,
+  Trophy,
   X,
+  Zap,
 } from "lucide-react";
 import { InstagramIcon } from "@/components/InstagramIcon";
 import { YouTubeIcon } from "@/components/YouTubeIcon";
 import { BrandLogo } from "@/components/BrandLogo";
+import { getBrandIconCandidates } from "@/lib/brand-icons";
 import {
   computeInitials,
   CreatorProfileData,
   FontStyle,
-  getDomainFromUrl,
   isLightHex,
   isSafeHexColor,
   isSafeHttpUrl,
@@ -58,6 +65,100 @@ const FONT_VARS: Record<FontStyle, string> = {
   lora: "var(--font-lora), Georgia, serif",
 };
 
+function FeaturedBadgeIcon({
+  iconKey,
+  className = "h-3 w-3",
+}: {
+  iconKey?: string;
+  className?: string;
+}) {
+  switch (iconKey) {
+    case "flame":
+      return <Flame className={className} aria-hidden="true" />;
+    case "zap":
+      return <Zap className={className} aria-hidden="true" />;
+    case "star":
+      return <Star className={className} aria-hidden="true" />;
+    case "trophy":
+      return <Trophy className={className} aria-hidden="true" />;
+    case "tag":
+      return <Tag className={className} aria-hidden="true" />;
+    case "gift":
+      return <Gift className={className} aria-hidden="true" />;
+    case "percent":
+      return <Percent className={className} aria-hidden="true" />;
+    case "clock":
+      return <Clock className={className} aria-hidden="true" />;
+    case "sparkles":
+    default:
+      return <Sparkles className={className} aria-hidden="true" />;
+  }
+}
+
+function CountdownBadge({ expiresAt }: { expiresAt: string }) {
+  const [now, setNow] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const target = useMemo(() => new Date(expiresAt).getTime(), [expiresAt]);
+  if (isNaN(target)) return null;
+
+  const diff = target - now;
+
+  if (diff <= 0) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-[0.6875rem] font-bold text-red-400">
+        <Clock className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
+        <span>Cupom Expirado</span>
+      </span>
+    );
+  }
+
+  const totalSecs = Math.floor(diff / 1000);
+  const days = Math.floor(totalSecs / 86400);
+  const hours = Math.floor((totalSecs % 86400) / 3600);
+  const minutes = Math.floor((totalSecs % 3600) / 60);
+  const seconds = totalSecs % 60;
+
+  // Mais de 24h: "⏱️ Expira em Xd Yh"
+  if (days >= 1) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-0.5 text-[0.6875rem] font-semibold text-amber-300">
+        <Clock className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
+        <span>Expira em {days}d {hours}h</span>
+      </span>
+    );
+  }
+
+  // Menos de 1h: Alta urgência com piscar sutil "⚡ Últimos MM:SS!"
+  if (hours === 0) {
+    const padM = String(minutes).padStart(2, "0");
+    const padS = String(seconds).padStart(2, "0");
+    return (
+      <span className="inline-flex items-center gap-1 animate-pulse rounded-full border border-rose-500/40 bg-rose-500/15 px-2.5 py-0.5 text-[0.6875rem] font-extrabold text-rose-300 shadow-[0_0_12px_rgba(244,63,94,0.3)]">
+        <Zap className="h-2.5 w-2.5 shrink-0 fill-current" aria-hidden="true" />
+        <span>Últimos {padM}:{padS}!</span>
+      </span>
+    );
+  }
+
+  // Entre 1h e 24h: Ticking em segundos "🔥 Expira em HH:MM:SS"
+  const padH = String(hours).padStart(2, "0");
+  const padM = String(minutes).padStart(2, "0");
+  const padS = String(seconds).padStart(2, "0");
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/15 px-2.5 py-0.5 text-[0.6875rem] font-bold text-amber-200">
+      <Flame className="h-2.5 w-2.5 shrink-0 fill-current text-amber-400" aria-hidden="true" />
+      <span>Expira em {padH}:{padM}:{padS}</span>
+    </span>
+  );
+}
+
 function BrandBadge({
   item,
   cardColor,
@@ -68,22 +169,19 @@ function BrandBadge({
   textColor: string;
 }) {
   const candidates = useMemo(() => {
-    const list: string[] = [];
-    if (isSafeMediaSrc(item.logoUrl)) {
-      list.push(item.logoUrl.trim());
-    }
-    const domain = getDomainFromUrl(item.url);
-    if (domain) {
-      list.push(`https://icon.horse/icon/${encodeURIComponent(domain)}`);
-      list.push(
-        `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`
-      );
-    }
-    return list;
-  }, [item.logoUrl, item.url]);
+    return getBrandIconCandidates(item.title, item.url, item.logoUrl);
+  }, [item.title, item.url, item.logoUrl]);
 
+  const [currentKey, setCurrentKey] = useState("");
   const [candidateIndex, setCandidateIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
+
+  const candidateKey = candidates.join("|");
+  if (candidateKey !== currentKey) {
+    setCurrentKey(candidateKey);
+    setCandidateIndex(0);
+    setLoaded(false);
+  }
 
   const currentSrc = candidates[candidateIndex];
   const initials = computeInitials(item.title);
@@ -116,7 +214,7 @@ function BrandBadge({
           decoding="async"
           referrerPolicy="no-referrer"
           onLoad={(e) => {
-            if (e.currentTarget.naturalWidth === 0) {
+            if (e.currentTarget.naturalWidth <= 1) {
               setLoaded(false);
               setCandidateIndex((i) => i + 1);
             } else {
@@ -922,15 +1020,21 @@ export function PublicBioView({ profile, items, previewMode = false }: PublicBio
                           : "transition-transform duration-150 hover:-translate-y-0.5"
                       }`}
                     >
-                      {item.isFeatured ? (
-                        <div className="flex items-center justify-between gap-2">
-                          <span
-                            style={{ background: featuredBadgeBg, color: featuredBadgeInk }}
-                            className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[0.6875rem] font-extrabold uppercase tracking-wider shadow-sm"
-                          >
-                            <Sparkles className="h-3 w-3" aria-hidden="true" />
-                            <span>Destaque</span>
-                          </span>
+                      {item.isFeatured || item.expiresAt ? (
+                        <div className="flex flex-wrap items-center justify-between gap-1.5">
+                          {item.isFeatured ? (
+                            <span
+                              style={{ background: featuredBadgeBg, color: featuredBadgeInk }}
+                              className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[0.6875rem] font-extrabold uppercase tracking-wider shadow-sm"
+                            >
+                              <FeaturedBadgeIcon iconKey={item.featuredIcon} className="h-3 w-3" />
+                              <span>{item.featuredLabel || "Destaque"}</span>
+                            </span>
+                          ) : <span />}
+
+                          {item.expiresAt ? (
+                            <CountdownBadge expiresAt={item.expiresAt} />
+                          ) : null}
                         </div>
                       ) : null}
 
@@ -1022,15 +1126,21 @@ export function PublicBioView({ profile, items, previewMode = false }: PublicBio
                         : "p-4 transition-transform duration-150 hover:-translate-y-0.5"
                     }`}
                   >
-                    {item.isFeatured ? (
-                      <div className="flex items-center justify-between gap-2">
-                        <span
-                          style={{ background: featuredBadgeBg, color: featuredBadgeInk }}
-                          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[0.6875rem] font-extrabold uppercase tracking-wider shadow-sm"
-                        >
-                          <Sparkles className="h-3 w-3" aria-hidden="true" />
-                          <span>Destaque</span>
-                        </span>
+                    {item.isFeatured || item.expiresAt ? (
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        {item.isFeatured ? (
+                          <span
+                            style={{ background: featuredBadgeBg, color: featuredBadgeInk }}
+                            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[0.6875rem] font-extrabold uppercase tracking-wider shadow-sm"
+                          >
+                            <FeaturedBadgeIcon iconKey={item.featuredIcon} className="h-3 w-3" />
+                            <span>{item.featuredLabel || "Destaque"}</span>
+                          </span>
+                        ) : <span />}
+
+                        {item.expiresAt ? (
+                          <CountdownBadge expiresAt={item.expiresAt} />
+                        ) : null}
                       </div>
                     ) : null}
 

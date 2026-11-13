@@ -16,6 +16,9 @@ const updateItemSchema = z.object({
   ctaLabel: z.string().max(60).optional(),
   isActive: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
+  featuredLabel: z.string().max(30).optional(),
+  featuredIcon: z.string().max(30).optional(),
+  expiresAt: z.string().nullable().optional(),
 });
 
 export async function PATCH(

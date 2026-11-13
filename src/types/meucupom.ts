@@ -51,6 +51,17 @@ export type FeaturedAnimation =
 export type SocialDisplayStyle = "both" | "icon" | "text";
 export type LinkItemKind = "coupon" | "link" | "divider";
 
+export type FeaturedIconKey =
+  | "sparkles"
+  | "flame"
+  | "zap"
+  | "star"
+  | "trophy"
+  | "tag"
+  | "gift"
+  | "percent"
+  | "clock";
+
 export interface LinkItemData {
   id: string;
   profileId: string;
@@ -67,6 +78,9 @@ export interface LinkItemData {
   sortOrder: number;
   isActive: boolean;
   isFeatured: boolean;
+  featuredLabel: string;
+  featuredIcon: FeaturedIconKey | string;
+  expiresAt: string | null;
   clicksCount: number;
   copiesCount: number;
 }
@@ -615,8 +629,11 @@ export function computeInitials(name: string): string {
 }
 
 export function getDomainFromUrl(url: string): string {
+  if (!url || typeof url !== "string") return "";
   try {
-    return new URL(url).hostname.replace(/^www\./i, "");
+    const raw = url.trim();
+    const withProto = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    return new URL(withProto).hostname.replace(/^www\./i, "").toLowerCase();
   } catch {
     return "";
   }

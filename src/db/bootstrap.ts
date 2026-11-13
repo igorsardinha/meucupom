@@ -109,6 +109,9 @@ const SQLITE_DDL = [
     "sort_order" integer NOT NULL DEFAULT 0,
     "is_active" integer NOT NULL DEFAULT 1,
     "is_featured" integer NOT NULL DEFAULT 0,
+    "featured_label" text NOT NULL DEFAULT 'Destaque',
+    "featured_icon" text NOT NULL DEFAULT 'sparkles',
+    "expires_at" integer,
     "clicks_count" integer NOT NULL DEFAULT 0,
     "copies_count" integer NOT NULL DEFAULT 0,
     "created_at" integer NOT NULL,
@@ -237,6 +240,9 @@ const PG_DDL = [
     "sort_order" integer NOT NULL DEFAULT 0,
     "is_active" boolean NOT NULL DEFAULT true,
     "is_featured" boolean NOT NULL DEFAULT false,
+    "featured_label" text NOT NULL DEFAULT 'Destaque',
+    "featured_icon" text NOT NULL DEFAULT 'sparkles',
+    "expires_at" timestamp,
     "clicks_count" integer NOT NULL DEFAULT 0,
     "copies_count" integer NOT NULL DEFAULT 0,
     "created_at" timestamp NOT NULL,
@@ -524,6 +530,9 @@ function buildShowcaseItems(profileId: string, now: Date) {
       sortOrder: 0,
       isActive: true,
       isFeatured: true,
+      featuredLabel: "Destaque",
+      featuredIcon: "sparkles",
+      expiresAt: null,
       clicksCount: 64,
       copiesCount: 98,
       createdAt: now,
@@ -545,6 +554,9 @@ function buildShowcaseItems(profileId: string, now: Date) {
       sortOrder: 1,
       isActive: true,
       isFeatured: false,
+      featuredLabel: "Destaque",
+      featuredIcon: "sparkles",
+      expiresAt: null,
       clicksCount: 41,
       copiesCount: 72,
       createdAt: now,
@@ -566,6 +578,9 @@ function buildShowcaseItems(profileId: string, now: Date) {
       sortOrder: 2,
       isActive: true,
       isFeatured: false,
+      featuredLabel: "Destaque",
+      featuredIcon: "sparkles",
+      expiresAt: null,
       clicksCount: 29,
       copiesCount: 51,
       createdAt: now,
@@ -587,6 +602,9 @@ function buildShowcaseItems(profileId: string, now: Date) {
       sortOrder: 3,
       isActive: true,
       isFeatured: false,
+      featuredLabel: "Destaque",
+      featuredIcon: "sparkles",
+      expiresAt: null,
       clicksCount: 37,
       copiesCount: 0,
       createdAt: now,
@@ -683,6 +701,21 @@ async function runColumnMigrations() {
         `ALTER TABLE "link_item" ADD COLUMN "is_featured" integer NOT NULL DEFAULT 0`
       );
     }
+    if (!itemNames.has("featured_label")) {
+      await handle.client.execute(
+        `ALTER TABLE "link_item" ADD COLUMN "featured_label" text NOT NULL DEFAULT 'Destaque'`
+      );
+    }
+    if (!itemNames.has("featured_icon")) {
+      await handle.client.execute(
+        `ALTER TABLE "link_item" ADD COLUMN "featured_icon" text NOT NULL DEFAULT 'sparkles'`
+      );
+    }
+    if (!itemNames.has("expires_at")) {
+      await handle.client.execute(
+        `ALTER TABLE "link_item" ADD COLUMN "expires_at" integer`
+      );
+    }
 
     const reportCols = await handle.client.execute(`PRAGMA table_info("abuse_report")`);
     const reportNames = new Set(reportCols.rows.map((r) => String(r.name)));
@@ -741,6 +774,15 @@ async function runColumnMigrations() {
   );
   await handle.pool.query(
     `ALTER TABLE "link_item" ADD COLUMN IF NOT EXISTS "is_featured" boolean NOT NULL DEFAULT false`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "link_item" ADD COLUMN IF NOT EXISTS "featured_label" text NOT NULL DEFAULT 'Destaque'`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "link_item" ADD COLUMN IF NOT EXISTS "featured_icon" text NOT NULL DEFAULT 'sparkles'`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "link_item" ADD COLUMN IF NOT EXISTS "expires_at" timestamp`
   );
   await handle.pool.query(
     `ALTER TABLE "abuse_report" ADD COLUMN IF NOT EXISTS "status" text NOT NULL DEFAULT 'open'`

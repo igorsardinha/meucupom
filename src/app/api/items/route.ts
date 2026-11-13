@@ -16,6 +16,9 @@ const createItemSchema = z
     url: z.string().max(1000).optional().default(""),
     ctaLabel: z.string().max(60).optional(),
     isFeatured: z.boolean().optional(),
+    featuredLabel: z.string().max(30).optional(),
+    featuredIcon: z.string().max(30).optional(),
+    expiresAt: z.string().nullable().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.kind !== "divider") {
