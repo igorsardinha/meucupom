@@ -25,7 +25,7 @@ import {
 import { InstagramIcon } from "@/components/InstagramIcon";
 import { YouTubeIcon } from "@/components/YouTubeIcon";
 import { BrandLogo } from "@/components/BrandLogo";
-import { UserBubbleIcon } from "@/components/UserBubbleIcon";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { getBrandIconCandidates } from "@/lib/brand-icons";
 import {
   computeInitials,
@@ -796,21 +796,22 @@ export function PublicBioView({ profile, items, previewMode = false }: PublicBio
                 </span>
               )}
             </div>
-            {/* Creator Badge with Attached User Bubble SVG Icon */}
+            {/* Verified Tick Badge on Avatar */}
             <div
               className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full bg-[#070C14] shadow-md ring-2 ring-[#070C14]"
-              title="Criador verificado meucupom"
+              title="Perfil verificado meucupom"
             >
-              <UserBubbleIcon className="h-6 w-6" bubbleColor="#1E60CF" personColor="#FFFFFF" />
+              <VerifiedBadge className="h-6 w-6" badgeColor="#1E60CF" tickColor="#FFFFFF" />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
             <h1
               style={{ fontFamily: nameFontFamily }}
-              className="text-[clamp(1.45rem,4.5vw,1.8rem)] font-extrabold leading-tight tracking-tight"
+              className="inline-flex items-center justify-center gap-2 text-[clamp(1.45rem,4.5vw,1.8rem)] font-extrabold leading-tight tracking-tight"
             >
-              {profile.displayName}
+              <span>{profile.displayName}</span>
+              <VerifiedBadge className="h-5 w-5 shrink-0" badgeColor="#1E60CF" tickColor="#FFFFFF" />
             </h1>
             {profile.bio ? (
               <p
