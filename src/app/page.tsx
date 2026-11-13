@@ -1,12 +1,12 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  ArrowRightLeft,
   BarChart3,
   Check,
   Copy,
   LayoutGrid,
   Palette,
-  ShieldCheck,
   Sparkles,
 } from "lucide-react";
 import { BrandIcon } from "@/components/BrandIcon";
@@ -54,10 +54,10 @@ const FEATURES = [
       "Alterne entre lista clássica ou modo compacto, destaque seu link principal e combine cupons e links diretos.",
   },
   {
-    icon: ShieldCheck,
-    title: "Login com Google ou e-mail",
+    icon: ArrowRightLeft,
+    title: "Conversor inteligente de Linktree",
     description:
-      "Entre rápido em segundos com segurança e comece a publicar seus cupons sem complicação.",
+      "Cole seu link do Linktree e migre tudo em segundos: puxamos seus links, redes sociais e detectamos seus cupons 🏷️ e 🎟️ automaticamente.",
   },
   {
     icon: Sparkles,
@@ -148,6 +148,7 @@ export default function HomePage() {
             </div>
 
             <div className="mt-5 flex flex-wrap items-center gap-3 text-xs font-semibold text-[#9CB3CE] sm:mt-6 sm:gap-4">
+              <span>✓ Conversor de Linktree</span>
               <span>✓ Login com Google ou e-mail</span>
               <span>✓ Preview em tempo real</span>
               <span>✓ Sem código</span>
@@ -156,6 +157,63 @@ export default function HomePage() {
 
           <div className="mt-4 lg:mt-0">
             <ShowcasePhone />
+          </div>
+        </section>
+
+        {/* Linktree Converter Highlight Banner */}
+        <section aria-label="Conversor de Linktree" className="mt-14 sm:mt-16">
+          <div className="relative overflow-hidden rounded-3xl border border-[#39E09B]/35 bg-gradient-to-br from-[#071F17] via-[#0A1624] to-[#0E1624] p-6 sm:p-8 md:p-10 shadow-[0_16px_48px_rgba(57,224,155,0.12)]">
+            <div
+              className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#39E09B]/15 blur-3xl"
+              aria-hidden="true"
+            />
+            <div
+              className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-[#38BDF8]/10 blur-3xl"
+              aria-hidden="true"
+            />
+
+            <div className="relative z-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#39E09B]/40 bg-[#39E09B]/15 px-3 py-1 text-xs font-black uppercase tracking-wider text-[#39E09B]">
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>Conversor Inteligente</span>
+                </div>
+
+                <h2 className="mt-3.5 text-2xl font-black tracking-tight text-white sm:text-3xl md:text-4xl">
+                  Já usa Linktree? Migre sua bio em{" "}
+                  <span className="text-[#39E09B]">segundos</span>.
+                </h2>
+
+                <p className="mt-3 text-sm leading-relaxed text-[#CBD5E1] sm:text-base">
+                  Não perca tempo recadastrando seus links e cupons. Nosso conversor inteligente analisa o seu perfil do Linktree, importa seus links e fotos de perfil, e detecta automaticamente cupons de desconto marcados com <span className="font-bold text-white">🏷️</span> ou <span className="font-bold text-white">🎟️</span> — deixando sua bio pronta com visual profissional de alta conversão.
+                </p>
+
+                <div className="mt-4 flex flex-wrap items-center gap-4 text-xs font-semibold text-[#9CB3CE]">
+                  <span className="flex items-center gap-1.5 text-white">
+                    <Check className="h-4 w-4 text-[#39E09B]" aria-hidden="true" /> Importação em 1 clique
+                  </span>
+                  <span className="flex items-center gap-1.5 text-white">
+                    <Check className="h-4 w-4 text-[#39E09B]" aria-hidden="true" /> Detecção de cupons 🏷️ e 🎟️
+                  </span>
+                  <span className="flex items-center gap-1.5 text-white">
+                    <Check className="h-4 w-4 text-[#39E09B]" aria-hidden="true" /> 100% grátis
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto">
+                <Link
+                  href="/entrar?mode=register"
+                  className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl bg-[#39E09B] px-6 text-sm font-extrabold text-[#070C14] shadow-[0_8px_24px_rgba(57,224,155,0.35)] transition hover:bg-[#4df2ad] active:scale-95 sm:w-auto"
+                >
+                  <span>Experimentar conversor</span>
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+                <p className="text-center text-[11px] text-[#9CB3CE] sm:text-left">
+                  Disponível no seu painel logo após o cadastro
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 

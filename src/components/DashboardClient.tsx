@@ -1776,9 +1776,9 @@ export function DashboardClient({
 
           {/* Right Actions */}
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-            {/* Commercial Public Link Pill */}
-            <div className="flex max-w-[125px] items-center rounded-full border border-[#38BDF8]/30 bg-[#0E1624] py-0.5 pl-2 pr-1 text-xs sm:max-w-none sm:py-1 sm:pl-3">
-              <span className="truncate font-mono text-[11px] text-[#7DD3FC] sm:text-xs">/{profile.slug}</span>
+            {/* Commercial Public Link Pill (Desktop - on mobile it lives in a dedicated block above the preview) */}
+            <div className="hidden sm:flex items-center rounded-full border border-[#38BDF8]/30 bg-[#0E1624] py-1 pl-3 pr-1 text-xs">
+              <span className="truncate font-mono text-xs text-[#7DD3FC]">/{profile.slug}</span>
               <button
                 type="button"
                 onClick={handleCopyPublicUrl}
@@ -4418,35 +4418,67 @@ export function DashboardClient({
             mobilePreviewOpen ? "block" : "hidden lg:block"
           } lg:sticky lg:top-20 lg:self-start`}
         >
-          {/* Mobile Top Bar when in Preview Mode */}
-          <div className="mb-3 flex items-center justify-between rounded-2xl border border-white/12 bg-[#0E1624] p-3 shadow-md lg:hidden">
-            <button
-              type="button"
-              onClick={() => setMobilePreviewOpen(false)}
-              className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-bold text-white hover:bg-white/10"
-            >
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              <span>Voltar ao editor</span>
-            </button>
-
-            <div className="flex items-center gap-2">
+          {/* Mobile: Link do Usuário em Bloco Acima da Preview */}
+          <div className="mb-3 space-y-2 lg:hidden">
+            <div className="flex items-center justify-between">
               <button
                 type="button"
-                onClick={handleCopyPublicUrl}
-                className="inline-flex min-h-[38px] items-center gap-1 rounded-xl border border-[#38BDF8]/30 bg-[#38BDF8]/15 px-3 text-xs font-bold text-[#7DD3FC]"
+                onClick={() => setMobilePreviewOpen(false)}
+                className="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-bold text-white transition hover:bg-white/10 active:scale-95"
               >
-                {copiedUrl ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                <span>{copiedUrl ? "Copiado" : "Copiar"}</span>
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                <span>Voltar ao editor</span>
               </button>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#9CB3CE]">
+                Preview ao vivo
+              </span>
+            </div>
 
-              <Link
-                href={`/${profile.slug}`}
-                target="_blank"
-                className="inline-flex min-h-[38px] items-center gap-1 rounded-xl bg-[#1E60CF] px-3 text-xs font-bold text-white shadow hover:bg-[#256EE8]"
-              >
-                <span>Abrir</span>
-                <ExternalLink className="h-3.5 w-3.5" />
-              </Link>
+            {/* Bloco dedicado com o link do usuário */}
+            <div className="rounded-2xl border border-[#38BDF8]/35 bg-gradient-to-r from-[#0E1624] via-[#0F1E33] to-[#0E1624] p-3 shadow-lg">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#9CB3CE]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Seu link público</span>
+                  </div>
+                  <p className="mt-0.5 truncate font-mono text-xs font-bold text-[#7DD3FC]">
+                    meucupom.bio/{profile.slug}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleCopyPublicUrl}
+                    className="inline-flex min-h-[36px] items-center gap-1 rounded-xl border border-[#38BDF8]/40 bg-[#38BDF8]/15 px-3 text-xs font-bold text-[#7DD3FC] transition hover:bg-[#38BDF8]/25 active:scale-95"
+                    aria-label="Copiar link público"
+                    title="Copiar link da sua página"
+                  >
+                    {copiedUrl ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-emerald-400" aria-hidden="true" />
+                        <span className="text-emerald-400">Copiado!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span>Copiar</span>
+                      </>
+                    )}
+                  </button>
+
+                  <Link
+                    href={`/${profile.slug}`}
+                    target="_blank"
+                    className="inline-flex min-h-[36px] items-center gap-1 rounded-xl bg-[#1E60CF] px-3 text-xs font-bold text-white shadow transition hover:bg-[#256EE8] active:scale-95"
+                    aria-label="Abrir página pública em nova aba"
+                    title="Abrir página pública em nova aba"
+                  >
+                    <span>Abrir</span>
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
 
