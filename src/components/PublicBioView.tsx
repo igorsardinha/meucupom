@@ -25,6 +25,7 @@ import {
 import { InstagramIcon } from "@/components/InstagramIcon";
 import { YouTubeIcon } from "@/components/YouTubeIcon";
 import { BrandLogo } from "@/components/BrandLogo";
+import { UserBubbleIcon } from "@/components/UserBubbleIcon";
 import { getBrandIconCandidates } from "@/lib/brand-icons";
 import {
   computeInitials,
@@ -769,30 +770,39 @@ export function PublicBioView({ profile, items, previewMode = false }: PublicBio
 
         {/* Hero */}
         <header className="mb-7 flex flex-col items-center gap-3.5 text-center">
-          <div
-            style={{
-              background: `linear-gradient(145deg, ${profile.ctaColor}, ${profile.accentColor})`,
-              borderColor: profile.accentColor,
-              boxShadow: `0 0 0 5px color-mix(in oklab, ${profile.accentColor} 22%, transparent), 0 14px 32px rgba(2, 6, 14, 0.35)`,
-            }}
-            className="relative grid h-24 w-24 place-items-center overflow-hidden rounded-full border-[2.5px]"
-          >
-            {hasValidAvatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={profile.avatarUrl}
-                alt={`Foto de ${profile.displayName}`}
-                onError={() => setFailedAvatarUrl(profile.avatarUrl)}
-                className="h-full w-full object-cover object-[center_20%]"
-              />
-            ) : (
-              <span
-                style={{ fontFamily: nameFontFamily }}
-                className="text-2xl font-extrabold tracking-tight text-white"
-              >
-                {computeInitials(profile.displayName)}
-              </span>
-            )}
+          <div className="relative">
+            <div
+              style={{
+                background: `linear-gradient(145deg, ${profile.ctaColor}, ${profile.accentColor})`,
+                borderColor: profile.accentColor,
+                boxShadow: `0 0 0 5px color-mix(in oklab, ${profile.accentColor} 22%, transparent), 0 14px 32px rgba(2, 6, 14, 0.35)`,
+              }}
+              className="relative grid h-24 w-24 place-items-center overflow-hidden rounded-full border-[2.5px]"
+            >
+              {hasValidAvatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatarUrl}
+                  alt={`Foto de ${profile.displayName}`}
+                  onError={() => setFailedAvatarUrl(profile.avatarUrl)}
+                  className="h-full w-full object-cover object-[center_20%]"
+                />
+              ) : (
+                <span
+                  style={{ fontFamily: nameFontFamily }}
+                  className="text-2xl font-extrabold tracking-tight text-white"
+                >
+                  {computeInitials(profile.displayName)}
+                </span>
+              )}
+            </div>
+            {/* Creator Badge with Attached User Bubble SVG Icon */}
+            <div
+              className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full bg-[#070C14] shadow-md ring-2 ring-[#070C14]"
+              title="Criador verificado meucupom"
+            >
+              <UserBubbleIcon className="h-6 w-6" bubbleColor="#1E60CF" personColor="#FFFFFF" />
+            </div>
           </div>
 
           <div className="flex flex-col gap-1.5">

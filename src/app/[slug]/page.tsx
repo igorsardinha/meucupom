@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { PublicBioView } from "@/components/PublicBioView";
 import { getPublicPageBySlug } from "@/db/repository";
-import { isSafeHttpUrl, sanitizeSlug } from "@/types/meucupom";
+import { getAppBaseUrl } from "@/lib/urls";
+import { sanitizeSlug } from "@/types/meucupom";
 
 function normalizeRouteSlug(raw: string): { decoded: string; clean: string } {
   const decoded = decodeURIComponent(raw);
@@ -32,19 +33,33 @@ export async function generateMetadata({
     profile.bio ||
     `Acesse os ${activeCount} links e cupons oficiais de ${profile.displayName}.`;
 
+  const baseUrl = getAppBaseUrl();
+  const ogImageUrl = `${baseUrl}/api/og?slug=${encodeURIComponent(clean)}`;
+
   return {
     title: `${profile.displayName} · Links e Cupons`,
     description,
     openGraph: {
       type: "website",
       locale: "pt_BR",
+      url: `${baseUrl}/${clean}`,
+      siteName: "meucupom.bio",
       title: `${profile.displayName} · Links e Cupons`,
       description,
-      images:
-        (profile.avatarUrl.startsWith("/") && !profile.avatarUrl.startsWith("//")) ||
-        isSafeHttpUrl(profile.avatarUrl)
-          ? [profile.avatarUrl]
-          : undefined,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${profile.displayName} · Links e Cupons`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${profile.displayName} · Links e Cupons`,
+      description,
+      images: [ogImageUrl],
     },
   };
 }
