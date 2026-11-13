@@ -43,6 +43,7 @@ import {
   Star,
   Tag,
   Trash2,
+  TreePine,
   TrendingUp,
   Trophy,
   Upload,
@@ -90,6 +91,7 @@ import { BrandIcon } from "@/components/BrandIcon";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getBrandIconCandidates } from "@/lib/brand-icons";
 import { PublicBioView } from "./PublicBioView";
+import { LinktreeImportModal } from "./LinktreeImportModal";
 
 interface DashboardClientProps {
   initialProfile: CreatorProfileData;
@@ -640,6 +642,7 @@ export function DashboardClient({
   } | null>(null);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [themeProNotice, setThemeProNotice] = useState<string | null>(null);
+  const [isLinktreeImportOpen, setIsLinktreeImportOpen] = useState(false);
 
   const [itemForm, setItemForm] = useState<ItemFormState>(EMPTY_ITEM_FORM);
   const [deleteTarget, setDeleteTarget] = useState<LinkItemData | null>(null);
@@ -2123,7 +2126,7 @@ export function DashboardClient({
                   </p>
                 </div>
 
-                <div className="grid w-full grid-cols-3 gap-2 sm:w-auto sm:flex sm:flex-wrap">
+                <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:flex sm:flex-wrap">
                   <button
                     type="button"
                     onClick={() => openCreateDialog("coupon")}
@@ -2148,6 +2151,14 @@ export function DashboardClient({
                     <Minus className="h-4 w-4 shrink-0" aria-hidden="true" />
                     <span className="truncate">Divisória</span>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsLinktreeImportOpen(true)}
+                    className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[#39E09B]/40 bg-[#39E09B]/12 px-3 py-2 text-xs font-bold text-[#39E09B] hover:bg-[#39E09B]/20 transition-colors sm:px-4 sm:text-sm"
+                  >
+                    <TreePine className="h-4 w-4 shrink-0 text-[#39E09B]" aria-hidden="true" />
+                    <span className="truncate">Importar Linktree</span>
+                  </button>
                 </div>
               </div>
 
@@ -2155,8 +2166,24 @@ export function DashboardClient({
                 <div className="rounded-2xl border border-dashed border-[#94C5FF]/25 bg-[#0E1624]/60 p-10 text-center">
                   <p className="font-bold text-white">Sua página ainda não tem itens</p>
                   <p className="mt-1 text-sm text-[#9CB3CE]">
-                    Clique em &quot;Novo Cupom&quot; ou &quot;Novo Link&quot; acima para começar.
+                    Clique em &quot;Novo Cupom&quot; ou traga tudo pronto do seu Linktree.
                   </p>
+                  <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => openCreateDialog("coupon")}
+                      className="inline-flex min-h-[42px] items-center gap-1.5 rounded-xl bg-[#1E60CF] px-4 py-2 text-xs font-bold text-white hover:bg-[#256EE8]"
+                    >
+                      <Plus className="h-4 w-4" /> Novo Cupom
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsLinktreeImportOpen(true)}
+                      className="inline-flex min-h-[42px] items-center gap-1.5 rounded-xl border border-[#39E09B]/40 bg-[#39E09B]/15 px-4 py-2 text-xs font-bold text-[#39E09B] hover:bg-[#39E09B]/25 transition-colors"
+                    >
+                      <TreePine className="h-4 w-4" /> Importar do Linktree
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -5127,6 +5154,23 @@ export function DashboardClient({
           </div>
         </div>
       ) : null}
+
+      {/* Modal de Importação do Linktree */}
+      <LinktreeImportModal
+        isOpen={isLinktreeImportOpen}
+        onClose={() => setIsLinktreeImportOpen(false)}
+        onImportSuccess={({ profile: updatedProfile, items: updatedItems, importedCount }) => {
+          setProfile(updatedProfile);
+          setItems(updatedItems);
+          setStatusBanner({
+            type: "ok",
+            text: `${importedCount} item(ns) importado(s) do Linktree com sucesso!`,
+          });
+          router.refresh();
+        }}
+        existingItemsCount={items.filter((it) => it.kind !== "divider").length}
+        userIsPro={userIsPro}
+      />
     </div>
   );
 }

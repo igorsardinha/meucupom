@@ -918,6 +918,250 @@ export async function reorderLinkItemsForUser(
   return true;
 }
 
+export interface ImportLinktreeItemInput {
+  kind: "coupon" | "link" | "divider";
+  title: string;
+  couponCode?: string;
+  url?: string;
+  badge?: string;
+  tag?: string;
+  ctaLabel?: string;
+  description?: string;
+}
+
+export interface ImportLinktreeOptions {
+  items: ImportLinktreeItemInput[];
+  importProfile?: boolean;
+  profileData?: {
+    avatarUrl?: string;
+    bio?: string;
+    instagramUrl?: string;
+    instagramHandle?: string;
+    tiktokUrl?: string;
+    tiktokHandle?: string;
+    youtubeUrl?: string;
+    youtubeHandle?: string;
+  };
+  replaceExisting?: boolean;
+}
+
+export async function importLinktreeItemsForUser(
+  userId: string,
+  options: ImportLinktreeOptions
+): Promise<
+  | { ok: true; profile: CreatorProfileData; items: LinkItemData[]; importedCount: number }
+  | { ok: false; error: string }
+> {
+  await ensureDatabaseReady();
+  const handle = getDbHandle();
+
+  const profileRows =
+    handle.dialect === "sqlite"
+      ? await handle.db
+          .select()
+          .from(handle.schema.creatorProfile)
+          .where(eq(handle.schema.creatorProfile.userId, userId))
+          .limit(1)
+      : await handle.db
+          .select()
+          .from(handle.schema.creatorProfile)
+          .where(eq(handle.schema.creatorProfile.userId, userId))
+          .limit(1);
+
+  if (profileRows.length === 0) {
+    return { ok: false, error: "Perfil não encontrado." };
+  }
+
+  const profile = mapProfile(profileRows[0] as unknown as Record<string, unknown>);
+  const profileId = profile.id;
+
+  const validItems = (options.items || []).filter((it) => {
+    if (it.kind === "divider") return Boolean(it.title?.trim());
+    return Boolean(it.title?.trim() && isSafeHttpUrl(it.url));
+  });
+
+  if (validItems.length === 0) {
+    return { ok: false, error: "Nenhum item válido foi selecionado para importação." };
+  }
+
+  const newNonDividerCount = validItems.filter((it) => it.kind !== "divider").length;
+
+  if (!isProPlan(profile)) {
+    let projectedCount = newNonDividerCount;
+    if (!options.replaceExisting) {
+      const existingItems =
+        handle.dialect === "sqlite"
+          ? await handle.db
+              .select({ kind: handle.schema.linkItem.kind })
+              .from(handle.schema.linkItem)
+              .where(eq(handle.schema.linkItem.profileId, profileId))
+          : await handle.db
+              .select({ kind: handle.schema.linkItem.kind })
+              .from(handle.schema.linkItem)
+              .where(eq(handle.schema.linkItem.profileId, profileId));
+      const existingNonDivider = existingItems.filter((it) => it.kind !== "divider").length;
+      projectedCount += existingNonDivider;
+    }
+
+    if (projectedCount > FREE_MAX_ACTIVE_OR_TOTAL_LINKS) {
+      return {
+        ok: false,
+        error: `O plano Grátis permite até ${FREE_MAX_ACTIVE_OR_TOTAL_LINKS} cupons e links. Com esta importação você teria ${projectedCount} links. Selecione menos itens ou assine o Pro para importar ilimitados.`,
+      };
+    }
+  }
+
+  if (options.replaceExisting) {
+    if (handle.dialect === "sqlite") {
+      await handle.db
+        .delete(handle.schema.linkItem)
+        .where(eq(handle.schema.linkItem.profileId, profileId));
+    } else {
+      await handle.db
+        .delete(handle.schema.linkItem)
+        .where(eq(handle.schema.linkItem.profileId, profileId));
+    }
+  }
+
+  let startSort = 0;
+  if (!options.replaceExisting) {
+    const existingSortRows =
+      handle.dialect === "sqlite"
+        ? await handle.db
+            .select({ sortOrder: handle.schema.linkItem.sortOrder })
+            .from(handle.schema.linkItem)
+            .where(eq(handle.schema.linkItem.profileId, profileId))
+        : await handle.db
+            .select({ sortOrder: handle.schema.linkItem.sortOrder })
+            .from(handle.schema.linkItem)
+            .where(eq(handle.schema.linkItem.profileId, profileId));
+    const maxSort = existingSortRows.reduce((acc, r) => Math.max(acc, r.sortOrder), -1);
+    startSort = maxSort + 1;
+  }
+
+  const now = new Date();
+
+  for (let i = 0; i < validItems.length; i += 1) {
+    const it = validItems[i];
+    const isDivider = it.kind === "divider";
+    const rawTitle = (it.title || "").trim().slice(0, 80);
+    const couponCode = it.kind === "coupon" ? (it.couponCode || "").trim().slice(0, 50) : "";
+    const url = isDivider ? "" : (it.url || "").trim();
+
+    const newItemRow = {
+      id: crypto.randomUUID(),
+      profileId,
+      kind: it.kind,
+      title: rawTitle,
+      badge: isDivider ? "" : (it.badge || computeInitials(rawTitle)),
+      logoUrl: "",
+      accentColor: "#38BDF8",
+      tag: isDivider
+        ? ""
+        : (it.tag || (it.kind === "coupon" ? "Cupom" : "Link")).trim().slice(0, 30),
+      description: (it.description || "").trim().slice(0, 180),
+      couponCode,
+      url,
+      ctaLabel: isDivider
+        ? ""
+        : (it.ctaLabel || (it.kind === "coupon" ? "Copiar cupom" : `Ir para ${rawTitle}`)).trim().slice(0, 60),
+      sortOrder: startSort + i,
+      isActive: true,
+      isFeatured: false,
+      featuredLabel: "Destaque",
+      featuredIcon: "sparkles",
+      expiresAt: null,
+      clicksCount: 0,
+      copiesCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    if (handle.dialect === "sqlite") {
+      await handle.db.insert(handle.schema.linkItem).values(newItemRow);
+    } else {
+      await handle.db.insert(handle.schema.linkItem).values(newItemRow);
+    }
+  }
+
+  if (options.importProfile && options.profileData) {
+    const pd = options.profileData;
+    const profilePatch: Record<string, unknown> = { updatedAt: now };
+
+    if (pd.avatarUrl && isSafeMediaSrc(pd.avatarUrl)) {
+      profilePatch.avatarUrl = pd.avatarUrl.trim();
+    }
+    if (typeof pd.bio === "string" && pd.bio.trim()) {
+      profilePatch.bio = pd.bio.trim().slice(0, 220);
+    }
+    if (pd.instagramUrl && isSafeHttpUrl(pd.instagramUrl)) {
+      profilePatch.instagramUrl = pd.instagramUrl.trim();
+      if (pd.instagramHandle) {
+        profilePatch.instagramHandle = pd.instagramHandle.trim().slice(0, 50);
+      }
+    }
+    if (pd.tiktokUrl && isSafeHttpUrl(pd.tiktokUrl)) {
+      profilePatch.tiktokUrl = pd.tiktokUrl.trim();
+      if (pd.tiktokHandle) {
+        profilePatch.tiktokHandle = pd.tiktokHandle.trim().slice(0, 50);
+      }
+    }
+    if (pd.youtubeUrl && isSafeHttpUrl(pd.youtubeUrl)) {
+      profilePatch.youtubeUrl = pd.youtubeUrl.trim();
+      if (pd.youtubeHandle) {
+        profilePatch.youtubeHandle = pd.youtubeHandle.trim().slice(0, 60);
+      }
+    }
+
+    if (Object.keys(profilePatch).length > 1) {
+      if (handle.dialect === "sqlite") {
+        await handle.db
+          .update(handle.schema.creatorProfile)
+          .set(profilePatch)
+          .where(eq(handle.schema.creatorProfile.id, profileId));
+      } else {
+        await handle.db
+          .update(handle.schema.creatorProfile)
+          .set(profilePatch)
+          .where(eq(handle.schema.creatorProfile.id, profileId));
+      }
+    }
+  }
+
+  const [updatedProfileRow] =
+    handle.dialect === "sqlite"
+      ? await handle.db
+          .select()
+          .from(handle.schema.creatorProfile)
+          .where(eq(handle.schema.creatorProfile.id, profileId))
+          .limit(1)
+      : await handle.db
+          .select()
+          .from(handle.schema.creatorProfile)
+          .where(eq(handle.schema.creatorProfile.id, profileId))
+          .limit(1);
+
+  const updatedItemRows =
+    handle.dialect === "sqlite"
+      ? await handle.db
+          .select()
+          .from(handle.schema.linkItem)
+          .where(eq(handle.schema.linkItem.profileId, profileId))
+          .orderBy(asc(handle.schema.linkItem.sortOrder))
+      : await handle.db
+          .select()
+          .from(handle.schema.linkItem)
+          .where(eq(handle.schema.linkItem.profileId, profileId))
+          .orderBy(asc(handle.schema.linkItem.sortOrder));
+
+  return {
+    ok: true,
+    profile: mapProfile(updatedProfileRow as unknown as Record<string, unknown>),
+    items: updatedItemRows.map((r) => mapItem(r as unknown as Record<string, unknown>)),
+    importedCount: validItems.length,
+  };
+}
+
 export async function recordProfileEvent(input: {
   slug: string;
   type: "view" | "click" | "copy";
