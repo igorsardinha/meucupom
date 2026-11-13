@@ -1,6 +1,6 @@
 import { getPublicPageBySlug } from "@/db/repository";
 import { sanitizeSlug } from "@/types/meucupom";
-import { createCreatorOgImageResponse } from "@/lib/og-image";
+import { createCreatorAvatarImageResponse } from "@/lib/og-image";
 import { NEUTRAL_SHOWCASE_PROFILE } from "@/lib/showcase";
 
 export async function GET(request: Request) {
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   const data = await getPublicPageBySlug(clean);
   if (!data) {
-    return createCreatorOgImageResponse({
+    return createCreatorAvatarImageResponse({
       ...NEUTRAL_SHOWCASE_PROFILE,
       id: "fallback",
       userId: "fallback",
@@ -22,5 +22,5 @@ export async function GET(request: Request) {
     });
   }
 
-  return createCreatorOgImageResponse(data.profile, data.items);
+  return createCreatorAvatarImageResponse(data.profile);
 }

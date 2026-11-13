@@ -40,7 +40,7 @@ export async function generateMetadata({
     title: `${profile.displayName} · Links e Cupons`,
     description,
     openGraph: {
-      type: "website",
+      type: "profile",
       locale: "pt_BR",
       url: `${baseUrl}/${clean}`,
       siteName: "meucupom.bio",
@@ -49,14 +49,16 @@ export async function generateMetadata({
       images: [
         {
           url: ogImageUrl,
-          width: 1200,
-          height: 630,
-          alt: `${profile.displayName} · Links e Cupons`,
+          secureUrl: ogImageUrl,
+          width: 600,
+          height: 600,
+          type: "image/jpeg",
+          alt: `Foto de ${profile.displayName}`,
         },
       ],
     },
     twitter: {
-      card: "summary_large_image",
+      card: "summary",
       title: `${profile.displayName} · Links e Cupons`,
       description,
       images: [ogImageUrl],
