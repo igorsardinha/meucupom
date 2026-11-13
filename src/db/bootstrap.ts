@@ -341,6 +341,10 @@ async function seedShowcaseProfile() {
           plan: "pro",
           subscriptionStatus: "active",
           onboardingCompleted: true,
+          instagramHandle: "",
+          tiktokHandle: "",
+          youtubeHandle: "",
+          socialDisplayStyle: "icon",
         })
         .where(eq(handle.schema.creatorProfile.id, existing[0].id));
       await seedDemoEventsIfEmpty(existing[0].id, now);
@@ -371,6 +375,18 @@ async function seedShowcaseProfile() {
         .where(eq(handle.schema.creatorProfile.userId, userId))
         .limit(1);
       if (existingByUser.length > 0) {
+        await handle.db
+          .update(handle.schema.creatorProfile)
+          .set({
+            plan: "pro",
+            subscriptionStatus: "active",
+            onboardingCompleted: true,
+            instagramHandle: "",
+            tiktokHandle: "",
+            youtubeHandle: "",
+            socialDisplayStyle: "icon",
+          })
+          .where(eq(handle.schema.creatorProfile.id, existingByUser[0].id));
         await seedDemoEventsIfEmpty(existingByUser[0].id, now);
         return;
       }
@@ -384,14 +400,15 @@ async function seedShowcaseProfile() {
       displayName: "Criador Modelo",
       initials: "CM",
       avatarUrl: "",
-      instagramHandle: "@criadormodelo",
+      instagramHandle: "",
       instagramUrl: "https://instagram.com",
-      tiktokHandle: "@criadormodelo",
+      tiktokHandle: "",
       tiktokUrl: "https://tiktok.com",
-      youtubeHandle: "@criadormodelo",
+      youtubeHandle: "",
       youtubeUrl: "https://youtube.com",
       bio: "Links oficiais, parceiros e cupons selecionados para você economizar.",
       ...DEFAULT_PROFILE_CUSTOMIZATION,
+      socialDisplayStyle: "icon",
       viewsCount: 186,
       plan: "pro",
       subscriptionStatus: "active",
@@ -424,6 +441,10 @@ async function seedShowcaseProfile() {
         plan: "pro",
         subscriptionStatus: "active",
         onboardingCompleted: true,
+        instagramHandle: "",
+        tiktokHandle: "",
+        youtubeHandle: "",
+        socialDisplayStyle: "icon",
       })
       .where(eq(handle.schema.creatorProfile.id, existing[0].id));
     await seedDemoEventsIfEmpty(existing[0].id, now);
@@ -454,6 +475,18 @@ async function seedShowcaseProfile() {
       .where(eq(handle.schema.creatorProfile.userId, userId))
       .limit(1);
     if (existingByUser.length > 0) {
+      await handle.db
+        .update(handle.schema.creatorProfile)
+        .set({
+          plan: "pro",
+          subscriptionStatus: "active",
+          onboardingCompleted: true,
+          instagramHandle: "",
+          tiktokHandle: "",
+          youtubeHandle: "",
+          socialDisplayStyle: "icon",
+        })
+        .where(eq(handle.schema.creatorProfile.id, existingByUser[0].id));
       await seedDemoEventsIfEmpty(existingByUser[0].id, now);
       return;
     }
@@ -467,14 +500,15 @@ async function seedShowcaseProfile() {
     displayName: "Criador Modelo",
     initials: "CM",
     avatarUrl: "",
-    instagramHandle: "@criadormodelo",
+    instagramHandle: "",
     instagramUrl: "https://instagram.com",
-    tiktokHandle: "@criadormodelo",
+    tiktokHandle: "",
     tiktokUrl: "https://tiktok.com",
-    youtubeHandle: "@criadormodelo",
+    youtubeHandle: "",
     youtubeUrl: "https://youtube.com",
     bio: "Links oficiais, parceiros e cupons selecionados para você economizar.",
     ...DEFAULT_PROFILE_CUSTOMIZATION,
+    socialDisplayStyle: "icon",
     viewsCount: 186,
     plan: "pro",
     subscriptionStatus: "active",
