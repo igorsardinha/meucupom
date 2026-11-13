@@ -27,6 +27,7 @@ function ShowcasePhone() {
           profile={NEUTRAL_SHOWCASE_PROFILE}
           items={NEUTRAL_SHOWCASE_ITEMS}
           previewMode
+          fromLanding
         />
       </div>
     </div>
@@ -89,10 +90,10 @@ export default function HomePage() {
 
         <nav className="flex shrink-0 items-center gap-2 sm:gap-2.5">
           <Link
-            href={`/${NEUTRAL_SHOWCASE_SLUG}`}
+            href={`/${NEUTRAL_SHOWCASE_SLUG}?from=landing`}
             className="hidden min-h-10 items-center rounded-full border border-[#94C5FF]/20 bg-white/5 px-4 text-sm font-semibold text-[#E2ECF7] transition hover:border-[#38BDF8]/50 md:inline-flex"
           >
-            Ver exemplo
+            Ver página modelo
           </Link>
           <Link
             href="/entrar"
@@ -131,7 +132,7 @@ export default function HomePage() {
 
             <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center sm:gap-3.5">
               <Link
-                href="/entrar"
+                href="/entrar?mode=register"
                 className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[#1E60CF] px-6 text-sm font-bold text-white shadow-[0_12px_28px_rgba(30,96,207,0.4)] transition hover:bg-[#256EE8] sm:min-h-[50px] sm:w-auto sm:text-base"
               >
                 <span>Criar minha página grátis</span>
@@ -139,10 +140,10 @@ export default function HomePage() {
               </Link>
 
               <Link
-                href={`/${NEUTRAL_SHOWCASE_SLUG}`}
+                href={`/${NEUTRAL_SHOWCASE_SLUG}?from=landing`}
                 className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl border border-[#94C5FF]/20 bg-[#0E1624] px-5 text-sm font-bold text-white transition hover:border-[#38BDF8]/50 sm:min-h-[50px] sm:w-auto sm:text-base"
               >
-                <span>Ver modelo de página</span>
+                <span>Ver página modelo</span>
               </Link>
             </div>
 
@@ -247,7 +248,7 @@ export default function HomePage() {
                   </div>
 
                   <Link
-                    href="/entrar"
+                    href="/entrar?mode=register"
                     className={`mt-7 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-bold transition ${
                       isPro
                         ? "bg-[#1E60CF] text-white shadow-lg hover:bg-[#256EE8]"

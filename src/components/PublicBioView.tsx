@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
+  ArrowRight,
   ArrowUpRight,
   Check,
   Clock,
@@ -51,6 +52,7 @@ interface PublicBioViewProps {
   profile: CreatorProfileData;
   items: LinkItemData[];
   previewMode?: boolean;
+  fromLanding?: boolean;
 }
 
 const FONT_VARS: Record<FontStyle, string> = {
@@ -284,7 +286,13 @@ function getColorSchemeServerSnapshot(): "dark" | "light" {
   return "dark";
 }
 
-export function PublicBioView({ profile, items, previewMode = false }: PublicBioViewProps) {
+export function PublicBioView({
+  profile,
+  items,
+  previewMode = false,
+  fromLanding = false,
+}: PublicBioViewProps) {
+  const isFromLanding = Boolean(fromLanding || profile.slug === "modelo");
   const [visitorOverride, setVisitorOverride] = useState<"dark" | "light" | null>(null);
   const systemScheme = useSyncExternalStore(
     subscribeColorScheme,
@@ -1276,6 +1284,22 @@ export function PublicBioView({ profile, items, previewMode = false }: PublicBio
 
         <footer style={{ color: mutedText }} className="mt-7 text-center text-xs">
           {profile.footerText ? <p>{profile.footerText}</p> : null}
+          {isFromLanding ? (
+            <div className="mt-5 mb-2 flex flex-col items-center justify-center gap-2">
+              <Link
+                href="/entrar?mode=register"
+                target={previewMode ? "_self" : undefined}
+                className="group inline-flex min-h-[46px] items-center justify-center gap-2.5 rounded-full bg-[#1E60CF] px-6 text-sm font-extrabold text-white shadow-[0_10px_25px_rgba(30,96,207,0.35)] transition hover:bg-[#256EE8] hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Sparkles className="h-4 w-4 text-[#7DD3FC]" aria-hidden="true" />
+                <span>Criar sua página</span>
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+              </Link>
+              <p className="text-[11px] font-medium opacity-75">
+                Crie sua página de links e cupons grátis em menos de 1 minuto
+              </p>
+            </div>
+          ) : null}
           {profile.showBranding ? (
             <div className="mt-5 flex flex-col items-center justify-center">
               <Link

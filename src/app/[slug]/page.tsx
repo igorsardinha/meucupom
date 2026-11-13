@@ -68,13 +68,23 @@ export async function generateMetadata({
 
 async function ProfileLoader({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { slug: rawSlug } = await params;
+  const sp = searchParams ? await searchParams : undefined;
+  const fromLanding =
+    sp?.from === "landing" ||
+    sp?.from === "modelo" ||
+    sp?.origem === "modelo" ||
+    sp?.ref === "modelo" ||
+    sp?.ref === "landing";
+
   const { decoded, clean } = normalizeRouteSlug(rawSlug);
   if (decoded.startsWith("@") && clean) {
-    redirect(`/${clean}`);
+    redirect(`/${clean}${fromLanding ? "?from=landing" : ""}`);
   }
 
   const data = await getPublicPageBySlug(clean);
@@ -95,13 +105,21 @@ async function ProfileLoader({
     );
   }
 
-  return <PublicBioView profile={data.profile} items={data.items} />;
+  return (
+    <PublicBioView
+      profile={data.profile}
+      items={data.items}
+      fromLanding={Boolean(fromLanding || clean === "modelo")}
+    />
+  );
 }
 
 export default function PublicProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   return (
     <Suspense
@@ -111,7 +129,7 @@ export default function PublicProfilePage({
         </div>
       }
     >
-      <ProfileLoader params={params} />
+      <ProfileLoader params={params} searchParams={searchParams} />
     </Suspense>
   );
 }

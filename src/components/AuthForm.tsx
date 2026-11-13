@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AlertCircle, ArrowLeft, Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
 import { BrandIcon } from "@/components/BrandIcon";
@@ -11,6 +11,7 @@ import { authClient } from "@/lib/auth-client";
 interface AuthFormProps {
   googleEnabled: boolean;
   demoEnabled: boolean;
+  initialMode?: "login" | "register";
 }
 
 function GoogleIcon() {
@@ -39,9 +40,21 @@ function GoogleIcon() {
 export function AuthForm({
   googleEnabled,
   demoEnabled,
+  initialMode = "login",
 }: AuthFormProps) {
   const router = useRouter();
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const searchParams = useSearchParams();
+  const paramMode =
+    searchParams?.get("mode") === "register" ||
+    searchParams?.get("tab") === "register" ||
+    searchParams?.get("cadastro") === "true" ||
+    searchParams?.get("cadastro") === "1"
+      ? "register"
+      : searchParams?.get("mode") === "login" || searchParams?.get("tab") === "login"
+        ? "login"
+        : null;
+
+  const [mode, setMode] = useState<"login" | "register">(paramMode ?? initialMode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
