@@ -964,7 +964,7 @@ export function PublicBioView({
                     className={showText ? pillClass : iconOnlyClass}
                   >
                     {showIcon ? (
-                      <YouTubeIcon className="h-4 w-4 shrink-0 text-white" />
+                      <YouTubeIcon className="h-4 w-4 shrink-0" />
                     ) : null}
                     {showText ? <span className="max-w-[150px] truncate">{ytText}</span> : null}
                   </a>
@@ -983,7 +983,7 @@ export function PublicBioView({
                     className={showText ? pillClass : iconOnlyClass}
                   >
                     {showIcon ? (
-                      <Mail className="h-4 w-4 shrink-0 text-white" />
+                      <Mail className="h-4 w-4 shrink-0" />
                     ) : null}
                     {showText ? <span className="max-w-[170px] truncate">{emailText}</span> : null}
                   </a>
