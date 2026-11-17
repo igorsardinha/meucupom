@@ -364,7 +364,6 @@ export function PublicBioView({
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"all" | "coupon" | "link">("all");
-  const [qrModalItem, setQrModalItem] = useState<LinkItemData | null>(null);
   const [profileQrOpen, setProfileQrOpen] = useState(false);
 
   const reportDialogRef = useRef<HTMLDialogElement>(null);
@@ -1544,25 +1543,6 @@ export function PublicBioView({
                               <span>{item.ctaLabel || (hasCoupon ? `Ir para ${item.title}` : "Acessar")}</span>
                               <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                             </a>
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setQrModalItem(item);
-                              }}
-                              aria-label={`Ver QR Code de ${item.title}`}
-                              title="Abrir no celular via QR Code"
-                              style={{
-                                background: pillBg,
-                                borderColor: borderSubtle,
-                                color: resolvedText,
-                                borderRadius: controlRadius,
-                              }}
-                              className="inline-flex min-h-[40px] w-10 shrink-0 items-center justify-center border transition hover:opacity-90 active:scale-95"
-                            >
-                              <QrCode className="h-4 w-4" />
-                            </button>
                           </div>
                         </div>
                       ) : null}
@@ -1616,39 +1596,22 @@ export function PublicBioView({
                           </h3>
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => setQrModalItem(item)}
-                            aria-label={`Ver QR Code de ${item.title}`}
-                            title="Abrir no celular via QR Code"
-                            style={{
-                              background: pillBg,
-                              borderColor: borderSubtle,
-                              color: resolvedText,
-                              borderRadius: controlRadius,
-                            }}
-                            className="inline-flex min-h-10 w-10 items-center justify-center border transition hover:opacity-90 active:scale-95"
-                          >
-                            <QrCode className="h-3.5 w-3.5" />
-                          </button>
-                          <a
-                            href={item.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => handleLinkClick(item)}
-                            aria-label={item.ctaLabel || `Acessar ${item.title}`}
-                            style={{
-                              background: resolvedCta,
-                              color: ctaInk,
-                              borderRadius: controlRadius,
-                            }}
-                            className="inline-flex min-h-10 items-center gap-1.5 px-3 text-xs font-bold whitespace-nowrap shadow-sm transition-opacity hover:opacity-95"
-                          >
-                            <span>Acessar</span>
-                            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-                          </a>
-                        </div>
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => handleLinkClick(item)}
+                          aria-label={item.ctaLabel || `Acessar ${item.title}`}
+                          style={{
+                            background: resolvedCta,
+                            color: ctaInk,
+                            borderRadius: controlRadius,
+                          }}
+                          className="inline-flex min-h-10 shrink-0 items-center gap-1.5 px-3 text-xs font-bold whitespace-nowrap shadow-sm transition-opacity hover:opacity-95"
+                        >
+                          <span>Acessar</span>
+                          <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                        </a>
                       </div>
 
                       {item.kind === "coupon" && item.couponCode ? (
@@ -1810,40 +1773,22 @@ export function PublicBioView({
                       </button>
                     ) : null}
 
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => handleLinkClick(item)}
-                        style={{
-                          background: resolvedCta,
-                          color: ctaInk,
-                          borderRadius: controlRadius,
-                          boxShadow: `0 6px 18px color-mix(in oklab, ${resolvedCta} 32%, transparent)`,
-                        }}
-                        className="inline-flex min-h-[46px] flex-1 items-center justify-center gap-2 px-4 py-2.5 text-[0.9375rem] font-bold tracking-tight transition-opacity hover:opacity-95 active:scale-[0.985]"
-                      >
-                        <span>{item.ctaLabel || `Ir para ${item.title}`}</span>
-                        <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden="true" />
-                      </a>
-
-                      <button
-                        type="button"
-                        onClick={() => setQrModalItem(item)}
-                        aria-label={`Ver QR Code de ${item.title}`}
-                        title="Abrir no celular via QR Code"
-                        style={{
-                          background: pillBg,
-                          borderColor: borderSubtle,
-                          color: resolvedText,
-                          borderRadius: controlRadius,
-                        }}
-                        className="inline-flex min-h-[46px] w-[46px] shrink-0 items-center justify-center border transition hover:opacity-90 active:scale-95"
-                      >
-                        <QrCode className="h-4 w-4" />
-                      </button>
-                    </div>
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => handleLinkClick(item)}
+                      style={{
+                        background: resolvedCta,
+                        color: ctaInk,
+                        borderRadius: controlRadius,
+                        boxShadow: `0 6px 18px color-mix(in oklab, ${resolvedCta} 32%, transparent)`,
+                      }}
+                      className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 px-4 py-2.5 text-[0.9375rem] font-bold tracking-tight transition-opacity hover:opacity-95 active:scale-[0.985]"
+                    >
+                      <span>{item.ctaLabel || `Ir para ${item.title}`}</span>
+                      <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    </a>
                   </li>
                 );
               })}
@@ -2096,25 +2041,6 @@ export function PublicBioView({
           logoUrl={profile.avatarUrl}
           initials={computeInitials(profile.displayName)}
           accentColor={profile.accentColor}
-        />
-      ) : null}
-
-      {/* Modal QR Code de Item / Cupom individual */}
-      {qrModalItem ? (
-        <QrCodeModal
-          isOpen={Boolean(qrModalItem)}
-          onClose={() => setQrModalItem(null)}
-          url={qrModalItem.url}
-          title={qrModalItem.title}
-          subtitle={
-            qrModalItem.couponCode
-              ? `Cupom: ${qrModalItem.couponCode}`
-              : "Aponte a câmera para abrir o link oficial"
-          }
-          logoUrl={qrModalItem.logoUrl}
-          initials={computeInitials(qrModalItem.title)}
-          accentColor={qrModalItem.accentColor || profile.accentColor}
-          badge={qrModalItem.badge}
         />
       ) : null}
 
