@@ -22,7 +22,25 @@ export async function GET(request: NextRequest) {
   if (action === "stats") {
     try {
       const stats = await getDatabaseStats();
-      return NextResponse.json({ ok: true, stats });
+      const tables: Record<string, number> = {
+        user: stats.user,
+        session: stats.session,
+        account: stats.account,
+        verification: stats.verification,
+        creator_profile: stats.creatorProfile,
+        link_item: stats.linkItem,
+        profile_event: stats.profileEvent,
+        abuse_report: stats.abuseReport,
+        platform_coupon: stats.platformCoupon,
+        platform_coupon_redemption: stats.platformCouponRedemption,
+      };
+      return NextResponse.json({
+        ok: true,
+        stats: {
+          ...stats,
+          tables,
+        },
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       return NextResponse.json({ error: `Erro ao obter estatísticas: ${msg}` }, { status: 500 });

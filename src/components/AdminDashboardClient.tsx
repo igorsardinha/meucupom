@@ -43,6 +43,7 @@ interface AdminDashboardClientProps {
   adminEmail: string;
   mercadoPagoEnabled: boolean;
   proPriceBrl: number;
+  defaultTab?: AdminTab;
 }
 
 type AdminTab = "users" | "subscriptions" | "coupons" | "reports" | "backups";
@@ -51,7 +52,8 @@ type UserFilter = "all" | "pro" | "permuta" | "free" | "suspended";
 interface BackupStatsState {
   dialect: string;
   totalRecords: number;
-  tables: Record<string, number>;
+  tables?: Record<string, number>;
+  [key: string]: unknown;
 }
 
 interface ParsedBackupInfo {
@@ -90,10 +92,11 @@ export function AdminDashboardClient({
   adminEmail,
   mercadoPagoEnabled,
   proPriceBrl,
+  defaultTab,
 }: AdminDashboardClientProps) {
   const [data, setData] = useState<AdminOverviewData>(initialData);
   const [coupons, setCoupons] = useState<PlatformCouponData[]>(initialData.coupons || []);
-  const [activeTab, setActiveTab] = useState<AdminTab>("users");
+  const [activeTab, setActiveTab] = useState<AdminTab>(defaultTab || "users");
   const [searchQuery, setSearchQuery] = useState("");
   const [userFilter, setUserFilter] = useState<UserFilter>("all");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -127,6 +130,45 @@ export function AdminDashboardClient({
     preRestoreSnapshot?: string;
     mode: string;
   } | null>(null);
+
+  const displayTables: Record<string, number> = useMemo(() => {
+    if (!backupStats) return {};
+    if (backupStats.tables && typeof backupStats.tables === "object") {
+      return backupStats.tables;
+    }
+    const s = backupStats as unknown as Record<string, unknown>;
+    return {
+      user: Number(s.user || 0),
+      session: Number(s.session || 0),
+      account: Number(s.account || 0),
+      verification: Number(s.verification || 0),
+      creator_profile: Number(s.creatorProfile || s.creator_profile || 0),
+      link_item: Number(s.linkItem || s.link_item || 0),
+      profile_event: Number(s.profileEvent || s.profile_event || 0),
+      abuse_report: Number(s.abuseReport || s.abuse_report || 0),
+      platform_coupon: Number(s.platformCoupon || s.platform_coupon || 0),
+      platform_coupon_redemption: Number(
+        s.platformCouponRedemption || s.platform_coupon_redemption || 0
+      ),
+    };
+  }, [backupStats]);
+
+  React.useEffect(() => {
+    if (defaultTab === "backups") {
+      let active = true;
+      fetch("/api/admin/backup?action=stats")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+          if (active && json?.ok && json?.stats) {
+            setBackupStats(json.stats);
+          }
+        })
+        .catch(() => {});
+      return () => {
+        active = false;
+      };
+    }
+  }, [defaultTab]);
 
   async function fetchBackupStats() {
     setLoadingBackupStats(true);
@@ -1722,9 +1764,9 @@ export function AdminDashboardClient({
                 </button>
               </div>
 
-              {backupStats ? (
+              {Object.keys(displayTables).length > 0 ? (
                 <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
-                  {Object.entries(backupStats.tables).map(([tableKey, count]) => (
+                  {Object.entries(displayTables).map(([tableKey, count]) => (
                     <div key={tableKey} className="rounded-xl border border-white/8 bg-[#08101C] p-2.5">
                       <span
                         className="block truncate text-[11px] font-medium text-[#9CB3CE]"
@@ -1733,7 +1775,7 @@ export function AdminDashboardClient({
                         {TABLE_LABELS[tableKey] || tableKey}
                       </span>
                       <span className="mt-0.5 text-lg font-bold text-white">
-                        {count.toLocaleString("pt-BR")}
+                        {Number(count || 0).toLocaleString("pt-BR")}
                       </span>
                     </div>
                   ))}

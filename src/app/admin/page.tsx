@@ -7,7 +7,22 @@ import { isSuperAdminEmail } from "@/lib/admin";
 import { getAuth } from "@/lib/auth";
 import { getProPriceBrl, isMercadoPagoEnabled } from "@/lib/mercadopago";
 
-async function AdminLoader() {
+interface AdminPageProps {
+  searchParams?: Promise<{ tab?: string }>;
+}
+
+async function AdminLoader({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tab?: string }>;
+}) {
+  const sp = searchParams ? await searchParams : undefined;
+  const validTabs = ["users", "subscriptions", "coupons", "reports", "backups"] as const;
+  const defaultTab =
+    sp?.tab && validTabs.includes(sp.tab as (typeof validTabs)[number])
+      ? (sp.tab as (typeof validTabs)[number])
+      : undefined;
+
   const auth = await getAuth();
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
@@ -26,11 +41,12 @@ async function AdminLoader() {
       adminEmail={session.user.email}
       mercadoPagoEnabled={isMercadoPagoEnabled()}
       proPriceBrl={getProPriceBrl()}
+      defaultTab={defaultTab}
     />
   );
 }
 
-export default function AdminPage() {
+export default function AdminPage({ searchParams }: AdminPageProps) {
   return (
     <Suspense
       fallback={
@@ -39,7 +55,7 @@ export default function AdminPage() {
         </div>
       }
     >
-      <AdminLoader />
+      <AdminLoader searchParams={searchParams} />
     </Suspense>
   );
 }
