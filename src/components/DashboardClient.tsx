@@ -92,6 +92,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { getBrandIconCandidates } from "@/lib/brand-icons";
 import { PublicBioView } from "./PublicBioView";
 import { LinktreeImportModal } from "./LinktreeImportModal";
+import { QrCodeModal } from "./QrCodeModal";
 
 interface DashboardClientProps {
   initialProfile: CreatorProfileData;
@@ -641,6 +642,7 @@ export function DashboardClient({
     text: string;
   } | null>(null);
   const [copiedUrl, setCopiedUrl] = useState(false);
+  const [profileQrOpen, setProfileQrOpen] = useState(false);
   const [themeProNotice, setThemeProNotice] = useState<string | null>(null);
   const [isLinktreeImportOpen, setIsLinktreeImportOpen] = useState(false);
 
@@ -1797,6 +1799,15 @@ export function DashboardClient({
                     <span className="hidden sm:inline">Copiar</span>
                   </>
                 )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setProfileQrOpen(true)}
+                aria-label="Gerar QR Code do perfil"
+                title="Gerar QR Code do perfil"
+                className="ml-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#9CB3CE] transition hover:bg-white/10 hover:text-white sm:h-7 sm:w-7"
+              >
+                <QrCode className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
               </button>
               <Link
                 href={`/${profile.slug}`}
@@ -3010,6 +3021,27 @@ export function DashboardClient({
                       <span>Botão claro/escuro para visitantes</span>
                     </label>
                   </div>
+
+                  <div className="flex items-end sm:col-span-2">
+                    <label className="flex min-h-[46px] w-full cursor-pointer items-center gap-3 rounded-xl border border-white/12 bg-[#09101B] px-3.5 text-sm font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={profile.searchEnabled}
+                        onChange={(e) =>
+                          setProfile((p) => ({ ...p, searchEnabled: e.target.checked }))
+                        }
+                        className="h-4 w-4 accent-[#38BDF8]"
+                      />
+                      <div className="py-1">
+                        <span className="block text-sm font-semibold">
+                          Barra de busca e filtros de cupons em tempo real
+                        </span>
+                        <span className="block text-xs font-normal text-[#9CB3CE]">
+                          Permite que os visitantes pesquisem lojas, tags e códigos e filtrem categorias instantaneamente na sua bio.
+                        </span>
+                      </div>
+                    </label>
+                  </div>
                 </div>
 
                 <div className="mt-6 flex items-center justify-end gap-3">
@@ -3032,6 +3064,162 @@ export function DashboardClient({
                     <span>Salvar aparência</span>
                   </button>
                 </div>
+              </div>
+
+              {/* Card do Botão Flutuante (WhatsApp & Telegram) */}
+              <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-5 sm:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h2 className="text-base font-extrabold flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
+                        💬
+                      </span>
+                      <span>Botão Flutuante de Contato</span>
+                    </h2>
+                    <p className="mt-0.5 text-xs text-[#9CB3CE]">
+                      Exiba um botão fixo no canto inferior da sua bio para os visitantes falarem com você no WhatsApp ou entrarem no seu Telegram.
+                    </p>
+                  </div>
+                  <label className="relative inline-flex cursor-pointer items-center">
+                    <input
+                      type="checkbox"
+                      checked={profile.floatingButtonEnabled}
+                      onChange={(e) =>
+                        setProfile((p) => ({ ...p, floatingButtonEnabled: e.target.checked }))
+                      }
+                      className="peer sr-only"
+                    />
+                    <div className="peer h-6 w-11 rounded-full bg-white/20 after:absolute after:top-0.5 after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#25D366] peer-checked:after:translate-x-full peer-focus:outline-none" />
+                  </label>
+                </div>
+
+                {profile.floatingButtonEnabled ? (
+                  <div className="space-y-4 pt-3 border-t border-white/10">
+                    <div>
+                      <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-[#9CB3CE]">
+                        Canal de Atendimento
+                      </span>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setProfile((p) => ({ ...p, floatingButtonType: "whatsapp" }))
+                          }
+                          className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-bold transition ${
+                            profile.floatingButtonType === "whatsapp"
+                              ? "border-[#25D366] bg-[#25D366]/15 text-[#25D366]"
+                              : "border-white/10 bg-[#09101B] text-[#9CB3CE] hover:text-white"
+                          }`}
+                        >
+                          <span className="text-base">📱</span>
+                          <span>WhatsApp</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setProfile((p) => ({ ...p, floatingButtonType: "telegram" }))
+                          }
+                          className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-bold transition ${
+                            profile.floatingButtonType === "telegram"
+                              ? "border-[#229ED9] bg-[#229ED9]/15 text-[#229ED9]"
+                              : "border-white/10 bg-[#09101B] text-[#9CB3CE] hover:text-white"
+                          }`}
+                        >
+                          <span className="text-base">✈️</span>
+                          <span>Telegram</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {profile.floatingButtonType === "whatsapp" ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="float-phone" className="mb-1 block text-sm font-semibold">
+                            Número do WhatsApp (com DDD)
+                          </label>
+                          <input
+                            id="float-phone"
+                            type="tel"
+                            value={profile.floatingButtonPhone}
+                            onChange={(e) =>
+                              setProfile((p) => ({ ...p, floatingButtonPhone: e.target.value }))
+                            }
+                            placeholder="Ex: 11 99999-9999"
+                            className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white placeholder:text-white/30"
+                          />
+                          <p className="mt-1 text-[11px] text-[#9CB3CE]">
+                            Digite com DDD (ex: 11988887777). O código internacional +55 é inserido automaticamente.
+                          </p>
+                        </div>
+
+                        <div>
+                          <label htmlFor="float-msg" className="mb-1 block text-sm font-semibold">
+                            Mensagem pré-preenchida
+                          </label>
+                          <input
+                            id="float-msg"
+                            type="text"
+                            value={profile.floatingButtonMessage}
+                            onChange={(e) =>
+                              setProfile((p) => ({ ...p, floatingButtonMessage: e.target.value }))
+                            }
+                            placeholder="Olá! Vim pelo seu MeuCupom.bio"
+                            className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white placeholder:text-white/30"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <label htmlFor="float-url" className="mb-1 block text-sm font-semibold">
+                          Link ou @ do Telegram
+                        </label>
+                        <input
+                          id="float-url"
+                          type="text"
+                          value={profile.floatingButtonUrl}
+                          onChange={(e) =>
+                            setProfile((p) => ({ ...p, floatingButtonUrl: e.target.value }))
+                          }
+                          placeholder="https://t.me/seucanal ou @seucanal"
+                          className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white placeholder:text-white/30"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label htmlFor="float-label" className="mb-1 block text-sm font-semibold">
+                        Texto de chamada / Balão (opcional)
+                      </label>
+                      <input
+                        id="float-label"
+                        type="text"
+                        maxLength={35}
+                        value={profile.floatingButtonLabel}
+                        onChange={(e) =>
+                          setProfile((p) => ({ ...p, floatingButtonLabel: e.target.value }))
+                        }
+                        placeholder="Ex: Fale Comigo, Grupo VIP de Ofertas..."
+                        className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 text-white placeholder:text-white/30"
+                      />
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="button"
+                        disabled={savingProfile}
+                        onClick={() => saveProfilePatch()}
+                        className="inline-flex min-h-[42px] items-center gap-2 rounded-xl bg-[#1E60CF] px-4 text-xs font-bold text-white transition hover:bg-[#256EE8] disabled:opacity-60"
+                      >
+                        {savingProfile ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Save className="h-3.5 w-3.5" aria-hidden="true" />
+                        )}
+                        <span>Salvar Botão</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </section>
           ) : null}
@@ -3481,6 +3669,120 @@ export function DashboardClient({
                   </div>
                 </div>
               ) : null}
+
+              {/* Card de Pixels de Rastreamento (Meta, Google Tag Manager, TikTok) */}
+              <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-5 sm:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h2 className="text-base font-extrabold flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-400">
+                        🎯
+                      </span>
+                      <span>Pixels de Rastreamento & Conversão</span>
+                    </h2>
+                    <p className="mt-0.5 text-xs text-[#9CB3CE]">
+                      Conecte seus pixels para medir o tráfego de anúncios, criar públicos personalizados e acompanhar conversões de cupons.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label htmlFor="meta-pixel" className="mb-1 block text-sm font-semibold flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-blue-500" />
+                        <span>Meta Pixel (Facebook/Instagram)</span>
+                      </label>
+                      <input
+                        id="meta-pixel"
+                        type="text"
+                        value={profile.metaPixelId}
+                        onChange={(e) =>
+                          setProfile((p) => ({ ...p, metaPixelId: e.target.value.trim() }))
+                        }
+                        placeholder="Ex: 123456789012345"
+                        className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 font-mono text-xs text-white placeholder:text-white/30"
+                      />
+                      <p className="mt-1 text-[11px] text-[#9CB3CE]">ID do Pixel no Gerenciador de Anúncios</p>
+                    </div>
+
+                    <div>
+                      <label htmlFor="gtm-id" className="mb-1 block text-sm font-semibold flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-amber-500" />
+                        <span>Google Tag Manager / GA4</span>
+                      </label>
+                      <input
+                        id="gtm-id"
+                        type="text"
+                        value={profile.gtmId}
+                        onChange={(e) =>
+                          setProfile((p) => ({ ...p, gtmId: e.target.value.trim() }))
+                        }
+                        placeholder="Ex: GTM-XXXXXXX ou G-XXXXXXX"
+                        className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 font-mono text-xs text-white placeholder:text-white/30"
+                      />
+                      <p className="mt-1 text-[11px] text-[#9CB3CE]">GTM Container ID ou Measurement ID</p>
+                    </div>
+
+                    <div>
+                      <label htmlFor="tiktok-pixel" className="mb-1 block text-sm font-semibold flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-rose-500" />
+                        <span>TikTok Pixel</span>
+                      </label>
+                      <input
+                        id="tiktok-pixel"
+                        type="text"
+                        value={profile.tiktokPixelId}
+                        onChange={(e) =>
+                          setProfile((p) => ({ ...p, tiktokPixelId: e.target.value.trim() }))
+                        }
+                        placeholder="Ex: C1234567890ABCDEF"
+                        className="mc-input min-h-[46px] w-full rounded-xl border border-white/15 bg-[#09101B] px-3 font-mono text-xs text-white placeholder:text-white/30"
+                      />
+                      <p className="mt-1 text-[11px] text-[#9CB3CE]">Código do Pixel no TikTok Ads Manager</p>
+                    </div>
+                  </div>
+
+                  {/* Informational checklist of events */}
+                  <div className="rounded-xl border border-white/10 bg-[#09101B] p-4 text-xs text-[#9CB3CE]">
+                    <p className="font-bold text-white mb-2">⚡ Eventos disparados automaticamente na sua bio:</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="flex items-center gap-2">
+                        <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                        <span><strong>PageView:</strong> Visita na página pública</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                        <span><strong>CouponCopied / Lead:</strong> Cópia de código de cupom</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                        <span><strong>AffiliateClick / ViewContent:</strong> Clique em link de parceiro</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                        <span><strong>Contact:</strong> Clique no botão de WhatsApp / Telegram</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="button"
+                      disabled={savingProfile}
+                      onClick={() => saveProfilePatch()}
+                      className="inline-flex min-h-[42px] items-center gap-2 rounded-xl bg-[#1E60CF] px-4 text-xs font-bold text-white transition hover:bg-[#256EE8] disabled:opacity-60"
+                    >
+                      {savingProfile ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <Save className="h-3.5 w-3.5" aria-hidden="true" />
+                      )}
+                      <span>Salvar Pixels</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </section>
           ) : null}
 
@@ -4467,6 +4769,17 @@ export function DashboardClient({
                     )}
                   </button>
 
+                  <button
+                    type="button"
+                    onClick={() => setProfileQrOpen(true)}
+                    className="inline-flex min-h-[36px] items-center gap-1 rounded-xl border border-white/15 bg-white/5 px-2.5 text-xs font-bold text-white transition hover:bg-white/10 active:scale-95"
+                    aria-label="Gerar QR Code do perfil"
+                    title="Gerar QR Code do perfil"
+                  >
+                    <QrCode className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>QR</span>
+                  </button>
+
                   <Link
                     href={`/${profile.slug}`}
                     target="_blank"
@@ -5250,6 +5563,24 @@ export function DashboardClient({
         existingItemsCount={items.filter((it) => it.kind !== "divider").length}
         userIsPro={userIsPro}
       />
+
+      {/* Modal QR Code do Perfil */}
+      {profileQrOpen ? (
+        <QrCodeModal
+          isOpen={profileQrOpen}
+          onClose={() => setProfileQrOpen(false)}
+          url={
+            typeof window !== "undefined"
+              ? `${window.location.origin}/${profile.slug}`
+              : `https://www.meucupom.bio/${profile.slug}`
+          }
+          title={profile.displayName}
+          subtitle={`meucupom.bio/${profile.slug}`}
+          logoUrl={profile.avatarUrl}
+          initials={computeInitials(profile.displayName)}
+          accentColor={profile.accentColor}
+        />
+      ) : null}
     </div>
   );
 }

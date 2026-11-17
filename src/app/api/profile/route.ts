@@ -111,6 +111,16 @@ const profilePatchSchema = z.object({
   textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   showBranding: z.boolean().optional(),
   onboardingCompleted: z.boolean().optional(),
+  floatingButtonEnabled: z.boolean().optional(),
+  floatingButtonType: z.enum(["whatsapp", "telegram"]).optional(),
+  floatingButtonPhone: z.string().max(30).optional(),
+  floatingButtonMessage: z.string().max(200).optional(),
+  floatingButtonUrl: z.string().max(500).optional(),
+  floatingButtonLabel: z.string().max(40).optional(),
+  searchEnabled: z.boolean().optional(),
+  metaPixelId: z.string().max(50).optional(),
+  gtmId: z.string().max(30).optional(),
+  tiktokPixelId: z.string().max(50).optional(),
 });
 
 export async function GET() {

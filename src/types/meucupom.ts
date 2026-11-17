@@ -129,6 +129,16 @@ export interface CreatorProfileData {
   onboardingCompleted: boolean;
   isSuspended: boolean;
   isVerified: boolean;
+  floatingButtonEnabled: boolean;
+  floatingButtonType: "whatsapp" | "telegram";
+  floatingButtonPhone: string;
+  floatingButtonMessage: string;
+  floatingButtonUrl: string;
+  floatingButtonLabel: string;
+  searchEnabled: boolean;
+  metaPixelId: string;
+  gtmId: string;
+  tiktokPixelId: string;
 }
 
 export interface DailyAnalyticsPoint {

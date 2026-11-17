@@ -92,6 +92,16 @@ const SQLITE_DDL = [
     "onboarding_completed" integer NOT NULL DEFAULT 0,
     "is_suspended" integer NOT NULL DEFAULT 0,
     "is_verified" integer NOT NULL DEFAULT 0,
+    "floating_button_enabled" integer NOT NULL DEFAULT 0,
+    "floating_button_type" text NOT NULL DEFAULT 'whatsapp',
+    "floating_button_phone" text NOT NULL DEFAULT '',
+    "floating_button_message" text NOT NULL DEFAULT 'Olá! Vim pelo seu MeuCupom.bio',
+    "floating_button_url" text NOT NULL DEFAULT '',
+    "floating_button_label" text NOT NULL DEFAULT '',
+    "search_enabled" integer NOT NULL DEFAULT 1,
+    "meta_pixel_id" text NOT NULL DEFAULT '',
+    "gtm_id" text NOT NULL DEFAULT '',
+    "tiktok_pixel_id" text NOT NULL DEFAULT '',
     "created_at" integer NOT NULL,
     "updated_at" integer NOT NULL
   )`,
@@ -251,6 +261,16 @@ const PG_DDL = [
     "onboarding_completed" boolean NOT NULL DEFAULT false,
     "is_suspended" boolean NOT NULL DEFAULT false,
     "is_verified" boolean NOT NULL DEFAULT false,
+    "floating_button_enabled" boolean NOT NULL DEFAULT false,
+    "floating_button_type" text NOT NULL DEFAULT 'whatsapp',
+    "floating_button_phone" text NOT NULL DEFAULT '',
+    "floating_button_message" text NOT NULL DEFAULT 'Olá! Vim pelo seu MeuCupom.bio',
+    "floating_button_url" text NOT NULL DEFAULT '',
+    "floating_button_label" text NOT NULL DEFAULT '',
+    "search_enabled" boolean NOT NULL DEFAULT true,
+    "meta_pixel_id" text NOT NULL DEFAULT '',
+    "gtm_id" text NOT NULL DEFAULT '',
+    "tiktok_pixel_id" text NOT NULL DEFAULT '',
     "created_at" timestamp NOT NULL,
     "updated_at" timestamp NOT NULL
   )`,
@@ -420,6 +440,16 @@ async function seedShowcaseProfile() {
       currentPeriodEnd: null,
       onboardingCompleted: true,
       isSuspended: false,
+      floatingButtonEnabled: false,
+      floatingButtonType: "whatsapp",
+      floatingButtonPhone: "",
+      floatingButtonMessage: "Olá! Vim pelo seu MeuCupom.bio",
+      floatingButtonUrl: "",
+      floatingButtonLabel: "",
+      searchEnabled: true,
+      metaPixelId: "",
+      gtmId: "",
+      tiktokPixelId: "",
       createdAt: now,
       updatedAt: now,
     });
@@ -521,6 +551,16 @@ async function seedShowcaseProfile() {
     currentPeriodEnd: null,
     onboardingCompleted: true,
     isSuspended: false,
+    floatingButtonEnabled: false,
+    floatingButtonType: "whatsapp",
+    floatingButtonPhone: "",
+    floatingButtonMessage: "Olá! Vim pelo seu MeuCupom.bio",
+    floatingButtonUrl: "",
+    floatingButtonLabel: "",
+    searchEnabled: true,
+    metaPixelId: "",
+    gtmId: "",
+    tiktokPixelId: "",
     createdAt: now,
     updatedAt: now,
   });
@@ -795,6 +835,56 @@ async function runColumnMigrations() {
         `ALTER TABLE "creator_profile" ADD COLUMN "is_verified" integer NOT NULL DEFAULT 0`
       );
     }
+    if (!profNames.has("floating_button_enabled")) {
+      await handle.client.execute(
+        `ALTER TABLE "creator_profile" ADD COLUMN "floating_button_enabled" integer NOT NULL DEFAULT 0`
+      );
+    }
+    if (!profNames.has("floating_button_type")) {
+      await handle.client.execute(
+        `ALTER TABLE "creator_profile" ADD COLUMN "floating_button_type" text NOT NULL DEFAULT 'whatsapp'`
+      );
+    }
+    if (!profNames.has("floating_button_phone")) {
+      await handle.client.execute(
+        `ALTER TABLE "creator_profile" ADD COLUMN "floating_button_phone" text NOT NULL DEFAULT ''`
+      );
+    }
+    if (!profNames.has("floating_button_message")) {
+      await handle.client.execute(
+        `ALTER TABLE "creator_profile" ADD COLUMN "floating_button_message" text NOT NULL DEFAULT 'Olá! Vim pelo seu MeuCupom.bio'`
+      );
+    }
+    if (!profNames.has("floating_button_url")) {
+      await handle.client.execute(
+        `ALTER TABLE "creator_profile" ADD COLUMN "floating_button_url" text NOT NULL DEFAULT ''`
+      );
+    }
+    if (!profNames.has("floating_button_label")) {
+      await handle.client.execute(
+        `ALTER TABLE "creator_profile" ADD COLUMN "floating_button_label" text NOT NULL DEFAULT ''`
+      );
+    }
+    if (!profNames.has("search_enabled")) {
+      await handle.client.execute(
+        `ALTER TABLE "creator_profile" ADD COLUMN "search_enabled" integer NOT NULL DEFAULT 1`
+      );
+    }
+    if (!profNames.has("meta_pixel_id")) {
+      await handle.client.execute(
+        `ALTER TABLE "creator_profile" ADD COLUMN "meta_pixel_id" text NOT NULL DEFAULT ''`
+      );
+    }
+    if (!profNames.has("gtm_id")) {
+      await handle.client.execute(
+        `ALTER TABLE "creator_profile" ADD COLUMN "gtm_id" text NOT NULL DEFAULT ''`
+      );
+    }
+    if (!profNames.has("tiktok_pixel_id")) {
+      await handle.client.execute(
+        `ALTER TABLE "creator_profile" ADD COLUMN "tiktok_pixel_id" text NOT NULL DEFAULT ''`
+      );
+    }
 
     const itemCols = await handle.client.execute(`PRAGMA table_info("link_item")`);
     const itemNames = new Set(itemCols.rows.map((r) => String(r.name)));
@@ -915,6 +1005,36 @@ async function runColumnMigrations() {
   );
   await handle.pool.query(
     `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "is_verified" boolean NOT NULL DEFAULT false`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "floating_button_enabled" boolean NOT NULL DEFAULT false`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "floating_button_type" text NOT NULL DEFAULT 'whatsapp'`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "floating_button_phone" text NOT NULL DEFAULT ''`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "floating_button_message" text NOT NULL DEFAULT 'Olá! Vim pelo seu MeuCupom.bio'`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "floating_button_url" text NOT NULL DEFAULT ''`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "floating_button_label" text NOT NULL DEFAULT ''`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "search_enabled" boolean NOT NULL DEFAULT true`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "meta_pixel_id" text NOT NULL DEFAULT ''`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "gtm_id" text NOT NULL DEFAULT ''`
+  );
+  await handle.pool.query(
+    `ALTER TABLE "creator_profile" ADD COLUMN IF NOT EXISTS "tiktok_pixel_id" text NOT NULL DEFAULT ''`
   );
   await handle.pool.query(
     `ALTER TABLE "link_item" ADD COLUMN IF NOT EXISTS "is_featured" boolean NOT NULL DEFAULT false`

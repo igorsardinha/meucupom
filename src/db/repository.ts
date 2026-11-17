@@ -88,6 +88,28 @@ function mapProfile(row: Record<string, unknown>): CreatorProfileData {
     onboardingCompleted: Boolean(row.onboardingCompleted),
     isSuspended: Boolean(row.isSuspended),
     isVerified: Boolean(row.isVerified || row.is_verified),
+    floatingButtonEnabled: Boolean(row.floatingButtonEnabled ?? row.floating_button_enabled),
+    floatingButtonType:
+      (row.floatingButtonType || row.floating_button_type) === "telegram"
+        ? "telegram"
+        : "whatsapp",
+    floatingButtonPhone: String(row.floatingButtonPhone || row.floating_button_phone || ""),
+    floatingButtonMessage: String(
+      row.floatingButtonMessage ??
+        row.floating_button_message ??
+        "Olá! Vim pelo seu MeuCupom.bio"
+    ),
+    floatingButtonUrl: String(row.floatingButtonUrl || row.floating_button_url || ""),
+    floatingButtonLabel: String(row.floatingButtonLabel || row.floating_button_label || ""),
+    searchEnabled:
+      row.searchEnabled !== undefined
+        ? Boolean(row.searchEnabled)
+        : row.search_enabled !== undefined
+          ? Boolean(row.search_enabled)
+          : true,
+    metaPixelId: String(row.metaPixelId || row.meta_pixel_id || ""),
+    gtmId: String(row.gtmId || row.gtm_id || ""),
+    tiktokPixelId: String(row.tiktokPixelId || row.tiktok_pixel_id || ""),
   };
 }
 
@@ -336,6 +358,16 @@ export async function getOrCreateProfileForUser(user: {
     currentPeriodEnd: null,
     onboardingCompleted: false,
     isSuspended: false,
+    floatingButtonEnabled: false,
+    floatingButtonType: "whatsapp",
+    floatingButtonPhone: "",
+    floatingButtonMessage: "Olá! Vim pelo seu MeuCupom.bio",
+    floatingButtonUrl: "",
+    floatingButtonLabel: "",
+    searchEnabled: true,
+    metaPixelId: "",
+    gtmId: "",
+    tiktokPixelId: "",
     createdAt: now,
     updatedAt: now,
   };
@@ -559,6 +591,50 @@ export async function updateProfileForUser(
       typeof patch.onboardingCompleted === "boolean"
         ? patch.onboardingCompleted
         : current.onboardingCompleted,
+    floatingButtonEnabled:
+      typeof patch.floatingButtonEnabled === "boolean"
+        ? patch.floatingButtonEnabled
+        : current.floatingButtonEnabled,
+    floatingButtonType:
+      patch.floatingButtonType === "telegram"
+        ? "telegram"
+        : patch.floatingButtonType === "whatsapp"
+          ? "whatsapp"
+          : current.floatingButtonType,
+    floatingButtonPhone:
+      typeof patch.floatingButtonPhone === "string"
+        ? patch.floatingButtonPhone.trim().slice(0, 30)
+        : current.floatingButtonPhone,
+    floatingButtonMessage:
+      typeof patch.floatingButtonMessage === "string"
+        ? patch.floatingButtonMessage.trim().slice(0, 200)
+        : current.floatingButtonMessage,
+    floatingButtonUrl:
+      patch.floatingButtonUrl !== undefined
+        ? isSafeHttpUrl(patch.floatingButtonUrl)
+          ? patch.floatingButtonUrl.trim()
+          : ""
+        : current.floatingButtonUrl,
+    floatingButtonLabel:
+      typeof patch.floatingButtonLabel === "string"
+        ? patch.floatingButtonLabel.trim().slice(0, 40)
+        : current.floatingButtonLabel,
+    searchEnabled:
+      typeof patch.searchEnabled === "boolean"
+        ? patch.searchEnabled
+        : current.searchEnabled,
+    metaPixelId:
+      typeof patch.metaPixelId === "string"
+        ? patch.metaPixelId.trim().slice(0, 50)
+        : current.metaPixelId,
+    gtmId:
+      typeof patch.gtmId === "string"
+        ? patch.gtmId.trim().slice(0, 30)
+        : current.gtmId,
+    tiktokPixelId:
+      typeof patch.tiktokPixelId === "string"
+        ? patch.tiktokPixelId.trim().slice(0, 50)
+        : current.tiktokPixelId,
     updatedAt: new Date(),
   };
 

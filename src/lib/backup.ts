@@ -422,6 +422,20 @@ export async function restoreDatabaseBackup(
     onboardingCompleted: toBoolean(row.onboardingCompleted, false),
     isSuspended: toBoolean(row.isSuspended, false),
     isVerified: toBoolean(row.isVerified, false),
+    floatingButtonEnabled: toBoolean(row.floatingButtonEnabled, false),
+    floatingButtonType:
+      toString(row.floatingButtonType, "whatsapp") === "telegram" ? "telegram" : "whatsapp",
+    floatingButtonPhone: toString(row.floatingButtonPhone, ""),
+    floatingButtonMessage: toString(
+      row.floatingButtonMessage,
+      "Olá! Vim pelo seu MeuCupom.bio"
+    ),
+    floatingButtonUrl: toString(row.floatingButtonUrl, ""),
+    floatingButtonLabel: toString(row.floatingButtonLabel, ""),
+    searchEnabled: toBoolean(row.searchEnabled, true),
+    metaPixelId: toString(row.metaPixelId, ""),
+    gtmId: toString(row.gtmId, ""),
+    tiktokPixelId: toString(row.tiktokPixelId, ""),
     createdAt: toDate(row.createdAt, now),
     updatedAt: toDate(row.updatedAt, now),
   }));

@@ -32,6 +32,16 @@ export const NEUTRAL_SHOWCASE_PROFILE: CreatorProfileData = {
   onboardingCompleted: true,
   isSuspended: false,
   isVerified: true,
+  floatingButtonEnabled: false,
+  floatingButtonType: "whatsapp",
+  floatingButtonPhone: "",
+  floatingButtonMessage: "Olá! Vim pelo seu MeuCupom.bio",
+  floatingButtonUrl: "",
+  floatingButtonLabel: "",
+  searchEnabled: true,
+  metaPixelId: "",
+  gtmId: "",
+  tiktokPixelId: "",
 };
 
 export const NEUTRAL_SHOWCASE_ITEMS: LinkItemData[] = [
