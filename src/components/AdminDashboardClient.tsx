@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  AlertOctagon,
   AlertTriangle,
   ArrowLeft,
   Ban,
@@ -10,16 +11,21 @@ import {
   CheckCircle2,
   Copy,
   Crown,
+  Database,
+  Download,
   ExternalLink,
   Flag,
   Loader2,
   LogOut,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
   ShieldCheck,
+  Terminal,
   Ticket,
   Trash2,
+  Upload,
   Users,
 } from "lucide-react";
 import { BrandIcon } from "@/components/BrandIcon";
@@ -39,8 +45,36 @@ interface AdminDashboardClientProps {
   proPriceBrl: number;
 }
 
-type AdminTab = "users" | "subscriptions" | "coupons" | "reports";
+type AdminTab = "users" | "subscriptions" | "coupons" | "reports" | "backups";
 type UserFilter = "all" | "pro" | "permuta" | "free" | "suspended";
+
+interface BackupStatsState {
+  dialect: string;
+  totalRecords: number;
+  tables: Record<string, number>;
+}
+
+interface ParsedBackupInfo {
+  version: string;
+  app: string;
+  createdAt: string;
+  totalRecords: number;
+  counts: Record<string, number>;
+  rawBackup: unknown;
+}
+
+const TABLE_LABELS: Record<string, string> = {
+  user: "Usuários (Auth)",
+  session: "Sessões Ativas",
+  account: "Contas Conectadas",
+  verification: "Tokens de Verificação",
+  creator_profile: "Perfis de Criadores",
+  link_item: "Links & Cupons",
+  profile_event: "Cliques & Visualizações",
+  abuse_report: "Denúncias",
+  platform_coupon: "Cupons Promocionais",
+  platform_coupon_redemption: "Resgates de Cupons",
+};
 
 const STATUS_LABELS: Record<CreatorProfileData["subscriptionStatus"], string> = {
   active: "Ativa",
@@ -78,6 +112,172 @@ export function AdminDashboardClient({
     maxUses: 100,
   });
   const [savingCoupon, setSavingCoupon] = useState(false);
+
+  const [backupStats, setBackupStats] = useState<BackupStatsState | null>(null);
+  const [loadingBackupStats, setLoadingBackupStats] = useState(false);
+  const [downloadingBackup, setDownloadingBackup] = useState(false);
+  const [parsedBackup, setParsedBackup] = useState<ParsedBackupInfo | null>(null);
+  const [fileParseError, setFileParseError] = useState<string | null>(null);
+  const [restoreMode, setRestoreMode] = useState<"clean" | "merge">("clean");
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
+  const [confirmRestoreInput, setConfirmRestoreInput] = useState("");
+  const [restoringBackup, setRestoringBackup] = useState(false);
+  const [restoreResult, setRestoreResult] = useState<{
+    recordsRestored: number;
+    preRestoreSnapshot?: string;
+    mode: string;
+  } | null>(null);
+
+  async function fetchBackupStats() {
+    setLoadingBackupStats(true);
+    try {
+      const res = await fetch("/api/admin/backup?action=stats");
+      if (!res.ok) {
+        notify("error", "Não foi possível carregar estatísticas do banco.");
+        return;
+      }
+      const json = await res.json();
+      if (json.ok && json.stats) {
+        setBackupStats(json.stats);
+      }
+    } catch {
+      notify("error", "Erro ao carregar estatísticas do banco.");
+    } finally {
+      setLoadingBackupStats(false);
+    }
+  }
+
+  async function handleDownloadBackup() {
+    setDownloadingBackup(true);
+    try {
+      const res = await fetch("/api/admin/backup");
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        notify("error", err?.error || "Erro ao gerar arquivo de backup.");
+        return;
+      }
+      const blob = await res.blob();
+      const contentDisposition = res.headers.get("content-disposition");
+      let filename = `meucupom-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (match?.[1]) filename = match[1];
+      }
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      notify("ok", "Backup baixado com sucesso!");
+      fetchBackupStats();
+    } catch {
+      notify("error", "Erro ao baixar arquivo de backup.");
+    } finally {
+      setDownloadingBackup(false);
+    }
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setFileParseError(null);
+    setParsedBackup(null);
+    setRestoreResult(null);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const json = JSON.parse(text);
+
+        if (!json || typeof json !== "object") {
+          throw new Error("Arquivo não contém um objeto JSON válido.");
+        }
+        if (json.app !== "meucupom.bio") {
+          throw new Error(
+            `Arquivo não pertence ao meucupom.bio (identificador: "${json.app || "indefinido"}").`
+          );
+        }
+        if (!json.tables || typeof json.tables !== "object") {
+          throw new Error("O arquivo não possui o objeto de tabelas obrigatório.");
+        }
+
+        const tableKeys = Object.keys(json.tables);
+        const counts: Record<string, number> = {};
+        let total = 0;
+        for (const k of tableKeys) {
+          const arr = json.tables[k];
+          const len = Array.isArray(arr) ? arr.length : 0;
+          counts[k] = len;
+          total += len;
+        }
+
+        setParsedBackup({
+          version: json.version || "1.0",
+          app: json.app,
+          createdAt: json.createdAt || new Date().toISOString(),
+          totalRecords: total,
+          counts,
+          rawBackup: json,
+        });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Erro desconhecido ao ler o arquivo JSON.";
+        setFileParseError(msg);
+        notify("error", msg);
+      }
+    };
+    reader.onerror = () => {
+      setFileParseError("Falha na leitura do arquivo local.");
+    };
+    reader.readAsText(file);
+  }
+
+  async function handleExecuteRestore() {
+    if (confirmRestoreInput !== "RESTAURAR") {
+      notify("error", 'Digite "RESTAURAR" em maiúsculas para confirmar.');
+      return;
+    }
+    if (!parsedBackup?.rawBackup) {
+      notify("error", "Nenhum arquivo de backup válido carregado.");
+      return;
+    }
+
+    setRestoringBackup(true);
+    try {
+      const res = await fetch("/api/admin/backup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          backup: parsedBackup.rawBackup,
+          mode: restoreMode,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        notify("error", json.error || "Erro durante o processo de restauração.");
+        return;
+      }
+
+      setRestoreResult(json.result);
+      setIsRestoreModalOpen(false);
+      setConfirmRestoreInput("");
+      notify(
+        "ok",
+        `Sucesso! ${json.result.recordsRestored} registros restaurados no banco de dados.`
+      );
+      fetchBackupStats();
+      refreshAll();
+    } catch {
+      notify("error", "Erro ao conectar com o servidor para restauração.");
+    } finally {
+      setRestoringBackup(false);
+    }
+  }
 
   function notify(type: "ok" | "error", text: string) {
     setBanner({ type, text });
@@ -456,7 +656,7 @@ export function AdminDashboardClient({
         <div
           role="tablist"
           aria-label="Módulos do Super Admin"
-          className="mb-6 grid grid-cols-2 gap-2 rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-1.5 lg:grid-cols-4"
+          className="mb-6 grid grid-cols-2 gap-2 rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-1.5 sm:grid-cols-3 lg:grid-cols-5"
         >
           <button
             type="button"
@@ -516,6 +716,24 @@ export function AdminDashboardClient({
           >
             <Flag className="h-4 w-4 shrink-0" aria-hidden="true" />
             <span>Denúncias ({stats.openReports})</span>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "backups"}
+            onClick={() => {
+              setActiveTab("backups");
+              if (!backupStats) fetchBackupStats();
+            }}
+            className={`flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold transition sm:text-sm ${
+              activeTab === "backups"
+                ? "bg-[#1E60CF] text-white shadow-md"
+                : "text-[#9CB3CE] hover:text-white"
+            }`}
+          >
+            <Database className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>Backup &amp; Dados</span>
           </button>
         </div>
 
@@ -1462,6 +1680,439 @@ export function AdminDashboardClient({
                 );
               })
             )}
+          </section>
+        ) : null}
+
+        {activeTab === "backups" ? (
+          <section aria-label="Backup e Restauração de Dados" className="space-y-6">
+            {/* Overview & Health Card */}
+            <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-5 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#38BDF8]/25 bg-[#38BDF8]/10 text-[#7DD3FC]">
+                    <Database className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-extrabold text-white">
+                      Integridade &amp; Status do Banco de Dados
+                    </h2>
+                    <p className="text-xs text-[#9CB3CE]">
+                      Mecanismo:{" "}
+                      <span className="font-semibold uppercase text-white">
+                        {backupStats?.dialect || "Detectando..."}
+                      </span>{" "}
+                      · Total de registros:{" "}
+                      <span className="font-semibold text-[#7DD3FC]">
+                        {backupStats ? backupStats.totalRecords.toLocaleString("pt-BR") : "—"}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={loadingBackupStats}
+                  onClick={fetchBackupStats}
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3.5 text-xs font-semibold text-white hover:bg-white/10 disabled:opacity-50"
+                >
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 ${loadingBackupStats ? "animate-spin" : ""}`}
+                    aria-hidden="true"
+                  />
+                  <span>{loadingBackupStats ? "Atualizando..." : "Recarregar Contagens"}</span>
+                </button>
+              </div>
+
+              {backupStats ? (
+                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+                  {Object.entries(backupStats.tables).map(([tableKey, count]) => (
+                    <div key={tableKey} className="rounded-xl border border-white/8 bg-[#08101C] p-2.5">
+                      <span
+                        className="block truncate text-[11px] font-medium text-[#9CB3CE]"
+                        title={tableKey}
+                      >
+                        {TABLE_LABELS[tableKey] || tableKey}
+                      </span>
+                      <span className="mt-0.5 text-lg font-bold text-white">
+                        {count.toLocaleString("pt-BR")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : loadingBackupStats ? (
+                <div className="mt-4 flex items-center justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-[#7DD3FC]" />
+                  <span className="ml-2 text-xs text-[#9CB3CE]">
+                    Carregando contagens em tempo real...
+                  </span>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Two Column Grid: Export & Import */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {/* Card 1: Exportar Backup */}
+              <div className="flex flex-col justify-between rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-6 shadow-sm">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-500/10 text-emerald-400">
+                      <Download className="h-5 w-5" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-extrabold text-white">
+                        Exportar Backup Completo
+                      </h3>
+                      <p className="text-xs text-[#9CB3CE]">
+                        Gere uma cópia exata de todos os dados da plataforma
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="mt-4 text-xs leading-relaxed text-[#9CB3CE]">
+                    Gera um arquivo JSON estruturado com todas as 10 tabelas relacionais do sistema. O arquivo pode ser guardado com segurança em discos locais ou backups em nuvem (S3, Drive) e é 100% interoperável entre SQLite e PostgreSQL.
+                  </p>
+
+                  <ul className="mt-4 space-y-2 text-xs text-[#9CB3CE]">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                      <span>Usuários, sessões, contas vinculadas e tokens de verificação</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                      <span>Perfis de criadores, biografias, temas, redes sociais e links de cupons</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                      <span>Eventos agregados de cliques, denúncias e cupons de influenciadores</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                      <span>Timestamps serializados em formato ISO (ISO-8601 UTC) com hash de versão</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="mt-6 border-t border-white/8 pt-4">
+                  <button
+                    type="button"
+                    disabled={downloadingBackup}
+                    onClick={handleDownloadBackup}
+                    className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 text-sm font-bold text-white shadow-lg hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-50"
+                  >
+                    {downloadingBackup ? (
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Download className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    <span>
+                      {downloadingBackup
+                        ? "Gerando arquivo de backup..."
+                        : "Baixar Backup Completo (.json)"}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 2: Restaurar Backup */}
+              <div className="flex flex-col justify-between rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-6 shadow-sm">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-400/25 bg-amber-500/10 text-amber-300">
+                      <Upload className="h-5 w-5" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-extrabold text-white">
+                        Restaurar Banco de Dados
+                      </h3>
+                      <p className="text-xs text-[#9CB3CE]">
+                        Restaure tabelas a partir de um arquivo JSON do meucupom.bio
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-400/20 bg-amber-500/8 p-3 text-xs text-amber-200">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+                    <div>
+                      <span className="font-bold">Proteção Automática Ativa:</span> Um snapshot
+                      de emergência do estado atual do banco será salvo no servidor antes de aplicar
+                      qualquer restauração.
+                    </div>
+                  </div>
+
+                  {/* Input de arquivo */}
+                  <div className="mt-4">
+                    <label className="mb-2 block text-xs font-semibold text-[#9CB3CE]">
+                      Selecione o arquivo de backup (.json):
+                    </label>
+                    <input
+                      type="file"
+                      accept=".json,application/json"
+                      onChange={handleFileSelect}
+                      className="block w-full cursor-pointer rounded-xl border border-white/10 bg-[#08101C] p-2 text-xs text-[#9CB3CE] file:mr-4 file:rounded-xl file:border-0 file:bg-[#1E60CF] file:px-4 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-[#1E60CF]/85"
+                    />
+                    {fileParseError ? (
+                      <p className="mt-2 text-xs font-medium text-red-400">{fileParseError}</p>
+                    ) : null}
+                  </div>
+
+                  {/* Detalhes do arquivo analisado */}
+                  {parsedBackup ? (
+                    <div className="mt-4 rounded-xl border border-[#38BDF8]/25 bg-[#08101C] p-3 text-xs">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="font-bold text-[#7DD3FC]">Arquivo Válido Verificado</span>
+                        <span className="text-[10px] text-[#9CB3CE]">
+                          Versão {parsedBackup.version}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-[11px] text-[#9CB3CE]">
+                        <div>
+                          <span>Criado em:</span>{" "}
+                          <strong className="text-white">
+                            {new Date(parsedBackup.createdAt).toLocaleString("pt-BR")}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>Total de Registros:</span>{" "}
+                          <strong className="text-white">
+                            {parsedBackup.totalRecords.toLocaleString("pt-BR")}
+                          </strong>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 border-t border-white/8 pt-3">
+                        <label className="mb-1.5 block text-[11px] font-bold text-white">
+                          Modo de Restauração:
+                        </label>
+                        <div className="space-y-2">
+                          <label className="flex cursor-pointer items-start gap-2">
+                            <input
+                              type="radio"
+                              name="restoreMode"
+                              value="clean"
+                              checked={restoreMode === "clean"}
+                              onChange={() => setRestoreMode("clean")}
+                              className="mt-0.5 text-[#1E60CF]"
+                            />
+                            <span className="text-[11px] text-[#9CB3CE]">
+                              <strong className="text-white">
+                                Substituição Completa (Limpar &amp; Recriar)
+                              </strong>
+                              : Apaga os registros existentes e recria o banco exatamente igual ao
+                              arquivo. (Recomendado para migração/recovery)
+                            </span>
+                          </label>
+                          <label className="flex cursor-pointer items-start gap-2">
+                            <input
+                              type="radio"
+                              name="restoreMode"
+                              value="merge"
+                              checked={restoreMode === "merge"}
+                              onChange={() => setRestoreMode("merge")}
+                              className="mt-0.5 text-[#1E60CF]"
+                            />
+                            <span className="text-[11px] text-[#9CB3CE]">
+                              <strong className="text-white">Mesclagem Segura (Upsert)</strong>:
+                              Atualiza registros existentes e insere novos sem deletar o que já
+                              está salvo.
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {restoreResult ? (
+                    <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-3 text-xs text-emerald-200">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                      <div>
+                        <strong className="block font-bold">
+                          Restauração Concluída com Sucesso!
+                        </strong>
+                        <span>
+                          {restoreResult.recordsRestored} registros processados em modo{" "}
+                          <span className="font-semibold uppercase">{restoreResult.mode}</span>.
+                          {restoreResult.preRestoreSnapshot
+                            ? ` Snapshot de emergência salvo no servidor (${restoreResult.preRestoreSnapshot}).`
+                            : ""}
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="mt-6 border-t border-white/8 pt-4">
+                  <button
+                    type="button"
+                    disabled={!parsedBackup || restoringBackup}
+                    onClick={() => {
+                      setConfirmRestoreInput("");
+                      setIsRestoreModalOpen(true);
+                    }}
+                    className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 px-4 text-sm font-bold text-white shadow-lg hover:from-red-500 hover:to-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                    <span>Iniciar Restauração...</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: CLI e Linha de Comando */}
+            <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-5 shadow-sm">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-purple-400/25 bg-purple-500/10 text-purple-300">
+                  <Terminal className="h-4 w-4" aria-hidden="true" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Comandos de Terminal (CLI)</h3>
+                  <p className="text-xs text-[#9CB3CE]">
+                    Para administradores executarem diretamente no servidor via SSH ou scripts cron
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 text-xs">
+                <div className="rounded-xl border border-white/10 bg-[#08101C] p-3.5">
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <span className="font-semibold text-white">Gerar backup no servidor:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText("npm run db:backup");
+                        notify("ok", "Comando db:backup copiado!");
+                      }}
+                      className="rounded p-1 text-[#9CB3CE] hover:text-white"
+                      title="Copiar comando"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <code className="block rounded bg-black/40 p-2 font-mono text-emerald-400">
+                    npm run db:backup
+                  </code>
+                  <p className="mt-1.5 text-[11px] text-[#9CB3CE]">
+                    Gera snapshot salvo em{" "}
+                    <span className="font-mono text-white">
+                      backups/meucupom-backup-[timestamp].json
+                    </span>
+                    .
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-[#08101C] p-3.5">
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <span className="font-semibold text-white">Restaurar último backup:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText("npm run db:restore");
+                        notify("ok", "Comando db:restore copiado!");
+                      }}
+                      className="rounded p-1 text-[#9CB3CE] hover:text-white"
+                      title="Copiar comando"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <code className="block rounded bg-black/40 p-2 font-mono text-amber-300">
+                    npm run db:restore
+                  </code>
+                  <p className="mt-1.5 text-[11px] text-[#9CB3CE]">
+                    Pede confirmação digitada no terminal ou use{" "}
+                    <span className="font-mono text-white">--yes</span> para automações.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal: Confirmação de Restauração */}
+            {isRestoreModalOpen ? (
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="restore-modal-title"
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+              >
+                <div className="w-full max-w-md rounded-2xl border border-red-500/30 bg-[#0B1220] p-6 shadow-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/15 text-red-400">
+                      <AlertOctagon className="h-6 w-6" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <h3 id="restore-modal-title" className="text-base font-extrabold text-white">
+                        Confirmar Restauração
+                      </h3>
+                      <p className="text-xs text-red-300">Ação de alto impacto no banco de dados</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-2 text-xs text-[#9CB3CE]">
+                    <p>
+                      Você está prestes a restaurar{" "}
+                      <strong className="text-white">
+                        {parsedBackup?.totalRecords} registros
+                      </strong>{" "}
+                      em modo{" "}
+                      <strong className="uppercase text-white">
+                        {restoreMode === "clean" ? "Substituição Completa" : "Mesclagem Segura"}
+                      </strong>
+                      .
+                    </p>
+                    {restoreMode === "clean" ? (
+                      <p className="text-amber-200">
+                        Atenção: Os dados atuais serão substituídos pelo conteúdo deste arquivo de
+                        backup. Um snapshot de emergência será salvo no servidor antes da alteração.
+                      </p>
+                    ) : (
+                      <p className="text-emerald-300">
+                        Modo Mesclagem: Os registros existentes serão atualizados e novos registros
+                        serão inseridos.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-white/10 bg-[#08101C] p-3">
+                    <label className="mb-1.5 block text-xs font-semibold text-white">
+                      Para prosseguir, digite{" "}
+                      <span className="font-mono font-bold text-red-400">RESTAURAR</span> abaixo:
+                    </label>
+                    <input
+                      type="text"
+                      value={confirmRestoreInput}
+                      onChange={(e) => setConfirmRestoreInput(e.target.value)}
+                      placeholder="RESTAURAR"
+                      className="w-full rounded-lg border border-white/15 bg-black/50 px-3 py-2 font-mono text-sm font-bold tracking-widest text-white uppercase placeholder:text-white/20 focus:border-red-400 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-end gap-3 border-t border-white/10 pt-4">
+                    <button
+                      type="button"
+                      disabled={restoringBackup}
+                      onClick={() => {
+                        setIsRestoreModalOpen(false);
+                        setConfirmRestoreInput("");
+                      }}
+                      className="rounded-xl border border-white/15 px-4 py-2 text-xs font-bold text-[#9CB3CE] hover:text-white disabled:opacity-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={confirmRestoreInput !== "RESTAURAR" || restoringBackup}
+                      onClick={handleExecuteRestore}
+                      className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-red-600 px-4 text-xs font-bold text-white shadow-md hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {restoringBackup ? (
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      <span>{restoringBackup ? "Restaurando..." : "Confirmar e Restaurar"}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </section>
         ) : null}
       </main>
