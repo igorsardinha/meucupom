@@ -9,12 +9,14 @@ import {
   Ban,
   Check,
   CheckCircle2,
+  CloudUpload,
   Copy,
   Crown,
   Database,
   Download,
   ExternalLink,
   Flag,
+  Folder,
   Loader2,
   LogOut,
   Plus,
@@ -36,6 +38,7 @@ import type {
   AdminUserSummary,
 } from "@/db/repository";
 import { authClient } from "@/lib/auth-client";
+import type { GoogleDriveStatus } from "@/lib/google-drive";
 import type { CreatorProfileData, PlatformCouponData } from "@/types/meucupom";
 
 interface AdminDashboardClientProps {
@@ -131,6 +134,12 @@ export function AdminDashboardClient({
     mode: string;
   } | null>(null);
 
+  const [googleDriveStatus, setGoogleDriveStatus] = useState<GoogleDriveStatus | null>(null);
+  const [loadingDriveStatus, setLoadingDriveStatus] = useState(false);
+  const [triggeringDriveBackup, setTriggeringDriveBackup] = useState(false);
+  const [savingDriveConfig, setSavingDriveConfig] = useState(false);
+  const [disconnectingDrive, setDisconnectingDrive] = useState(false);
+
   const displayTables: Record<string, number> = useMemo(() => {
     if (!backupStats) return {};
     if (backupStats.tables && typeof backupStats.tables === "object") {
@@ -164,11 +173,119 @@ export function AdminDashboardClient({
           }
         })
         .catch(() => {});
+
+      fetch("/api/admin/backup/google/status")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+          if (active && json?.ok && json?.status) {
+            setGoogleDriveStatus(json.status);
+          }
+        })
+        .catch(() => {});
+
       return () => {
         active = false;
       };
     }
   }, [defaultTab]);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const googleParam = params.get("google");
+      const googleError = params.get("google_error");
+      const googleEmail = params.get("email");
+
+      if (googleParam === "connected") {
+        notify("ok", `Conta do Google (${googleEmail || "Drive"}) conectada com sucesso!`);
+        window.history.replaceState({}, "", "/admin?tab=backups");
+      } else if (googleError) {
+        notify("error", decodeURIComponent(googleError));
+        window.history.replaceState({}, "", "/admin?tab=backups");
+      }
+    }
+  }, []);
+
+  async function fetchGoogleDriveStatus() {
+    setLoadingDriveStatus(true);
+    try {
+      const res = await fetch("/api/admin/backup/google/status");
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json.ok && json.status) {
+        setGoogleDriveStatus(json.status);
+      }
+    } catch {
+      // Silencioso
+    } finally {
+      setLoadingDriveStatus(false);
+    }
+  }
+
+  async function handleTriggerDriveBackup() {
+    setTriggeringDriveBackup(true);
+    try {
+      const res = await fetch("/api/admin/backup/google/trigger", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        notify("error", json.error || "Falha ao enviar backup para o Google Drive.");
+        return;
+      }
+      setGoogleDriveStatus(json.status);
+      notify("ok", `Backup "${json.result?.filename}" enviado com sucesso ao Google Drive!`);
+    } catch {
+      notify("error", "Erro ao conectar para envio ao Google Drive.");
+    } finally {
+      setTriggeringDriveBackup(false);
+    }
+  }
+
+  async function handleUpdateDriveConfig(autoBackupEnabled: boolean, retentionCount: number) {
+    setSavingDriveConfig(true);
+    try {
+      const res = await fetch("/api/admin/backup/google/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ autoBackupEnabled, retentionCount }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        notify("error", json.error || "Não foi possível salvar configurações do Drive.");
+        return;
+      }
+      setGoogleDriveStatus(json.status);
+      notify("ok", "Configurações do Google Drive atualizadas!");
+    } catch {
+      notify("error", "Erro ao salvar preferências do Drive.");
+    } finally {
+      setSavingDriveConfig(false);
+    }
+  }
+
+  async function handleDisconnectDrive() {
+    if (
+      !window.confirm(
+        "Deseja realmente desconectar sua conta do Google Drive? Os backups já existentes no seu Drive permanecerão preservados."
+      )
+    ) {
+      return;
+    }
+    setDisconnectingDrive(true);
+    try {
+      const res = await fetch("/api/admin/backup/google/disconnect", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        notify("error", json.error || "Erro ao desconectar Google Drive.");
+        return;
+      }
+      setGoogleDriveStatus(json.status);
+      notify("ok", "Google Drive desconectado com sucesso.");
+    } catch {
+      notify("error", "Erro ao processar desconexão.");
+    } finally {
+      setDisconnectingDrive(false);
+    }
+  }
 
   async function fetchBackupStats() {
     setLoadingBackupStats(true);
@@ -767,6 +884,7 @@ export function AdminDashboardClient({
             onClick={() => {
               setActiveTab("backups");
               if (!backupStats) fetchBackupStats();
+              if (!googleDriveStatus) fetchGoogleDriveStatus();
             }}
             className={`flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold transition sm:text-sm ${
               activeTab === "backups"
@@ -1996,6 +2114,317 @@ export function AdminDashboardClient({
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* Card: Google Drive Automatic Backup */}
+            <div className="rounded-2xl border border-[#94C5FF]/14 bg-[#0E1624] p-6 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-400/25 bg-blue-500/10 text-blue-400">
+                    <CloudUpload className="h-6 w-6" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-extrabold text-white">
+                        Backup Automático no Google Drive
+                      </h3>
+                      {googleDriveStatus?.connected ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                          Conectado
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-300">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-300" />
+                          Desconectado
+                        </span>
+                      )}
+                      {loadingDriveStatus ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-400" />
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-[#9CB3CE]">
+                      Sincronize backups diários do banco de dados na sua conta do Google Drive
+                    </p>
+                  </div>
+                </div>
+
+                {googleDriveStatus?.connected ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={triggeringDriveBackup}
+                      onClick={handleTriggerDriveBackup}
+                      className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#1E60CF] to-blue-600 px-4 text-xs font-bold text-white shadow-md hover:from-blue-600 hover:to-blue-500 disabled:opacity-50"
+                    >
+                      {triggeringDriveBackup ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <CloudUpload className="h-3.5 w-3.5" aria-hidden="true" />
+                      )}
+                      <span>
+                        {triggeringDriveBackup
+                          ? "Enviando ao Drive..."
+                          : "Fazer Backup no Drive Agora"}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={disconnectingDrive}
+                      onClick={handleDisconnectDrive}
+                      className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 text-xs font-semibold text-red-300 hover:bg-red-500/20 disabled:opacity-50"
+                    >
+                      <span>{disconnectingDrive ? "Desconectando..." : "Desconectar"}</span>
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+
+              {googleDriveStatus?.connected ? (
+                <div className="mt-6 space-y-4">
+                  {/* Status Grid */}
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 text-xs">
+                    <div className="rounded-xl border border-white/8 bg-[#08101C] p-3.5">
+                      <span className="text-[11px] text-[#9CB3CE]">Conta do Google vinculada</span>
+                      <p
+                        className="mt-1 font-bold text-white truncate"
+                        title={googleDriveStatus.email || ""}
+                      >
+                        {googleDriveStatus.email}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-white/8 bg-[#08101C] p-3.5">
+                      <span className="text-[11px] text-[#9CB3CE]">Pasta de destino</span>
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <span className="font-bold text-white truncate">
+                          {googleDriveStatus.folderName}
+                        </span>
+                        {googleDriveStatus.folderWebViewLink ? (
+                          <a
+                            href={googleDriveStatus.folderWebViewLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-[#7DD3FC] hover:underline shrink-0"
+                          >
+                            <span>Abrir</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-white/8 bg-[#08101C] p-3.5">
+                      <span className="text-[11px] text-[#9CB3CE]">Último backup no Drive</span>
+                      <p className="mt-1 font-bold text-white">
+                        {googleDriveStatus.lastBackupAt
+                          ? new Date(googleDriveStatus.lastBackupAt).toLocaleString("pt-BR")
+                          : "Aguardando 1º envio"}
+                      </p>
+                      {googleDriveStatus.lastBackupFileName ? (
+                        <p className="text-[10px] text-[#9CB3CE] truncate mt-0.5">
+                          {googleDriveStatus.lastBackupFileName}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {googleDriveStatus.lastError ? (
+                    <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-200">
+                      <AlertTriangle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
+                      <div>
+                        <strong>Aviso de Falha no Último Envio:</strong>
+                        <p className="mt-0.5">{googleDriveStatus.lastError}</p>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Settings / Preferences Card */}
+                  <div className="rounded-xl border border-white/10 bg-[#08101C] p-4 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div>
+                        <strong className="block text-sm font-bold text-white">
+                          Rotina de Automação Diária
+                        </strong>
+                        <p className="text-[#9CB3CE]">
+                          Executa automaticamente todo dia às 03:00 UTC (Vercel Cron) salvando snapshot no Drive.
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={googleDriveStatus.autoBackupEnabled}
+                            disabled={savingDriveConfig}
+                            onChange={(e) =>
+                              handleUpdateDriveConfig(
+                                e.target.checked,
+                                googleDriveStatus.retentionCount
+                              )
+                            }
+                            className="h-4 w-4 rounded border-white/20 bg-black/40 text-[#1E60CF] focus:ring-0"
+                          />
+                          <span className="font-semibold text-white">Ativar Backup Diário</span>
+                        </label>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#9CB3CE]">Retenção:</span>
+                          <select
+                            value={googleDriveStatus.retentionCount}
+                            disabled={savingDriveConfig}
+                            onChange={(e) =>
+                              handleUpdateDriveConfig(
+                                googleDriveStatus.autoBackupEnabled,
+                                Number(e.target.value)
+                              )
+                            }
+                            className="rounded-lg border border-white/15 bg-black/50 px-2.5 py-1 text-xs font-semibold text-white focus:outline-none"
+                          >
+                            <option value={7}>Últimos 7 dias</option>
+                            <option value={15}>Últimos 15 dias</option>
+                            <option value={30}>Últimos 30 dias (Recomendado)</option>
+                            <option value={60}>Últimos 60 dias</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recent Files in Drive */}
+                  {googleDriveStatus.recentBackups && googleDriveStatus.recentBackups.length > 0 ? (
+                    <div>
+                      <h4 className="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+                        <Folder className="h-3.5 w-3.5 text-blue-400" />
+                        <span>
+                          Arquivos de Backup Armazenados no Google Drive (
+                          {googleDriveStatus.recentBackups.length})
+                        </span>
+                      </h4>
+                      <div className="max-h-56 overflow-y-auto rounded-xl border border-white/8 bg-[#08101C]">
+                        <table className="w-full text-left text-xs">
+                          <thead className="border-b border-white/8 bg-white/5 text-[11px] text-[#9CB3CE]">
+                            <tr>
+                              <th className="py-2 px-3">Arquivo</th>
+                              <th className="py-2 px-3">Criado em</th>
+                              <th className="py-2 px-3">Tamanho</th>
+                              <th className="py-2 px-3 text-right">Link</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/5 text-[#9CB3CE]">
+                            {googleDriveStatus.recentBackups.map((file) => (
+                              <tr key={file.id} className="hover:bg-white/[0.02]">
+                                <td
+                                  className="py-2 px-3 font-mono font-medium text-white truncate max-w-[200px]"
+                                  title={file.name}
+                                >
+                                  {file.name}
+                                </td>
+                                <td className="py-2 px-3">
+                                  {file.createdTime
+                                    ? new Date(file.createdTime).toLocaleString("pt-BR")
+                                    : "—"}
+                                </td>
+                                <td className="py-2 px-3">
+                                  {file.size
+                                    ? `${(Number(file.size) / 1024).toFixed(1)} KB`
+                                    : "—"}
+                                </td>
+                                <td className="py-2 px-3 text-right">
+                                  {file.webViewLink ? (
+                                    <a
+                                      href={file.webViewLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 font-semibold text-[#7DD3FC] hover:underline"
+                                    >
+                                      <span>Ver no Drive</span>
+                                      <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  ) : (
+                                    "—"
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="mt-5 rounded-xl border border-white/8 bg-[#08101C] p-5 text-xs">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="max-w-xl space-y-2">
+                      <p className="leading-relaxed text-[#9CB3CE]">
+                        Conecte sua conta Google para enviar cópias de segurança do banco de dados
+                        automaticamente para o seu Google Drive na pasta{" "}
+                        <strong className="text-white">MeuCupom.bio Backups</strong>.
+                      </p>
+                      <ul className="space-y-1.5 text-[11px] text-[#9CB3CE]">
+                        <li className="flex items-center gap-2">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                          <span>
+                            Escopo seguro <code className="text-blue-300 font-mono">drive.file</code>:
+                            a aplicação só cria e gerencia seus próprios arquivos de backup.
+                          </span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                          <span>
+                            Criação automática da pasta de destino no seu Drive na primeira
+                            sincronização.
+                          </span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                          <span>
+                            Limpeza automática de arquivos antigos de acordo com a política de
+                            retenção.
+                          </span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="shrink-0 flex flex-col items-start md:items-end gap-2">
+                      <Link
+                        href="/api/admin/backup/google/auth"
+                        prefetch={false}
+                        className="inline-flex min-h-[46px] items-center justify-center gap-2.5 rounded-xl bg-white px-5 text-sm font-bold text-[#08101C] shadow-lg transition hover:bg-slate-100"
+                      >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24">
+                          <path
+                            fill="#4285F4"
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                          />
+                          <path
+                            fill="#34A853"
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                          />
+                          <path
+                            fill="#FBBC05"
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                          />
+                          <path
+                            fill="#EA4335"
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                          />
+                        </svg>
+                        <span>Conectar com minha Conta Google</span>
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-white/8 text-[11px] text-[#9CB3CE]">
+                    <span>URI de redirecionamento autorizada para o Google Cloud Console:</span>{" "}
+                    <code className="text-[#7DD3FC] font-mono select-all">
+                      https://www.meucupom.bio/api/admin/backup/google/callback
+                    </code>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Card 3: CLI e Linha de Comando */}
