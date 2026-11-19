@@ -589,6 +589,12 @@ export function DashboardClient({
     setMobilePreviewOpen(false);
   };
   const [profile, setProfile] = useState<CreatorProfileData>(initialProfile);
+  const [savedProfile, setSavedProfile] = useState<CreatorProfileData>(initialProfile);
+  const [prevInitialProfile, setPrevInitialProfile] = useState<CreatorProfileData>(initialProfile);
+  if (prevInitialProfile !== initialProfile) {
+    setPrevInitialProfile(initialProfile);
+    setSavedProfile(initialProfile);
+  }
   const [items, setItems] = useState<LinkItemData[]>(initialItems);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingItem, setSavingItem] = useState(false);
@@ -695,8 +701,8 @@ export function DashboardClient({
   }, []);
 
   const hasUnsavedProfileChanges = useMemo(() => {
-    return JSON.stringify(profile) !== JSON.stringify(initialProfile);
-  }, [profile, initialProfile]);
+    return JSON.stringify(profile) !== JSON.stringify(savedProfile);
+  }, [profile, savedProfile]);
 
   const totalCopies = useMemo(
     () => items.reduce((acc, item) => acc + item.copiesCount, 0),
@@ -932,6 +938,16 @@ export function DashboardClient({
           textColor: payload.textColor,
           showBranding: payload.showBranding,
           onboardingCompleted: payload.onboardingCompleted,
+          floatingButtonEnabled: payload.floatingButtonEnabled,
+          floatingButtonType: payload.floatingButtonType,
+          floatingButtonPhone: payload.floatingButtonPhone,
+          floatingButtonMessage: payload.floatingButtonMessage,
+          floatingButtonUrl: payload.floatingButtonUrl,
+          floatingButtonLabel: payload.floatingButtonLabel,
+          searchEnabled: payload.searchEnabled,
+          metaPixelId: payload.metaPixelId,
+          gtmId: payload.gtmId,
+          tiktokPixelId: payload.tiktokPixelId,
         }),
       });
       const data = (await res.json()) as { profile?: CreatorProfileData; error?: string };
@@ -940,6 +956,7 @@ export function DashboardClient({
         return;
       }
       setProfile(data.profile);
+      setSavedProfile(data.profile);
       notify("ok", "Alterações salvas e publicadas!");
       router.refresh();
     } catch {

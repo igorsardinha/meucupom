@@ -102,9 +102,9 @@ function mapProfile(row: Record<string, unknown>): CreatorProfileData {
     floatingButtonUrl: String(row.floatingButtonUrl || row.floating_button_url || ""),
     floatingButtonLabel: String(row.floatingButtonLabel || row.floating_button_label || ""),
     searchEnabled:
-      row.searchEnabled !== undefined
+      row.searchEnabled !== undefined && row.searchEnabled !== null
         ? Boolean(row.searchEnabled)
-        : row.search_enabled !== undefined
+        : row.search_enabled !== undefined && row.search_enabled !== null
           ? Boolean(row.search_enabled)
           : true,
     metaPixelId: String(row.metaPixelId || row.meta_pixel_id || ""),
@@ -610,9 +610,10 @@ export async function updateProfileForUser(
         ? patch.floatingButtonMessage.trim().slice(0, 200)
         : current.floatingButtonMessage,
     floatingButtonUrl:
-      patch.floatingButtonUrl !== undefined
-        ? isSafeHttpUrl(patch.floatingButtonUrl)
-          ? patch.floatingButtonUrl.trim()
+      typeof patch.floatingButtonUrl === "string"
+        ? Boolean(isSafeHttpUrl(patch.floatingButtonUrl)) ||
+          /^(https?:\/\/|@|[a-zA-Z0-9_]{3,})/i.test(patch.floatingButtonUrl.trim())
+          ? patch.floatingButtonUrl.trim().slice(0, 500)
           : ""
         : current.floatingButtonUrl,
     floatingButtonLabel:
